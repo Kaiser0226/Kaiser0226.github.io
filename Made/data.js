@@ -19,19 +19,20 @@ const TIME_SLOTS = [
 const STAFF = [
   {
     id: 1,
-    name: "ごう",
-    ruby: "ごう",
+    name: "かい",
+    ruby: "かい",
     emoji: "🧸",
-    role: "タロット担当",
-    tags: ["タロット", "初心者歓迎"],
-    message: "ゆっくり見ていこうね〜",
+    role: "Webサイト作成担当",
+    tags: ["受付", "AI頼り"],
+    message: "使えそうかなこのサイト",
     color: "#90caf9",
     details: [
-      { icon: "📏", label: "身長", value: "193cm" },
-      { icon: "⚖️", label: "体重", value: "112kg" },
-      { icon: "🎯", label: "趣味", value: "ダーツ（的ごと貫通）" },
-      { icon: "🏃", label: "50m走", value: "6.0秒" },
-      { icon: "🪨", label: "特技", value: "岩を椅子代わりにする" }
+      { icon: "📏", label: "身長", value: "155cm(自称)" },
+      { icon: "⚖️", label: "体重", value: "54kg" },
+      { icon: "🎯", label: "趣味", value: "パソコンいじり" },
+      { icon: "🏃", label: "50m走", value: "7.5秒" },
+      { icon: "🍖", label: "好きな食べ物", value: "炒飯・餃子" },
+      { icon: "🧊", label: "自慢", value: "体育は冬でも半袖" }
     ]
   },
   {
