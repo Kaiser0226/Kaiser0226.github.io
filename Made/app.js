@@ -63,7 +63,7 @@ function renderSchedule(day) {
         if (!staff) return;
 
         html += `
-          <div class="profile-card" onclick="openModal(${staff.id}, '${slot.label}')" id="card-${slot.id}-${staff.id}">
+          <div class="profile-card" onclick="openModal(${staff.id}, '${slot.label}')" id="card-${slot.id}-${staff.id}" style="background: linear-gradient(145deg, ${staff.color}15, ${staff.color}08); border-color: ${staff.color}60;">
             <div class="card-avatar-emoji">${staff.emoji}</div>
             <div class="card-name">${staff.name}</div>
             <div class="card-role">${staff.role}</div>
