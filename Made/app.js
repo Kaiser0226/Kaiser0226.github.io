@@ -227,9 +227,8 @@ function renderRanking() {
   const list = document.getElementById("ranking-list");
   if (!list) return;
 
-  // スタッフを投票数順に並べる（名前が決まっている人だけ or 全員）
+  // スタッフを投票数順に並べる（全員表示）
   const sorted = [...STAFF]
-    .filter(s => s.name !== String(s.id)) // 名前未設定（id番号のまま）を除外
     .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
 
   if (sorted.length === 0) {
@@ -246,7 +245,7 @@ function renderRanking() {
     const voteCount = votes[staff.id] || 0;
 
     return `
-      <div class="ranking-item${rankClass}" style="animation-delay:${i * 0.04}s">
+      <div class="ranking-item${rankClass}" style="animation-delay:${i * 0.04}s" onclick="openModal(${staff.id})">
         <div class="ranking-rank">${rankDisplay}</div>
         <div class="ranking-avatar" style="--staff-color: ${staff.color};">
           <img class="ranking-avatar-photo"
@@ -274,7 +273,6 @@ function renderRanking() {
 // ============================
 function getCurrentRank(staffId) {
   const sorted = [...STAFF]
-    .filter(s => s.name !== String(s.id))
     .sort((a, b) => (votes[b.id] || 0) - (votes[a.id] || 0));
   const idx = sorted.findIndex(s => s.id === staffId);
   return idx >= 0 ? idx + 1 : null;
@@ -304,7 +302,8 @@ function openModal(staffId, shiftLabel, slotId) {
     currentStaffList = dayData[slotId];
     currentStaffIndex = currentStaffList.indexOf(staffId);
     currentShiftLabel = shiftLabel;
-  } else if (!currentStaffList.includes(staffId)) {
+  } else {
+    // ランキング等から単体で開く場合、または別の文脈がない場合
     currentStaffList = [staffId];
     currentStaffIndex = 0;
     currentShiftLabel = shiftLabel || "";
@@ -362,7 +361,7 @@ function updateModalContent(staffId) {
 
       <div class="modal-tags">
         ${staff.tags.map(t => `<span class="modal-tag">${t}</span>`).join("")}
-        <span class="modal-shift-badge">🕐 ${currentShiftLabel}</span>
+        ${currentShiftLabel ? `<span class="modal-shift-badge">🕐 ${currentShiftLabel}</span>` : ""}
       </div>
 
       <div class="modal-divider"></div>
