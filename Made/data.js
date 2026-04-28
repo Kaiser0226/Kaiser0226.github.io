@@ -38,19 +38,19 @@ const STAFF = [
   },
   {
     id: 2,
-    name: "りゅう",
-    ruby: "りゅう",
+    name: "はるちゃん",
+    ruby: "はるき",
     emoji: "🐥",
-    role: "手相担当",
-    tags: ["手相", "恋愛相談"],
-    message: "手、見せて〜優しく見るよ",
+    role: "嫉妬担当",
+    tags: ["愛らしい", "反逆者の野心家"],
+    message: "君が次のご主人様？",
     color: "#a5d6a7",
     details: [
-      { icon: "📏", label: "身長", value: "190cm" },
-      { icon: "⚖️", label: "体重", value: "105kg" },
-      { icon: "🎯", label: "趣味", value: "釣り（素手）" },
-      { icon: "🔥", label: "握力", value: "98kg" },
-      { icon: "🛠️", label: "特技", value: "ドアノブを回さず開ける" }
+      { icon: "📏", label: "好きなタイプ", value: "狐" },
+      { icon: "⚖️", label: "体重", value: "象3頭分" },
+      { icon: "🎯", label: "趣味", value: "下剋上" },
+      { icon: "🔥", label: "自分の好みのパーツ", value: "左手" },
+      { icon: "🛠️", label: "特技", value: "諜報活動(暗殺)" }
     ]
   },
   {
