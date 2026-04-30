@@ -403,7 +403,8 @@ const STAFF = [
     message: "4回は来てね",
     color: "#A4E5E0",
     details: [
-      { icon: "", label: "好きなもの", value: "歩くこと・漫画・アニメ・ネトフリ・野球" }
+      { icon: "", label: "好きなもの", value: "歩くこと・漫画・アニメ・ネトフリ・野球" },
+      { icon: "", label: "Twitterのフォロワー", value: "6人以下" }
     ]
   },
   {
