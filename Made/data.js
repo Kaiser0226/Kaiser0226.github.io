@@ -124,19 +124,15 @@ const STAFF = [
   },
   {
     id: 10,
-    name: "10",
-    ruby: "10",
+    name: "さっくー",
+    ruby: "ひさのぶ",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["純粋"],
+    message: "当たったら褒めてください",
+    color: "#3EB370",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きな素材", value: "木" }
     ]
   },
   {
@@ -167,6 +163,7 @@ const STAFF = [
     color: "#F0566E",
     details: [
       { icon: "", label: "好きな曲", value: "me me she" },
+      { icon: "", label: "好きな食べ物", value: "ハンバーグ" },
       { icon: "", label: "趣味", value: "バスケ" }
     ]
   },
