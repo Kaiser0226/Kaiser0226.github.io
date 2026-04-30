@@ -89,19 +89,20 @@ const STAFF = [
   },
   {
     id: 6,
-    name: "6",
-    ruby: "6",
+    name: "ひとぷー",
+    ruby: "ひとし",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["小さい"],
+    message: "choose doom or zenith",
+    color: "#00A968",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きな動物", value: "人間" },
+      { icon: "", label: "趣味", value: "スプラ" },
+      { icon: "", label: "好きなお菓子", value: "つぶグミ" },
+      { icon: "", label: "好きな言葉", value: "doom or zenith" },
+      { icon: "", label: "最近考えていること", value: "哲学的にこの世界の帳尻合わせと死" },
+      { icon: "", label: "好きなYoutuber", value: "ドズル社とニシコリ" }
     ]
   },
   {
