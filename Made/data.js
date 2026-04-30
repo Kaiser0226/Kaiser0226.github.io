@@ -395,19 +395,15 @@ const STAFF = [
   },
   {
     id: 34,
-    name: "34",
-    ruby: "34",
+    name: "なごみ",
+    ruby: "なごむ",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["あまったるい"],
+    message: "4回は来てね",
+    color: "#A4E5E0",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きなもの", value: 歩くこと・漫画・アニメ・ネトフリ・野球" }
     ]
   },
   {
