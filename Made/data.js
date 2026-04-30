@@ -38,19 +38,19 @@ const STAFF = [
   },
   {
     id: 4,
-    name: "4",
-    ruby: "4",
+    name: "とくちゃん♡",
+    ruby: "とくたろう",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["濃いよ"],
+    message: "すごいのかましちゃおーとおもいます♡",
+    color: "#F067A6",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きな語感", value: "バンクシー" },
+      { icon: "", label: "好きなもの", value: "毛" },
+      { icon: "", label: "趣味", value: "退部" },
+      { icon: "", label: "理系国語", value: "学年1位" },
+      { icon: "", label: "100m", value: "6秒台(自称)" }
     ]
   },
   {
@@ -123,19 +123,19 @@ const STAFF = [
   },
   {
     id: 12,
-    name: "12",
-    ruby: "12",
+    name: "しま",
+    ruby: "はると",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["サボり魔"],
+    message: "貢いでください",
+    color: "#FF80ab",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きな部位", value: "耳たぶ" },
+      { icon: "", label: "身長", value: "人権なし" },
+      { icon: "", label: "推し", value: "会計の毛利" },
+      { icon: "", label: "後輩に舐められるまでにかかった日数", value: "0日" },
+      { icon: "", label: "趣味", value: "ガチャガチャ" }
     ]
   },
   {
