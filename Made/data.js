@@ -60,7 +60,7 @@ const STAFF = [
     emoji: "",
     role: "嫉妬担当",
     tags: ["愛らしい", "反逆者の野心家"],
-    message: "君が次のご主人様？",
+    message: "俺と海と君、I see you.",
     color: "#a5d6a7",
     details: [
       { icon: "📏", label: "好きなタイプ", value: "狐" },
