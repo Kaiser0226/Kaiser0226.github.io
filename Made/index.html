@@ -17,18 +17,8 @@
 <body>
 
   <!-- ヘッダー -->
-  <header class="site-header">
-    <div class="stars-bg"></div>
-    <div class="header-content">
-      <div class="header-deco">✦ ✦ ✦</div>
-      <h1 class="site-title">
-        <span class="title-icon">🔮</span>
-        メイド占い屋
-        <span class="title-icon">🔮</span>
-      </h1>
-      <p class="site-subtitle">シフト表</p>
-      <div class="header-deco">✦ ✦ ✦</div>
-    </div>
+  <header class="site-header-image">
+    <img src="photos/Kanban.png" alt="看板" class="header-kanban">
   </header>
 
   <!-- ========== 一覧タブ ========== -->
@@ -78,6 +68,16 @@
     <div class="footer-deco">✦ 節度を持った投票を。私がAPIの使用制限に引っかかってしまいます。 ✦</div>
   </div>
 
+  <!-- ========== 店についてタブ ========== -->
+  <div id="page-store" class="page-container">
+    <div class="store-info-wrap">
+      <div class="store-info-icon">☕</div>
+      <div class="store-info-title">店について</div>
+      <div class="store-info-status">現在会議中</div>
+      <div class="store-info-stars">✦ ✦ ✦</div>
+    </div>
+  </div>
+
   <!-- モーダル -->
   <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
     <div class="modal-card" id="modal-card" onclick="event.stopPropagation()">
@@ -99,6 +99,10 @@
     <button class="bottom-tab" id="btab-ranking" onclick="switchTab('ranking')">
       <span class="bottom-tab-icon">👑</span>
       <span class="bottom-tab-label">ランキング</span>
+    </button>
+    <button class="bottom-tab" id="btab-store" onclick="switchTab('store')">
+      <span class="bottom-tab-icon">🏠</span>
+      <span class="bottom-tab-label">店について</span>
     </button>
   </nav>
 

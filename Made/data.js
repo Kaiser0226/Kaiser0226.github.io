@@ -63,11 +63,11 @@ const STAFF = [
     message: "すごいのかましちゃおーとおもいます♡",
     color: "#F067A6",
     details: [
-      { icon: "", label: "好きな語感", value: "バンクシー" },
-      { icon: "", label: "好きなもの", value: "毛" },
-      { icon: "", label: "趣味", value: "退部" },
-      { icon: "", label: "理系国語", value: "学年1位" },
-      { icon: "", label: "100m", value: "6秒台(自称)" }
+      { icon: "🎨", label: "好きな語感", value: "バンクシー" },
+      { icon: "💇", label: "好きなもの", value: "毛" },
+      { icon: "🚪", label: "趣味", value: "退部" },
+      { icon: "🏆", label: "理系国語", value: "学年1位" },
+      { icon: "🏃", label: "100m", value: "6秒台(自称)" }
     ]
   },
   {
@@ -97,12 +97,12 @@ const STAFF = [
     message: "choose doom or zenith",
     color: "#00A968",
     details: [
-      { icon: "", label: "好きな動物", value: "人間" },
-      { icon: "", label: "趣味", value: "スプラ" },
-      { icon: "", label: "好きなお菓子", value: "つぶグミ" },
-      { icon: "", label: "好きな言葉", value: "doom or zenith" },
-      { icon: "", label: "最近考えていること", value: "哲学的にこの世界の帳尻合わせと死" },
-      { icon: "", label: "好きなYoutuber", value: "ドズル社とニシコリ" }
+      { icon: "👥", label: "好きな動物", value: "人間" },
+      { icon: "🔫", label: "趣味", value: "スプラ" },
+      { icon: "🍬", label: "好きなお菓子", value: "つぶグミ" },
+      { icon: "🌀", label: "好きな言葉", value: "doom or zenith" },
+      { icon: "💀", label: "最近考えていること", value: "哲学的にこの世界の帳尻合わせと死" },
+      { icon: "📺", label: "好きなYoutuber", value: "ドズル社とニシコリ" }
     ]
   },
   {
@@ -132,7 +132,7 @@ const STAFF = [
     message: "当たったら褒めてください",
     color: "#3EB370",
     details: [
-      { icon: "", label: "好きな素材", value: "木" }
+      { icon: "🌳", label: "好きな素材", value: "木" }
     ]
   },
   {
@@ -145,11 +145,11 @@ const STAFF = [
     message: "貢いでください",
     color: "#FF80ab",
     details: [
-      { icon: "", label: "好きな部位", value: "耳たぶ" },
-      { icon: "", label: "身長", value: "人権なし" },
-      { icon: "", label: "推し", value: "会計の毛利" },
-      { icon: "", label: "後輩に舐められるまでにかかった日数", value: "0日" },
-      { icon: "", label: "趣味", value: "ガチャガチャ" }
+      { icon: "👂", label: "好きな部位", value: "耳たぶ" },
+      { icon: "📏", label: "身長", value: "人権なし" },
+      { icon: "💖", label: "推し", value: "会計の毛利" },
+      { icon: "⏳", label: "後輩に舐められるまでにかかった日数", value: "0日" },
+      { icon: "🎡", label: "趣味", value: "ガチャガチャ" }
     ]
   },
   {
@@ -162,9 +162,9 @@ const STAFF = [
     message: "お隣失礼",
     color: "#F0566E",
     details: [
-      { icon: "", label: "好きな曲", value: "me me she" },
-      { icon: "", label: "好きな食べ物", value: "ハンバーグ" },
-      { icon: "", label: "趣味", value: "バスケ" }
+      { icon: "🎵", label: "好きな曲", value: "me me she" },
+      { icon: "🍔", label: "好きな食べ物", value: "ハンバーグ" },
+      { icon: "🏀", label: "趣味", value: "バスケ" }
     ]
   },
   {
@@ -313,11 +313,11 @@ const STAFF = [
     message: "愛嬌は期待しないでください。",
     color: "#000000",
     details: [
-      { icon: "", label: "趣味", value: "映画鑑賞、音楽鑑賞" },
-      { icon: "", label: "好きな食べ物", value: "魚、スイーツ" },
-      { icon: "", label: "好きな映画", value: "セッション、テネット" },
-      { icon: "", label: "好きな動物", value: "キツネ、レッサーパンダ" },
-      { icon: "", label: "毎日の楽しみ", value: "美味しいものを食べること" }
+      { icon: "🎬", label: "趣味", value: "映画鑑賞、音楽鑑賞" },
+      { icon: "🍰", label: "好きな食べ物", value: "魚、スイーツ" },
+      { icon: "🎞️", label: "好きな映画", value: "セッション、テネット" },
+      { icon: "🦊", label: "好きな動物", value: "キツネ、レッサーパンダ" },
+      { icon: "😋", label: "毎日の楽しみ", value: "美味しいものを食べること" }
     ]
   },
   {
@@ -415,8 +415,8 @@ const STAFF = [
     message: "4回は来てね",
     color: "#A4E5E0",
     details: [
-      { icon: "", label: "好きなもの", value: "歩くこと・漫画・アニメ・ネトフリ・野球" },
-      { icon: "", label: "Twitterのフォロワー", value: "6人以下" }
+      { icon: "🚶", label: "好きなもの", value: "歩くこと・漫画・アニメ・ネトフリ・野球" },
+      { icon: "🐦", label: "Twitterのフォロワー", value: "6人以下" }
     ]
   },
   {

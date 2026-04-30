@@ -420,20 +420,7 @@ function updateModalContent(staffId) {
 // ============================
 function updateNavButtons(card) {
   card.querySelectorAll(".modal-nav-btn").forEach(b => b.remove());
-
-  if (currentStaffList.length <= 1) return;
-
-  const prevBtn = document.createElement("button");
-  prevBtn.className = "modal-nav-btn prev";
-  prevBtn.innerHTML = "‹";
-  prevBtn.onclick = (e) => { e.stopPropagation(); prevStaff(); };
-  card.appendChild(prevBtn);
-
-  const nextBtn = document.createElement("button");
-  nextBtn.className = "modal-nav-btn next";
-  nextBtn.innerHTML = "›";
-  nextBtn.onclick = (e) => { e.stopPropagation(); nextStaff(); };
-  card.appendChild(nextBtn);
+  // 左右の矢印を削除
 }
 
 function nextStaff() {
