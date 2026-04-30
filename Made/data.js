@@ -20,6 +20,23 @@ const TIME_SLOTS = [
 // 項目の数・種類はスタッフごとに異なっても構いません。
 const STAFF = [
   {
+    id: 1,
+    name: "2",
+    ruby: "2",
+    emoji: "",
+    role: "未詳",
+    tags: ["未詳"],
+    message: "未定",
+    color: "#ffffffff",
+    details: [
+      { icon: "", label: "XXXXXX", value: "未定" },
+      { icon: "", label: "XXXXXX", value: "未定" },
+      { icon: "", label: "XXXXXX", value: "未定" },
+      { icon: "", label: "XXXXXX", value: "未定" },
+      { icon: "", label: "XXXXXX", value: "未定" }
+    ]
+  },
+  {
     id: 2,
     name: "2",
     ruby: "2",
@@ -468,9 +485,9 @@ const SCHEDULE = {
     t2: [],
     t3: [25, 13, 9, 36, 2],
     t4: [23, 4, 24, 32, 18],
-    t5: [19, 5, 39, 2, 40],
+    t5: [19, 5, 1, 2, 40],
     t6: [10, 6, 34, 31, 27],
-    t7: [4, 23, 12, 14, 16]
+    t7: [4, 22, 12, 14, 16]
   },
   "513": {
     t1: [9, 19, 39, 40, 22],
