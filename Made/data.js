@@ -157,19 +157,16 @@ const STAFF = [
   },
   {
     id: 13,
-    name: "13",
-    ruby: "13",
+    name: "とも",
+    ruby: "ともき",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["元気"],
+    message: "お隣失礼",
+    color: "#F0566E",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "好きな曲", value: "me me she" },
+      { icon: "", label: "趣味", value: "バスケ" }
     ]
   },
   {
