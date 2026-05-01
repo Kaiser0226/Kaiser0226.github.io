@@ -107,19 +107,20 @@ const STAFF = [
   },
   {
     id: 9,
-    name: "9",
-    ruby: "9",
+    name: "たかぴょん",
+    ruby: "たかひと",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["人懐っこい"],
+    message: "一生 視界に入ってて❤︎",
+    color: "#bbe2f1",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "🧒", label: "担当", value: "弟" },
+      { icon: "☕", label: "好きなもの", value: "スタバ" },
+      { icon: "🍭", label: "好きな人", value: "お菓子を分けてくれる人" },
+      { icon: "☁️", label: "体重", value: "マシュマロ3,000個分" },
+      { icon: "🧺", label: "趣味", value: "ピクニック" },
+      { icon: "👟", label: "特技", value: "早歩き" }
     ]
   },
   {
@@ -186,19 +187,17 @@ const STAFF = [
   },
   {
     id: 16,
-    name: "16",
-    ruby: "16",
+    name: "たかさん",
+    ruby: "さら",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["不器用"],
+    message: "待ってまーす♫",
+    color: "#90caf9",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "🏀", label: "好きなスポーツ", value: "バスケと野球" },
+      { icon: "🎤", label: "好きな歌手", value: "髭男" },
+      { icon: "🏃", label: "通学距離", value: "フルマラソン1回分" }
     ]
   },
   {
@@ -356,19 +355,19 @@ const STAFF = [
   },
   {
     id: 31,
-    name: "31",
-    ruby: "31",
+    name: "なのちゃん",
+    ruby: "ななか",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["ちゅ、多様性。"],
+    message: "なのの魔法をかけてあげる♡",
+    color: "#00FFFF",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "🎶", label: "好きなこと", value: "歌うこと  お笑い鑑賞  クイズ" },
+      { icon: "🎢", label: "好きなタイプ", value: "ジェットコースターに乗れる人" },
+      { icon: "🎙️", label: "やってみたいこと", value: "コール＆レスポンス   ライブに行くこと" },
+      { icon: "💭", label: "最近考えていること", value: "ダジャレ  変顔" },
+      { icon: "🧠", label: "MBTI", value: "ENFP" }
     ]
   },
   {
