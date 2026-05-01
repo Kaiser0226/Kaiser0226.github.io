@@ -21,8 +21,8 @@ const TIME_SLOTS = [
 const STAFF = [
   {
     id: 1,
-    name: "2",
-    ruby: "2",
+    name: "1",
+    ruby: "1",
     emoji: "",
     role: "未詳",
     tags: ["未詳"],
