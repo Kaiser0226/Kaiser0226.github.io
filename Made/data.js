@@ -115,7 +115,6 @@ const STAFF = [
     message: "一生 視界に入ってて❤︎",
     color: "#bbe2f1",
     details: [
-      { icon: "🧒", label: "担当", value: "弟" },
       { icon: "☕", label: "好きなもの", value: "スタバ" },
       { icon: "🍭", label: "好きな人", value: "お菓子を分けてくれる人" },
       { icon: "☁️", label: "体重", value: "マシュマロ3,000個分" },
