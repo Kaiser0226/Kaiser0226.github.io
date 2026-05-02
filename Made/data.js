@@ -355,7 +355,7 @@ const STAFF = [
   {
     id: 31,
     name: "なのちゃん",
-    ruby: "ななか",
+    ruby: "なのは",
     emoji: "",
     role: "未詳",
     tags: ["ちゅ、多様性。"],
