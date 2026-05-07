@@ -201,19 +201,19 @@ const STAFF = [
   },
   {
     id: 17,
-    name: "17",
-    ruby: "17",
+    name: "そーちゃん",
+    ruby: "そういちろう",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["凡才"],
+    message: "毒しちゃうよ♡",
+    color: "#ff80ab",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "趣味", value: "読書・音楽を聴く" },
+      { icon: "", label: "好きなアーティスト", value: "Mr.Children" },
+      { icon: "", label: "特技", value: "人生相談" },
+      { icon: "", label: "最近ハマっていること", value: "散歩" },
+      { icon: "", label: "長所", value: "自信家" }
     ]
   },
   {
