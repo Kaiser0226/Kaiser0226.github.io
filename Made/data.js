@@ -269,19 +269,17 @@ const STAFF = [
   },
   {
     id: 23,
-    name: "23",
-    ruby: "23",
+    name: "りょーちゃん",
+    ruby: "りょう",
     emoji: "",
     role: "未詳",
-    tags: ["未詳"],
-    message: "未定",
-    color: "#ffffffff",
+    tags: ["誠実"],
+    message: "溺れて見ませんか？",
+    color: "#ff80ab",
     details: [
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" },
-      { icon: "", label: "XXXXXX", value: "未定" }
+      { icon: "", label: "趣味", value: "映画" },
+      { icon: "", label: "身長", value: "174cm" },
+      { icon: "", label: "好きな食べ物", value: "おにぎり" }
     ]
   },
   {
