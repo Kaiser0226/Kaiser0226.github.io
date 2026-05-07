@@ -289,7 +289,7 @@ const STAFF = [
     emoji: "",
     role: "未詳",
     tags: ["アグレッシブ","シンデレラ体型"],
-    message: "ご主人様、ご用はなぁに？行ってごらぁん",
+    message: "ご主人様、ご用はなぁに？言ってごらぁん",
     color: "#ff80ab",
     details: [
       { icon: "", label: "身長", value: "177cm" },
