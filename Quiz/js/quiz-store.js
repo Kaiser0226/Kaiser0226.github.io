@@ -78,7 +78,7 @@ class QuizStore {
       currentQuestionIndex: 0,
       questionStartTime: 0,
       timerDuration: 15,
-      isTimerRunning: true,
+      isTimerRunning: false,
       remainingSeconds: 15,
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
