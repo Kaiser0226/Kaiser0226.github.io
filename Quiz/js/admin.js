@@ -77,6 +77,9 @@ const jsonEditorArea = document.getElementById('jsonEditorArea');
 const btnFormatJson = document.getElementById('btnFormatJson');
 const btnApplyJson = document.getElementById('btnApplyJson');
 const btnExportJson = document.getElementById('btnExportJson');
+const btnImportJsonFile = document.getElementById('btnImportJsonFile');
+const jsonFileInput = document.getElementById('jsonFileInput');
+const jsonFileName = document.getElementById('jsonFileName');
 
 // 出題順モーダル要素
 const btnOpenOrderModal = document.getElementById('btnOpenOrderModal');
@@ -222,6 +225,8 @@ function setupEventListeners() {
   });
   btnApplyJson.addEventListener('click', handleApplyJson);
   btnExportJson.addEventListener('click', handleExportJson);
+  btnImportJsonFile.addEventListener('click', () => jsonFileInput.click());
+  jsonFileInput.addEventListener('change', handleImportJsonFile);
   // 出題順モーダル
   btnOpenOrderModal.addEventListener('click', openOrderModal);
   btnCloseOrderModal.addEventListener('click', () => orderModal.classList.remove('active'));
@@ -807,6 +812,25 @@ async function handleApplyJson() {
   }
 }
 
+async function handleImportJsonFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    jsonEditorArea.value = await file.text();
+    jsonFileName.textContent = file.name;
+    const parsed = JSON.parse(jsonEditorArea.value);
+    if (!Array.isArray(parsed)) throw new Error("問題データは配列 [] である必要があります。");
+    jsonEditorArea.value = JSON.stringify(parsed, null, 2);
+  } catch (e) {
+    jsonEditorArea.value = '';
+    jsonFileName.textContent = '';
+    alert("JSON読込エラー: " + e.message);
+  } finally {
+    event.target.value = '';
+  }
+}
+
 function handleExportJson() {
   const jsonStr = JSON.stringify(currentQuestions, null, 2);
   const blob = new Blob([jsonStr], { type: "application/json" });
@@ -814,7 +838,9 @@ function handleExportJson() {
   const a = document.createElement('a');
   a.href = url;
   a.download = "quiz_questions.json";
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 }
 

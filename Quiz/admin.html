@@ -141,7 +141,7 @@
               📥 JSON書出
             </button>
             <button type="button" class="btn btn-secondary" id="btnOpenJsonModal" style="font-size: 0.85rem;">
-              📤 JSON一括編集
+              📤 JSON読込・編集
             </button>
           </div>
         </div>
@@ -377,8 +377,13 @@
         <button type="button" class="modal-close" id="btnCloseJsonModal">&times;</button>
       </div>
       <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
-        問題配列のJSONを直接編集または貼り付けて反映できます。
+        問題配列のJSONをファイルから読み込むか、直接編集して反映できます。
       </p>
+      <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 10px;">
+        <button type="button" class="btn btn-secondary" id="btnImportJsonFile">📂 JSONファイル読込</button>
+        <input type="file" id="jsonFileInput" accept=".json,application/json" hidden>
+        <span id="jsonFileName" style="font-size: 0.8rem; color: #94a3b8;"></span>
+      </div>
       <textarea id="jsonEditorArea" class="json-area" rows="14"></textarea>
       <div style="display: flex; justify-content: space-between; margin-top: 16px;">
         <button type="button" class="btn btn-secondary" id="btnFormatJson">JSON整形</button>
