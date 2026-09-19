@@ -195,9 +195,16 @@ function setupTimer() {
     return;
   }
 
+  // Show timer UI
   presTimerContainer.style.display = 'flex';
   const totalDuration = q.timeLimitSeconds || 15;
-  const startTime = currentState.questionStartTime || Date.now();
+  // Use shared start time; if missing, wait briefly for it to arrive from admin
+  let startTime = currentState.questionStartTime;
+  if (!startTime) {
+    // Fallback: set now and sync to store (should already be set by admin)
+    startTime = Date.now();
+    quizStore.updateState({ questionStartTime: startTime });
+  }
 
   async function tick() {
     const elapsed = (Date.now() - startTime) / 1000;
