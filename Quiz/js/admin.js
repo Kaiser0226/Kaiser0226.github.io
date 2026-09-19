@@ -558,13 +558,31 @@ async function handleSimulateAnswers() {
 // --- Firebase & JSON 設定モーダル ---
 
 function handleSaveFirebaseConfig() {
+  let raw = firebaseConfigInput.value.trim();
   try {
-    const parsed = JSON.parse(firebaseConfigInput.value);
+    // もし "const firebaseConfig = { ... };" のようなコードが貼られた場合、{ ... } を抽出
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      raw = match[0];
+    }
+    // JSのオブジェクト構文（キーがクォートなし等）を安全にパース
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // JSON.parseが失敗した場合はFunctionで安全に評価
+      parsed = (new Function(`return (${raw});`))();
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error("オブジェクト形式ではありません。");
+    }
+
     FirebaseManager.saveConfig(parsed);
     alert("Firebase設定を保存しました。再接続のためページをリロードします。");
     location.reload();
   } catch (e) {
-    alert("有効なJSON形式で入力してください: " + e.message);
+    alert("設定の読み取りに失敗しました: " + e.message);
   }
 }
 

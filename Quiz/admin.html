@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +12,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 </head>
+
 <body class="admin-layout">
 
   <!-- 管理ナビゲーションバー -->
@@ -33,7 +35,7 @@
   </header>
 
   <main class="admin-main">
-    
+
     <!-- 左側メイン操作エリア -->
     <div class="admin-content-area">
 
@@ -48,7 +50,8 @@
             <button type="button" class="btn btn-success" id="btnToggleGameStatus">
               ▶ クイズ開始
             </button>
-            <button type="button" class="btn btn-danger" id="btnResetScores" style="font-size: 0.85rem; padding: 8px 12px;">
+            <button type="button" class="btn btn-danger" id="btnResetScores"
+              style="font-size: 0.85rem; padding: 8px 12px;">
               🔄 得点・回答リセット
             </button>
           </div>
@@ -148,7 +151,8 @@
                 <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
                   <input type="checkbox" id="editHasTimeLimit" checked> 時間制限を有効にする
                 </label>
-                <input type="number" id="editTimeLimitSeconds" class="form-input" style="width: 90px;" value="15" min="5" max="120"> 秒
+                <input type="number" id="editTimeLimitSeconds" class="form-input" style="width: 90px;" value="15"
+                  min="5" max="120"> 秒
               </div>
             </div>
             <div class="form-group">
@@ -169,8 +173,10 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label class="form-label" style="margin: 0;">選択肢 (2〜6択)</label>
               <div style="display: flex; gap: 6px;">
-                <button type="button" class="btn btn-secondary" id="btnAddOption" style="font-size: 0.8rem; padding: 4px 10px;">＋ 選択肢追加</button>
-                <button type="button" class="btn btn-secondary" id="btnRemoveOption" style="font-size: 0.8rem; padding: 4px 10px;">－ 削除</button>
+                <button type="button" class="btn btn-secondary" id="btnAddOption"
+                  style="font-size: 0.8rem; padding: 4px 10px;">＋ 選択肢追加</button>
+                <button type="button" class="btn btn-secondary" id="btnRemoveOption"
+                  style="font-size: 0.8rem; padding: 4px 10px;">－ 削除</button>
               </div>
             </div>
             <div id="optionsEditorContainer">
@@ -260,7 +266,7 @@
 
     <!-- 右側サイドバー: リアルタイムモニター & テスト支援 -->
     <aside class="admin-sidebar">
-      
+
       <!-- リアルタイム回答状況モニター -->
       <section class="admin-card monitor-card">
         <div class="admin-card-header">
@@ -289,10 +295,12 @@
         <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
           <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">🧪 動作テスト・シミュレーション</div>
           <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-secondary" id="btnGenerateDummyTeams" style="font-size: 0.75rem; flex: 1; padding: 6px;">
+            <button type="button" class="btn btn-secondary" id="btnGenerateDummyTeams"
+              style="font-size: 0.75rem; flex: 1; padding: 6px;">
               60チーム生成
             </button>
-            <button type="button" class="btn btn-secondary" id="btnSimulateAnswers" style="font-size: 0.75rem; flex: 1; padding: 6px;">
+            <button type="button" class="btn btn-secondary" id="btnSimulateAnswers"
+              style="font-size: 0.75rem; flex: 1; padding: 6px;">
               一括回答実行
             </button>
           </div>
@@ -328,12 +336,13 @@
         <button type="button" class="modal-close" id="btnCloseFirebaseModal">&times;</button>
       </div>
       <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
-        Firebase Console の「プロジェクト設定」→「SDK の設定と構成」にある <code>firebaseConfig</code> を貼り付けてください。<br>
-        ※未設定でもローカルブラウザ同期で動作確認が可能です。
+        Firebase Console の「プロジェクト設定」→「マイアプリ（ウェブ）」にある <code>firebaseConfig</code> を貼り付けて保存できます。<br>
+        ※すでに初期値として設定済みです。変更したい場合にご利用ください。
       </p>
       <div class="form-group">
         <label class="form-label">Firebase Config (JSONまたはプロパティ)</label>
-        <textarea id="firebaseConfigInput" class="form-textarea" rows="8" placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "databaseURL": "https://...",\n  "projectId": "..."\n}'></textarea>
+        <textarea id="firebaseConfigInput" class="form-textarea" rows="8"
+          placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "databaseURL": "https://...",\n  "projectId": "..."\n}'></textarea>
       </div>
       <div style="display: flex; justify-content: space-between; margin-top: 16px;">
         <button type="button" class="btn btn-secondary" id="btnResetFirebaseConfig">設定クリア</button>
@@ -367,4 +376,5 @@
   <script src="js/quiz-store.js"></script>
   <script src="js/admin.js"></script>
 </body>
+
 </html>

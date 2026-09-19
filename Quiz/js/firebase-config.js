@@ -7,33 +7,45 @@
  */
 
 const FIREBASE_CONFIG_DEFAULT = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyA-tsN_ANUMirM5lIUte7pOeSvt585nGt8",
+  authDomain: "ryoko-quiz.firebaseapp.com",
+  databaseURL: "https://ryoko-quiz-default-rtdb.firebaseio.com",
+  projectId: "ryoko-quiz",
+  storageBucket: "ryoko-quiz.firebasestorage.app",
+  messagingSenderId: "675351531312",
+  appId: "1:675351531312:web:ad3a5e0d3ae06d59acc2f5",
+  measurementId: "G-SFESE0WVH1"
 };
 
 class FirebaseManager {
   static getConfig() {
+    let config = { ...FIREBASE_CONFIG_DEFAULT };
+
     // LocalStorageに保存されたカスタム設定があれば優先
     const saved = localStorage.getItem('quiz_firebase_config');
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
         if (parsed.apiKey && parsed.apiKey !== "YOUR_API_KEY") {
-          return parsed;
+          config = { ...config, ...parsed };
         }
       } catch (e) {
         console.error("Failed to parse saved firebase config:", e);
       }
     }
-    return FIREBASE_CONFIG_DEFAULT;
+
+    // databaseURLが抜けている場合はprojectIdから自動推定
+    if (!config.databaseURL && config.projectId) {
+      config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+    }
+
+    return config;
   }
 
   static saveConfig(config) {
+    if (!config.databaseURL && config.projectId) {
+      config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+    }
     localStorage.setItem('quiz_firebase_config', JSON.stringify(config));
   }
 
@@ -47,8 +59,7 @@ class FirebaseManager {
       config &&
       config.apiKey &&
       config.apiKey !== "YOUR_API_KEY" &&
-      config.databaseURL &&
-      !config.databaseURL.includes("YOUR_PROJECT_ID")
+      config.projectId
     );
   }
 }
