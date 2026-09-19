@@ -12,6 +12,7 @@
  * - hasTimeLimit: 制限時間の有無 (boolean)
  * - timeLimitSeconds: 制限時間(秒)
  */
+//制限時間設定したらバグるよ
 
 const DEFAULT_QUESTIONS = [
   {
@@ -26,7 +27,7 @@ const DEFAULT_QUESTIONS = [
     ],
     answer: 0,
     explanation: "現在の日本の首都は東京都です。政治・経済の中心地となっています。",
-    hasTimeLimit: true,
+    hasTimeLimit: false,
     timeLimitSeconds: 15
   },
   {
@@ -40,7 +41,7 @@ const DEFAULT_QUESTIONS = [
     ],
     answer: 1,
     explanation: "緑・白・赤の縦三色旗はイタリア共和国の国旗です。（フランスは青・白・赤）",
-    hasTimeLimit: true,
+    hasTimeLimit: false,
     timeLimitSeconds: 20
   },
   {
@@ -70,7 +71,7 @@ const DEFAULT_QUESTIONS = [
     ],
     answer: 0,
     explanation: "カモノハシは卵を産みますが、母乳で子どもを育てるため哺乳類（単孔目）に分類されます。ペンギンは鳥類です。",
-    hasTimeLimit: true,
+    hasTimeLimit: false,
     timeLimitSeconds: 15
   },
   {
@@ -85,7 +86,7 @@ const DEFAULT_QUESTIONS = [
     ],
     answer: 1,
     explanation: "富士山の最高峰（剣ヶ峰）の標高は3,776メートルです。「みななろう（3776）富士山」と覚えられます。",
-    hasTimeLimit: true,
+    hasTimeLimit: false,
     timeLimitSeconds: 15
   }
 ];
