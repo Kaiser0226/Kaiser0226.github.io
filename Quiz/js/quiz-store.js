@@ -357,6 +357,7 @@ class QuizStore {
    */
   async resetAllData() {
     const defaultState = this.getDefaultState();
+    defaultState.isTimerRunning = false;
     defaultState.resetToken = Date.now(); // 端末強制ログアウトリセット用トークン
 
     if (this.isFirebaseReady && this.database) {
