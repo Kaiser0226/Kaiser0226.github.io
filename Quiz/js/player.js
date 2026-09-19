@@ -3,7 +3,10 @@
  */
 
 let myTeam = null; // { teamId, teamName }
+let rawQuestions = DEFAULT_QUESTIONS;
+let currentQuestionOrder = typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5];
 let currentQuestions = DEFAULT_QUESTIONS;
+let teamMasterList = typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : [];
 let currentState = null;
 let allTeams = {};
 let selectedOptionIndex = null;
@@ -14,7 +17,7 @@ let currentQuestionResults = null;
 const playerBody = document.getElementById('playerBody');
 const registerView = document.getElementById('registerView');
 const gameView = document.getElementById('gameView');
-const teamNameInput = document.getElementById('teamNameInput');
+const teamSelectDropdown = document.getElementById('teamSelectDropdown');
 const btnRegisterTeam = document.getElementById('btnRegisterTeam');
 
 // ヘッダー要素
@@ -55,11 +58,36 @@ const finalTableBody = document.getElementById('finalTableBody');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
-  initTeam();
+  // ブラウザの「戻る」による画面破損を防止
+  try {
+    history.pushState(null, null, location.href);
+    window.addEventListener('popstate', () => {
+      history.pushState(null, null, location.href);
+      if (myTeam) applyState();
+    });
+  } catch (e) {
+    console.warn("history pushState error:", e);
+  }
+
+  // チームマスターリスト購読
+  quizStore.subscribeTeamList(list => {
+    teamMasterList = list || [];
+    populateTeamDropdown();
+  });
 
   // 問題データ購読
   quizStore.subscribeQuestions(questions => {
-    currentQuestions = questions || DEFAULT_QUESTIONS;
+    rawQuestions = questions || DEFAULT_QUESTIONS;
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    if (myTeam) {
+      applyState();
+    }
+  });
+
+  // 出題順購読
+  quizStore.subscribeQuestionOrder(order => {
+    currentQuestionOrder = order || [];
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
     if (myTeam) {
       applyState();
     }
@@ -69,6 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeTeams(teams => {
     allTeams = teams || {};
     updateHeaderStats();
+    populateTeamDropdown(); // 参加状況反映
     if (currentState && currentState.currentScene === 'result') {
       renderRankingsTable();
     } else if (currentState && currentState.currentScene === 'final') {
@@ -78,20 +107,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 状態購読
   quizStore.subscribeState(state => {
+    // リセットトークン監視（管理者による完全初期化時）
+    if (state && state.resetToken) {
+      const lastToken = Number(localStorage.getItem('quiz_last_reset_token') || 0);
+      if (state.resetToken > lastToken) {
+        localStorage.setItem('quiz_last_reset_token', state.resetToken);
+        resetPlayerSession();
+        return;
+      }
+    }
+
     currentState = state;
-    applyState();
+    if (myTeam) {
+      applyState();
+    }
   });
 
-  // イベント登録
+  // チーム登録ボタン
   btnRegisterTeam.addEventListener('click', handleRegister);
-  teamNameInput.addEventListener('keydown', e => {
-    if (e.key === 'Enter') handleRegister();
-  });
-
   btnLock.addEventListener('click', handleLockAnswer);
+
+  initTeam();
 });
 
 // --- チーム登録と認証 ---
+
+function populateTeamDropdown() {
+  if (!teamSelectDropdown) return;
+  const currentVal = teamSelectDropdown.value;
+  teamSelectDropdown.innerHTML = '<option value="">-- チームを選択してください --</option>';
+
+  teamMasterList.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    // 参加中のチームかチェック
+    const isJoined = Object.values(allTeams).some(t => t.teamName === name);
+    opt.textContent = isJoined ? `${name} (参加中)` : name;
+    teamSelectDropdown.appendChild(opt);
+  });
+
+  if (currentVal) {
+    teamSelectDropdown.value = currentVal;
+  }
+}
 
 function initTeam() {
   const saved = localStorage.getItem('quiz_player_team');
@@ -111,26 +169,42 @@ function initTeam() {
   // 未登録の場合
   registerView.style.display = 'flex';
   gameView.style.display = 'none';
+  populateTeamDropdown();
 }
 
 async function handleRegister() {
-  const name = teamNameInput.value.trim();
-  if (!name) {
-    alert("チーム名を入力してください");
+  const selectedName = teamSelectDropdown.value;
+  if (!selectedName) {
+    alert("チームを選択してください");
     return;
   }
 
-  const teamId = 'team_' + Math.random().toString(36).substring(2, 9) + '_' + Date.now();
-  myTeam = { teamId, teamName: name };
+  // チーム名は選択制で固定のため、名前から一意のteamIdを生成
+  const teamId = 'team_' + btoa(encodeURIComponent(selectedName)).replace(/=/g, '');
+  myTeam = { teamId, teamName: selectedName };
 
   localStorage.setItem('quiz_player_team', JSON.stringify(myTeam));
-  displayTeamName.textContent = name;
+  displayTeamName.textContent = selectedName;
 
-  await quizStore.registerTeam(teamId, name);
+  await quizStore.registerTeam(teamId, selectedName);
 
   registerView.style.display = 'none';
   gameView.style.display = 'flex';
   applyState();
+}
+
+function resetPlayerSession() {
+  myTeam = null;
+  selectedOptionIndex = null;
+  isAnswerLocked = false;
+  localStorage.removeItem('quiz_player_team');
+  sessionStorage.clear();
+  resetBodyLockedColor();
+
+  registerView.style.display = 'flex';
+  gameView.style.display = 'none';
+  if (teamSelectDropdown) teamSelectDropdown.value = '';
+  populateTeamDropdown();
 }
 
 // --- 状態の適用とシーン切り替え ---
@@ -144,13 +218,13 @@ function applyState() {
   displayQBadge.textContent = `第 ${currentQuestionIndex + 1} 問`;
   updateHeaderStats();
 
-  // シーン隠蔽リセット
+  // シーン隠蔽リセット（画面の逆戻し・切り替えによる不整合を防止）
   sceneWaiting.style.display = 'none';
   sceneQuestion.style.display = 'none';
   sceneResult.style.display = 'none';
   sceneFinal.style.display = 'none';
 
-  // 背景のロックカラーリセット (質問シーンでロックされた場合のみ付与)
+  // 背景カラーリセット
   if (currentScene !== 'question' && currentScene !== 'closed') {
     resetBodyLockedColor();
   }

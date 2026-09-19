@@ -2,7 +2,10 @@
  * 管理者コントロールパネル ロジック (admin.js)
  */
 
+let rawQuestions = DEFAULT_QUESTIONS;
+let currentQuestionOrder = typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5];
 let currentQuestions = DEFAULT_QUESTIONS;
+let teamMasterList = typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : [];
 let currentState = null;
 let allTeams = {};
 let currentAnswers = {};
@@ -12,8 +15,11 @@ let selectedQIndex = 0;
 const lblGameStatus = document.getElementById('lblGameStatus');
 const lblCurrentScene = document.getElementById('lblCurrentScene');
 const lblTargetTeams = document.getElementById('lblTargetTeams');
-const btnToggleGameStatus = document.getElementById('btnToggleGameStatus');
 const btnResetScores = document.getElementById('btnResetScores');
+
+// ★ ワンボタン進行
+const btnMainAdvance = document.getElementById('btnMainAdvance');
+const btnMainRollback = document.getElementById('btnMainRollback');
 
 const selectCurrentQuestion = document.getElementById('selectCurrentQuestion');
 const btnPrevQuestion = document.getElementById('btnPrevQuestion');
@@ -72,13 +78,43 @@ const btnFormatJson = document.getElementById('btnFormatJson');
 const btnApplyJson = document.getElementById('btnApplyJson');
 const btnExportJson = document.getElementById('btnExportJson');
 
+// 出題順モーダル要素
+const btnOpenOrderModal = document.getElementById('btnOpenOrderModal');
+const btnCloseOrderModal = document.getElementById('btnCloseOrderModal');
+const orderModal = document.getElementById('orderModal');
+const orderListContainer = document.getElementById('orderListContainer');
+const btnSaveOrder = document.getElementById('btnSaveOrder');
+const btnCancelOrder = document.getElementById('btnCancelOrder');
+
+// チーム名定義モーダル要素
+const btnOpenTeamListModal = document.getElementById('btnOpenTeamListModal');
+const btnCloseTeamListModal = document.getElementById('btnCloseTeamListModal');
+const teamListModal = document.getElementById('teamListModal');
+const teamListTextArea = document.getElementById('teamListTextArea');
+const btnGenerate60TeamsText = document.getElementById('btnGenerate60TeamsText');
+const btnSaveTeamList = document.getElementById('btnSaveTeamList');
+
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   // 問題購読
   quizStore.subscribeQuestions(questions => {
-    currentQuestions = questions || DEFAULT_QUESTIONS;
+    rawQuestions = questions || DEFAULT_QUESTIONS;
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
     populateQuestionDropdown();
     loadQuestionToEditor(selectedQIndex);
+  });
+
+  // 出題順購読
+  quizStore.subscribeQuestionOrder(order => {
+    currentQuestionOrder = order || [];
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    populateQuestionDropdown();
+    loadQuestionToEditor(selectedQIndex);
+  });
+
+  // チーム名リスト購読
+  quizStore.subscribeTeamList(list => {
+    teamMasterList = list || [];
   });
 
   // チーム購読
@@ -90,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // 状態購読
   quizStore.subscribeState(state => {
     currentState = state;
+    selectedQIndex = state.currentQuestionIndex || 0;
     applyStateToUI();
   });
 
@@ -97,9 +134,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
-  // クイズ開始・停止
-  btnToggleGameStatus.addEventListener('click', toggleGameStatus);
-  // 得点リセット
+  // ★ ワンボタン進行
+  btnMainAdvance.addEventListener('click', handleMainAdvance);
+  btnMainRollback.addEventListener('click', handleMainRollback);
+
+  // 完全初期化
   btnResetScores.addEventListener('click', handleResetScores);
 
   // シーン切替ボタン
@@ -181,8 +220,167 @@ function setupEventListeners() {
       alert("JSONの構文エラー: " + e.message);
     }
   });
-  btnApplyJson.addEventListener('click', handleApplyJson);
-  btnExportJson.addEventListener('click', handleExportJson);
+  // 出題順モーダル
+  btnOpenOrderModal.addEventListener('click', openOrderModal);
+  btnCloseOrderModal.addEventListener('click', () => orderModal.classList.remove('active'));
+  btnCancelOrder.addEventListener('click', () => orderModal.classList.remove('active'));
+  btnSaveOrder.addEventListener('click', handleSaveOrder);
+
+  // チーム名定義モーダル
+  btnOpenTeamListModal.addEventListener('click', openTeamListModal);
+  btnCloseTeamListModal.addEventListener('click', () => teamListModal.classList.remove('active'));
+  btnGenerate60TeamsText.addEventListener('click', () => {
+    teamListTextArea.value = Array.from({ length: 60 }, (_, i) => `チーム ${i + 1}`).join('\n');
+  });
+  btnSaveTeamList.addEventListener('click', handleSaveTeamList);
+}
+
+// --- ★ ワンボタン進行コントロール ---
+
+function updateMainAdvanceButton() {
+  if (!btnMainAdvance) return;
+  const state = currentState || quizStore.getDefaultState();
+  const qNum = (state.currentQuestionIndex || 0) + 1;
+  const totalQ = currentQuestions.length;
+
+  if (state.status !== 'running') {
+    btnMainAdvance.textContent = `▶ クイズ開始 (第1問 待機へ)`;
+    btnMainAdvance.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+    btnMainAdvance.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+    return;
+  }
+
+  switch (state.currentScene) {
+    case 'waiting':
+      btnMainAdvance.textContent = `📢 第 ${qNum} 問 出題・回答開始！`;
+      btnMainAdvance.style.background = 'linear-gradient(135deg, #3b82f6, #1d4ed8)';
+      btnMainAdvance.style.boxShadow = '0 6px 20px rgba(59, 130, 246, 0.4)';
+      break;
+
+    case 'question':
+      btnMainAdvance.textContent = `⏹ 第 ${qNum} 問 回答を締め切る`;
+      btnMainAdvance.style.background = 'linear-gradient(135deg, #f59e0b, #d97706)';
+      btnMainAdvance.style.boxShadow = '0 6px 20px rgba(245, 158, 11, 0.4)';
+      break;
+
+    case 'closed':
+      btnMainAdvance.textContent = `💡 第 ${qNum} 問 正解発表・解説！`;
+      btnMainAdvance.style.background = 'linear-gradient(135deg, #8b5cf6, #6d28d9)';
+      btnMainAdvance.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.4)';
+      break;
+
+    case 'result':
+      if (qNum < totalQ) {
+        btnMainAdvance.textContent = `▶ 次の問題へ (第 ${qNum + 1} 問 待機)`;
+        btnMainAdvance.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+        btnMainAdvance.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+      } else {
+        btnMainAdvance.textContent = `🏆 最終結果発表へ！`;
+        btnMainAdvance.style.background = 'linear-gradient(135deg, #eab308, #ca8a04)';
+        btnMainAdvance.style.boxShadow = '0 6px 20px rgba(234, 179, 8, 0.5)';
+      }
+      break;
+
+    case 'final':
+      btnMainAdvance.textContent = `🏁 大会終了 (初期待機へ戻す)`;
+      btnMainAdvance.style.background = 'linear-gradient(135deg, #64748b, #475569)';
+      btnMainAdvance.style.boxShadow = 'none';
+      break;
+  }
+}
+
+async function handleMainAdvance() {
+  const state = currentState || quizStore.getDefaultState();
+  const qNum = (state.currentQuestionIndex || 0) + 1;
+  const totalQ = currentQuestions.length;
+
+  if (state.status !== 'running') {
+    // クイズ開始
+    await quizStore.updateState({
+      status: 'running',
+      currentScene: 'waiting',
+      currentQuestionIndex: 0
+    });
+    selectedQIndex = 0;
+    loadQuestionToEditor(0);
+    return;
+  }
+
+  switch (state.currentScene) {
+    case 'waiting':
+      // 出題・回答開始
+      await changeScene('question');
+      break;
+
+    case 'question':
+      // 回答締切
+      await changeScene('closed');
+      break;
+
+    case 'closed':
+      // 正解発表・解説
+      await changeScene('result');
+      break;
+
+    case 'result':
+      if (qNum < totalQ) {
+        // 次の問題へ
+        selectedQIndex = (state.currentQuestionIndex || 0) + 1;
+        selectCurrentQuestion.value = selectedQIndex;
+        loadQuestionToEditor(selectedQIndex);
+        await quizStore.updateState({
+          currentQuestionIndex: selectedQIndex,
+          currentScene: 'waiting'
+        });
+      } else {
+        // 最終結果発表
+        await changeScene('final');
+      }
+      break;
+
+    case 'final':
+      // 大会終了
+      if (confirm("大会を終了し、初期状態（待機画面）に戻しますか？")) {
+        await quizStore.updateState({
+          status: 'stopped',
+          currentScene: 'waiting',
+          currentQuestionIndex: 0
+        });
+      }
+      break;
+  }
+}
+
+async function handleMainRollback() {
+  const state = currentState || quizStore.getDefaultState();
+  if (state.status !== 'running') {
+    alert("クイズは停止中です。");
+    return;
+  }
+
+  const sceneOrder = ['waiting', 'question', 'closed', 'result'];
+  const curIdx = sceneOrder.indexOf(state.currentScene);
+
+  if (state.currentScene === 'final') {
+    await changeScene('result');
+    return;
+  }
+
+  if (curIdx > 0) {
+    // 同一問題内で1つ前のシーンへ
+    await changeScene(sceneOrder[curIdx - 1]);
+  } else if (curIdx === 0 && (state.currentQuestionIndex || 0) > 0) {
+    // 前の問題の正解発表へ巻き戻し
+    selectedQIndex = state.currentQuestionIndex - 1;
+    selectCurrentQuestion.value = selectedQIndex;
+    loadQuestionToEditor(selectedQIndex);
+    await quizStore.updateState({
+      currentQuestionIndex: selectedQIndex,
+      currentScene: 'result'
+    });
+  } else {
+    alert("これ以上前には戻せません。");
+  }
 }
 
 // --- 状態のUI反映 ---
@@ -196,14 +394,13 @@ function applyStateToUI() {
   if (status === 'running') {
     lblGameStatus.textContent = "進行中";
     lblGameStatus.className = "status-badge-live running";
-    btnToggleGameStatus.textContent = "⏹ クイズ停止";
-    btnToggleGameStatus.className = "btn btn-danger";
   } else {
     lblGameStatus.textContent = "停止中";
     lblGameStatus.className = "status-badge-live stopped";
-    btnToggleGameStatus.textContent = "▶ クイズ開始";
-    btnToggleGameStatus.className = "btn btn-success";
   }
+
+  // ワンボタンの表示更新
+  updateMainAdvanceButton();
 
   // 想定組数表示 (デフォルト100)
   lblTargetTeams.textContent = targetTeamCount || 100;
@@ -269,9 +466,12 @@ async function toggleGameStatus() {
 }
 
 async function handleResetScores() {
-  if (confirm("全チームの得点と回答データをリセットしますか？\n（チーム登録は保持されます）")) {
-    await quizStore.resetAllScores();
-    alert("得点・回答データをリセットしました。");
+  const msg = "【警告: 全データ完全初期化】\n\n参加チームデータ、回答ログ、獲得得点をすべて消去し、ゲーム進行も最初の待機画面にリセットします。\n参加者のスマートフォン画面もすべて初期チーム選択画面に戻ります。\n\n本当に実行しますか？";
+  if (confirm(msg)) {
+    await quizStore.resetAllData();
+    selectedQIndex = 0;
+    loadQuestionToEditor(0);
+    alert("チームデータ・得点・回答ログをすべて初期化しました。");
   }
 }
 
@@ -617,4 +817,98 @@ function escapeHtml(str) {
   return str.replace(/[&<>"']/g, m => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   })[m]);
+}
+
+// --- 出題順 (Question Order) モーダル操作 ---
+
+let tempOrder = [];
+
+function openOrderModal() {
+  tempOrder = [...currentQuestionOrder];
+  // 登録問題で未登録のIDがあれば追加
+  rawQuestions.forEach(q => {
+    if (!tempOrder.includes(q.id)) {
+      tempOrder.push(q.id);
+    }
+  });
+  renderOrderList();
+  orderModal.classList.add('active');
+}
+
+function renderOrderList() {
+  orderListContainer.innerHTML = '';
+  const qMap = {};
+  rawQuestions.forEach(q => { qMap[q.id] = q; });
+
+  tempOrder.forEach((id, idx) => {
+    const q = qMap[id];
+    const qText = q ? q.question : `(ID: ${id}) 削除された問題`;
+
+    const row = document.createElement('div');
+    row.style.display = 'flex';
+    row.style.alignItems = 'center';
+    row.style.justifyContent = 'space-between';
+    row.style.padding = '10px 14px';
+    row.style.marginBottom = '8px';
+    row.style.background = '#0f172a';
+    row.style.borderRadius = '8px';
+    row.style.border = '1px solid #334155';
+
+    row.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+        <span style="font-weight: 800; color: #38bdf8; width: 36px;">#${idx + 1}</span>
+        <span style="font-size: 0.8rem; background: #334155; padding: 2px 8px; border-radius: 4px;">ID:${id}</span>
+        <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;">${escapeHtml(qText)}</span>
+      </div>
+      <div style="display: flex; gap: 6px; flex-shrink: 0; margin-left: 12px;">
+        <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" ${idx === 0 ? 'disabled' : ''} onclick="moveOrderItem(${idx}, -1)">↑ 上へ</button>
+        <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 0.8rem;" ${idx === tempOrder.length - 1 ? 'disabled' : ''} onclick="moveOrderItem(${idx}, 1)">↓ 下へ</button>
+      </div>
+    `;
+    orderListContainer.appendChild(row);
+  });
+}
+
+window.moveOrderItem = function(index, dir) {
+  const targetIdx = index + dir;
+  if (targetIdx < 0 || targetIdx >= tempOrder.length) return;
+  const item = tempOrder.splice(index, 1)[0];
+  tempOrder.splice(targetIdx, 0, item);
+  renderOrderList();
+};
+
+async function handleSaveOrder() {
+  currentQuestionOrder = [...tempOrder];
+  await quizStore.saveQuestionOrder(currentQuestionOrder);
+  currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+  populateQuestionDropdown();
+  loadQuestionToEditor(selectedQIndex);
+  orderModal.classList.remove('active');
+  alert("問題の出題順を保存・適用しました！");
+}
+
+// --- 参加チーム名定義 モーダル操作 ---
+
+function openTeamListModal() {
+  teamListTextArea.value = teamMasterList.join('\n');
+  teamListModal.classList.add('active');
+}
+
+async function handleSaveTeamList() {
+  const lines = teamListTextArea.value
+    .split('\n')
+    .map(line => line.trim())
+    .filter(line => line.length > 0);
+
+  if (lines.length === 0) {
+    alert("チーム名を最低1つ入力してください。");
+    return;
+  }
+
+  // 重複チェック
+  const unique = Array.from(new Set(lines));
+  teamMasterList = unique;
+  await quizStore.saveTeamList(teamMasterList);
+  teamListModal.classList.remove('active');
+  alert(`${teamMasterList.length} チームの名前リストを保存しました！\n（参加者のスマホ画面に選択肢として反映されます）`);
 }

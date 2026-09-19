@@ -65,6 +65,7 @@ class QuizStore {
       remainingSeconds: 15,
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
+      resetToken: 0, // 全体初期化トークン
       scoreConfig: {
         basePoint: 10,
         top1Bonus: 10,
@@ -227,37 +228,155 @@ class QuizStore {
     }
   }
 
-  /**
-   * 全チームの得点と回答履歴をリセット
-   */
-  async resetAllScores() {
+  // --- 出題順 (Question Order) の取得・更新 ---
+
+  subscribeQuestionOrder(callback) {
+    if (!this.listeners.questionOrder) this.listeners.questionOrder = [];
+    this.listeners.questionOrder.push(callback);
+
+    const local = localStorage.getItem('quiz_local_question_order');
+    const initialOrder = local ? JSON.parse(local) : (typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5]);
+    callback(initialOrder);
+
     if (this.isFirebaseReady && this.database) {
-      // チームのスコアを0にリセット
-      const teamsSnap = await this.database.ref('quiz/teams').once('value');
-      const teams = teamsSnap.val() || {};
-      const updates = {};
-      Object.keys(teams).forEach(id => {
-        updates[`quiz/teams/${id}/totalScore`] = 0;
+      const orderRef = this.database.ref('quiz/questionOrder');
+      orderRef.on('value', snapshot => {
+        if (!snapshot.exists()) {
+          orderRef.set(initialOrder);
+          callback(initialOrder);
+        } else {
+          const val = snapshot.val();
+          callback(Array.isArray(val) && val.length ? val : initialOrder);
+        }
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeQuestionOrder error:", err);
       });
-      await this.database.ref().update(updates);
-      // 回答履歴と結果をクリア
-      await this.database.ref('quiz/answers').remove();
-      await this.database.ref('quiz/results').remove();
-    } else {
-      const teams = JSON.parse(localStorage.getItem('quiz_local_teams') || '{}');
-      Object.keys(teams).forEach(id => {
-        teams[id].totalScore = 0;
-      });
-      localStorage.setItem('quiz_local_teams', JSON.stringify(teams));
-      localStorage.removeItem('quiz_local_answers');
-      localStorage.removeItem('quiz_local_results');
-      if (this.channel) {
-        this.channel.postMessage({ type: 'teams', data: teams });
-        this.channel.postMessage({ type: 'answers', data: {} });
-      }
-      this.listeners.teams.forEach(cb => cb(teams));
-      this.listeners.answers.forEach(cb => cb({}));
     }
+  }
+
+  async saveQuestionOrder(order) {
+    localStorage.setItem('quiz_local_question_order', JSON.stringify(order));
+    if (this.channel) {
+      this.channel.postMessage({ type: 'questionOrder', data: order });
+    }
+    if (this.listeners.questionOrder) {
+      this.listeners.questionOrder.forEach(cb => cb(order));
+    }
+
+    if (this.isFirebaseReady && this.database) {
+      try {
+        await this.database.ref('quiz/questionOrder').set(order);
+      } catch (err) {
+        console.warn("QuizStore: Firebase saveQuestionOrder failed:", err);
+      }
+    }
+  }
+
+  // --- 参加チーム名マスターリストの取得・更新 ---
+
+  subscribeTeamList(callback) {
+    if (!this.listeners.teamList) this.listeners.teamList = [];
+    this.listeners.teamList.push(callback);
+
+    const local = localStorage.getItem('quiz_local_team_list');
+    const initialList = local ? JSON.parse(local) : (typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : []);
+    callback(initialList);
+
+    if (this.isFirebaseReady && this.database) {
+      const listRef = this.database.ref('quiz/teamList');
+      listRef.on('value', snapshot => {
+        if (!snapshot.exists()) {
+          listRef.set(initialList);
+          callback(initialList);
+        } else {
+          const val = snapshot.val();
+          callback(Array.isArray(val) && val.length ? val : initialList);
+        }
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeTeamList error:", err);
+      });
+    }
+  }
+
+  async saveTeamList(list) {
+    localStorage.setItem('quiz_local_team_list', JSON.stringify(list));
+    if (this.channel) {
+      this.channel.postMessage({ type: 'teamList', data: list });
+    }
+    if (this.listeners.teamList) {
+      this.listeners.teamList.forEach(cb => cb(list));
+    }
+
+    if (this.isFirebaseReady && this.database) {
+      try {
+        await this.database.ref('quiz/teamList').set(list);
+      } catch (err) {
+        console.warn("QuizStore: Firebase saveTeamList failed:", err);
+      }
+    }
+  }
+
+  /**
+   * 出題順リストに従って問題配列を整列して返すヘルパー
+   */
+  getOrderedQuestions(questions, order) {
+    if (!order || !order.length) return questions;
+    const qMap = {};
+    questions.forEach(q => {
+      qMap[q.id] = q;
+    });
+
+    const ordered = [];
+    order.forEach(id => {
+      if (qMap[id]) {
+        ordered.push(qMap[id]);
+      }
+    });
+
+    // orderに載っていない問題があれば後ろに追加
+    questions.forEach(q => {
+      if (!order.includes(q.id)) {
+        ordered.push(q);
+      }
+    });
+
+    return ordered.length ? ordered : questions;
+  }
+
+  /**
+   * 【完全初期化】チームデータ・得点・回答履歴をすべて完全にリセットする
+   */
+  async resetAllData() {
+    const defaultState = this.getDefaultState();
+    defaultState.resetToken = Date.now(); // 端末強制ログアウトリセット用トークン
+
+    if (this.isFirebaseReady && this.database) {
+      try {
+        await this.database.ref('quiz/teams').remove();
+        await this.database.ref('quiz/answers').remove();
+        await this.database.ref('quiz/results').remove();
+        await this.database.ref('quiz/state').set(defaultState);
+      } catch (err) {
+        console.error("QuizStore: Firebase resetAllData failed:", err);
+      }
+    }
+
+    // ローカルキャッシュクリア
+    localStorage.removeItem('quiz_local_teams');
+    localStorage.removeItem('quiz_local_answers');
+    localStorage.removeItem('quiz_local_results');
+    localStorage.setItem('quiz_local_state', JSON.stringify(defaultState));
+
+    if (this.channel) {
+      this.channel.postMessage({ type: 'state', data: defaultState });
+      this.channel.postMessage({ type: 'teams', data: {} });
+      this.channel.postMessage({ type: 'answers', data: {} });
+      this.channel.postMessage({ type: 'resetAll', resetToken: defaultState.resetToken });
+    }
+
+    this.listeners.state.forEach(cb => cb(defaultState));
+    this.listeners.teams.forEach(cb => cb({}));
+    this.listeners.answers.forEach(cb => cb({}));
   }
 
   /**

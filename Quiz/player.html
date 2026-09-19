@@ -13,14 +13,26 @@
 </head>
 <body class="player-body" id="playerBody">
 
-  <!-- チーム登録画面 (初回のみ表示) -->
+  <!-- チーム登録画面 (選択制) -->
   <div id="registerView" class="player-content" style="display: none;">
     <div class="register-card">
-      <h2>🎉 クイズ大会へようこそ！</h2>
-      <p>あなたのチーム名（またはグループ名）を入力してください。</p>
-      <input type="text" id="teamNameInput" class="register-input" placeholder="例: チームA" maxlength="20">
-      <button type="button" class="btn btn-primary" id="btnRegisterTeam" style="width: 100%; padding: 14px;">
-        参加登録して待機する
+      <div style="font-size: 2.5rem; margin-bottom: 12px;">🙋‍♂️</div>
+      <h2 style="font-size: 1.5rem; margin-bottom: 8px;">あなたはどのチームですか？</h2>
+      <p style="color: #94a3b8; font-size: 0.95rem; margin-bottom: 20px;">
+        参加するチーム名を選択してください。
+      </p>
+
+      <div style="margin-bottom: 16px; text-align: left;">
+        <label for="teamSelectDropdown" style="font-size: 0.85rem; font-weight: 700; color: #94a3b8; display: block; margin-bottom: 6px;">
+          ▼ チームを選択
+        </label>
+        <select id="teamSelectDropdown" class="register-input" style="cursor: pointer; appearance: auto;">
+          <option value="">-- チームを選択してください --</option>
+        </select>
+      </div>
+
+      <button type="button" class="btn btn-primary" id="btnRegisterTeam" style="width: 100%; padding: 16px; font-size: 1.15rem; font-weight: 800;">
+        このチームで参加する
       </button>
     </div>
   </div>
@@ -165,6 +177,8 @@
   <!-- スクリプト群 -->
   <script src="js/firebase-config.js"></script>
   <script src="js/questions-data.js"></script>
+  <script src="js/questions-order.js"></script>
+  <script src="js/teams-data.js"></script>
   <script src="js/score-engine.js"></script>
   <script src="js/quiz-store.js"></script>
   <script src="js/player.js"></script>

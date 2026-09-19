@@ -2,6 +2,8 @@
  * プレゼンテーション画面ロジック (presentation.js)
  */
 
+let rawQuestions = DEFAULT_QUESTIONS;
+let currentQuestionOrder = typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5];
 let currentQuestions = DEFAULT_QUESTIONS;
 let currentState = null;
 let currentAnswers = {};
@@ -38,7 +40,15 @@ const finalRankingsContainer = document.getElementById('finalRankingsContainer')
 document.addEventListener('DOMContentLoaded', () => {
   // 問題データ購読
   quizStore.subscribeQuestions(questions => {
-    currentQuestions = questions || DEFAULT_QUESTIONS;
+    rawQuestions = questions || DEFAULT_QUESTIONS;
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    renderCurrentQuestion();
+  });
+
+  // 出題順購読
+  quizStore.subscribeQuestionOrder(order => {
+    currentQuestionOrder = order || [];
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
     renderCurrentQuestion();
   });
 

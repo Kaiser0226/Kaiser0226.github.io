@@ -8,26 +8,28 @@
 ## 📂 フォルダ構成
 
 ```
-KaiseiMaeda.github.io/
+Kaiser0226.github.io/
 ├── Made/                      # ※一切手を触れていません
 └── Quiz/
     ├── index.html             # 総合ポータル画面
-    ├── player.html            # スマートフォン回答端末画面
+    ├── player.html            # スマートフォン回答端末画面（チーム選択制）
     ├── presentation.html      # 大画面プレゼンテーション表示画面
-    ├── admin.html             # 管理者コントロールパネル
+    ├── admin.html             # 管理者コントロールパネル（ワンボタン進行）
     ├── css/
     │   ├── common.css         # 共通スタイル・6色テーマ定義
     │   ├── player.css         # スマホ専用UI・ロック時カラー変化
     │   ├── presentation.css   # 水位上昇アニメーション・警告演出
     │   └── admin.css          # 管理画面ダッシュボード
     ├── js/
-    │   ├── firebase-config.js # Firebase接続設定（後貼り対応）
+    │   ├── firebase-config.js # Firebase接続設定
     │   ├── quiz-store.js      # RTDB ＆ LocalStorage同期レイヤー
-    │   ├── questions-data.js  # 問題データ（JSON形式、サンプル問題）
+    │   ├── questions-data.js  # 問題データ（JSON形式、問題定義）
+    │   ├── questions-order.js # 【新設】問題の出題順を定義するファイル
+    │   ├── teams-data.js      # 【新設】参加チーム名を定義するファイル
     │   ├── score-engine.js    # 4種ボーナス得点計算エンジン
-    │   ├── player.js          # スマホ回答制御
+    │   ├── player.js          # スマホ回答制御（戻る操作保護対応）
     │   ├── presentation.js    # プレゼン大画面制御
-    │   └── admin.js           # 進行管理・タイマー切替・問題編集
+    │   └── admin.js           # ワンボタン進行・出題順/チーム定義・完全リセット
     ├── images/                # 問題・選択肢の画像フォルダ
     │   └── README.md          # 命名規則ガイド
     └── README.md              # 本ドキュメント

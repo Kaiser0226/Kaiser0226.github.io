@@ -22,14 +22,20 @@
       <span>クイズ大会 一括管理パネル</span>
     </div>
     <div class="admin-nav-actions">
+      <button type="button" class="btn btn-secondary" id="btnOpenOrderModal" style="font-size: 0.9rem;">
+        📋 出題順の管理
+      </button>
+      <button type="button" class="btn btn-secondary" id="btnOpenTeamListModal" style="font-size: 0.9rem;">
+        👥 チーム名定義
+      </button>
       <a href="presentation.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
-        📺 プレゼン画面を開く
+        📺 プレゼン画面
       </a>
       <a href="player.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
-        📱 回答画面を開く
+        📱 回答画面
       </a>
       <button type="button" class="btn btn-secondary" id="btnOpenFirebaseModal" style="font-size: 0.9rem;">
-        ⚙️ Firebase設定
+        ⚙️ Firebase
       </button>
     </div>
   </header>
@@ -47,12 +53,24 @@
             <span>クイズ進行コントロール</span>
           </div>
           <div style="display: flex; gap: 8px; align-items: center;">
-            <button type="button" class="btn btn-success" id="btnToggleGameStatus">
-              ▶ クイズ開始
-            </button>
             <button type="button" class="btn btn-danger" id="btnResetScores"
-              style="font-size: 0.85rem; padding: 8px 12px;">
-              🔄 得点・回答リセット
+              style="font-size: 0.85rem; padding: 8px 14px;">
+              🔄 全データ完全初期化 (チーム・得点・回答)
+            </button>
+          </div>
+        </div>
+
+        <!-- ★ メイン進行ワンボタン (すべて1つのボタンで切り替え) -->
+        <div style="background: linear-gradient(135deg, #1e293b, #0f172a); border: 2px solid #38bdf8; border-radius: var(--radius-md); padding: 18px; margin-bottom: 20px; text-align: center; box-shadow: 0 4px 20px rgba(56, 189, 248, 0.2);">
+          <div style="font-size: 0.85rem; font-weight: 700; color: #38bdf8; margin-bottom: 8px; letter-spacing: 1px;">
+            ▼ メイン進行ボタン (このボタン1つを押すだけで全進行が可能です)
+          </div>
+          <div style="display: flex; gap: 10px; justify-content: center; align-items: stretch;">
+            <button type="button" id="btnMainAdvance" class="btn btn-success" style="flex: 1; padding: 18px 24px; font-size: 1.35rem; font-weight: 900; letter-spacing: 1px; border-radius: 12px; box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);">
+              ▶ クイズ開始 (第1問へ)
+            </button>
+            <button type="button" id="btnMainRollback" class="btn btn-secondary" style="padding: 14px 18px; font-size: 1rem; border-radius: 12px;" title="1つ前の進行ステップに戻す">
+              ⏮ 1つ戻す
             </button>
           </div>
         </div>
@@ -70,8 +88,8 @@
           </div>
         </div>
 
-        <!-- シーン切替ボタン群 -->
-        <div class="form-label" style="margin-bottom: 8px;">▼ 画面シーン切替 (参加者端末・プレゼン画面連動)</div>
+        <!-- 詳細シーン切替ボタン群 (手動用) -->
+        <div class="form-label" style="margin-bottom: 8px;">個別シーン切替 (手動オーバーライド用)</div>
         <div class="scene-flow-control">
           <button type="button" class="scene-btn active" data-scene="waiting">1. 待機 (指示待ち)</button>
           <button type="button" class="scene-btn" data-scene="question">2. 出題・回答受付</button>
@@ -369,9 +387,49 @@
     </div>
   </div>
 
+  <!-- 出題順 (Question Order) 管理モーダル -->
+  <div class="modal-overlay" id="orderModal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2>📋 問題の出題順 (Question Order) 管理</h2>
+        <button type="button" class="modal-close" id="btnCloseOrderModal">&times;</button>
+      </div>
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
+        出題したい順番に並べ替えてください。「↑ 上へ」「↓ 下へ」で順序を変更できます。
+      </p>
+      <div id="orderListContainer" style="max-height: 380px; overflow-y: auto; margin-bottom: 16px;">
+        <!-- JSで動的生成 -->
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px;">
+        <button type="button" class="btn btn-secondary" id="btnCancelOrder">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="btnSaveOrder">出題順を保存・適用</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 参加チーム名マスター定義モーダル -->
+  <div class="modal-overlay" id="teamListModal">
+    <div class="modal-card" style="max-width: 650px;">
+      <div class="modal-header">
+        <h2>👥 参加チーム名一覧の定義 (選択制)</h2>
+        <button type="button" class="modal-close" id="btnCloseTeamListModal">&times;</button>
+      </div>
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
+        スマートフォン回答画面で参加者が選択するチーム名の一覧です（1行につき1チーム名）。
+      </p>
+      <textarea id="teamListTextArea" class="form-textarea" rows="12" placeholder="チーム 1\nチーム 2\nチーム 3..."></textarea>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="btnGenerate60TeamsText">1〜60チーム自動生成</button>
+        <button type="button" class="btn btn-primary" id="btnSaveTeamList">チーム一覧を保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- スクリプト群 -->
   <script src="js/firebase-config.js"></script>
   <script src="js/questions-data.js"></script>
+  <script src="js/questions-order.js"></script>
+  <script src="js/teams-data.js"></script>
   <script src="js/score-engine.js"></script>
   <script src="js/quiz-store.js"></script>
   <script src="js/admin.js"></script>
