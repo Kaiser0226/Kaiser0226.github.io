@@ -130,9 +130,8 @@ function showSpecialView(title, subtitle) {
 }
 
 function renderCurrentQuestion() {
-  if (!currentState) return;
-  const qIndex = currentState.currentQuestionIndex || 0;
-  const q = currentQuestions[qIndex];
+  const qIndex = (currentState && currentState.currentQuestionIndex !== undefined) ? currentState.currentQuestionIndex : 0;
+  const q = currentQuestions[qIndex] || currentQuestions[0];
   if (!q) return;
 
   // 1. 問題画像 (あれば表示)

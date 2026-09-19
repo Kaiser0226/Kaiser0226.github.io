@@ -83,34 +83,48 @@ class QuizStore {
   subscribeState(callback) {
     this.listeners.state.push(callback);
 
+    // 1. まずローカルの最新状態またはデフォルト値を即座に同期返却（画面の初期化を即座に完了させる）
+    const local = localStorage.getItem('quiz_local_state');
+    const initialState = local ? JSON.parse(local) : this.getDefaultState();
+    callback(initialState);
+
+    // 2. Firebaseが有効な場合はリスナーを登録
     if (this.isFirebaseReady && this.database) {
       const stateRef = this.database.ref('quiz/state');
       stateRef.on('value', snapshot => {
-        const val = snapshot.val() || this.getDefaultState();
-        callback(val);
+        if (!snapshot.exists()) {
+          // Firebase側が空の場合はデフォルト状態を自動投入
+          stateRef.set(this.getDefaultState());
+          callback(this.getDefaultState());
+        } else {
+          const val = snapshot.val() || this.getDefaultState();
+          callback(val);
+        }
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeState error:", err);
       });
-    } else {
-      // ローカルモード
-      const local = localStorage.getItem('quiz_local_state');
-      const state = local ? JSON.parse(local) : this.getDefaultState();
-      callback(state);
     }
   }
 
   async updateState(partialState) {
+    const current = JSON.parse(localStorage.getItem('quiz_local_state') || JSON.stringify(this.getDefaultState()));
+    const updated = { ...current, ...partialState, updatedAt: Date.now() };
+    localStorage.setItem('quiz_local_state', JSON.stringify(updated));
+
+    if (this.channel) {
+      this.channel.postMessage({ type: 'state', data: updated });
+    }
+    this.listeners.state.forEach(cb => cb(updated));
+
     if (this.isFirebaseReady && this.database) {
-      await this.database.ref('quiz/state').update({
-        ...partialState,
-        updatedAt: Date.now()
-      });
-    } else {
-      const current = JSON.parse(localStorage.getItem('quiz_local_state') || JSON.stringify(this.getDefaultState()));
-      const updated = { ...current, ...partialState, updatedAt: Date.now() };
-      localStorage.setItem('quiz_local_state', JSON.stringify(updated));
-      if (this.channel) {
-        this.channel.postMessage({ type: 'state', data: updated });
+      try {
+        await this.database.ref('quiz/state').update({
+          ...partialState,
+          updatedAt: Date.now()
+        });
+      } catch (err) {
+        console.warn("QuizStore: Firebase updateState failed:", err);
       }
-      this.listeners.state.forEach(cb => cb(updated));
     }
   }
 
@@ -119,27 +133,43 @@ class QuizStore {
   subscribeQuestions(callback) {
     this.listeners.questions.push(callback);
 
+    // 1. まず即座にデフォルト問題またはローカル保存問題を返却（描画ブロックを防止）
+    const local = localStorage.getItem('quiz_local_questions');
+    const initialQuestions = local ? JSON.parse(local) : DEFAULT_QUESTIONS;
+    callback(initialQuestions);
+
+    // 2. Firebaseが有効な場合はリスナー登録
     if (this.isFirebaseReady && this.database) {
-      this.database.ref('quiz/questions').on('value', snapshot => {
-        const val = snapshot.val();
-        callback(val || DEFAULT_QUESTIONS);
+      const qRef = this.database.ref('quiz/questions');
+      qRef.on('value', snapshot => {
+        if (!snapshot.exists()) {
+          // Firebase側にまだ問題データがない場合はデフォルト問題を自動シード
+          console.log("QuizStore: Seeding initial questions to Firebase");
+          qRef.set(DEFAULT_QUESTIONS);
+          callback(DEFAULT_QUESTIONS);
+        } else {
+          const val = snapshot.val();
+          callback(val && val.length ? val : DEFAULT_QUESTIONS);
+        }
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeQuestions error:", err);
       });
-    } else {
-      const local = localStorage.getItem('quiz_local_questions');
-      const questions = local ? JSON.parse(local) : DEFAULT_QUESTIONS;
-      callback(questions);
     }
   }
 
   async saveQuestions(questions) {
+    localStorage.setItem('quiz_local_questions', JSON.stringify(questions));
+    if (this.channel) {
+      this.channel.postMessage({ type: 'questions', data: questions });
+    }
+    this.listeners.questions.forEach(cb => cb(questions));
+
     if (this.isFirebaseReady && this.database) {
-      await this.database.ref('quiz/questions').set(questions);
-    } else {
-      localStorage.setItem('quiz_local_questions', JSON.stringify(questions));
-      if (this.channel) {
-        this.channel.postMessage({ type: 'questions', data: questions });
+      try {
+        await this.database.ref('quiz/questions').set(questions);
+      } catch (err) {
+        console.warn("QuizStore: Firebase saveQuestions failed:", err);
       }
-      this.listeners.questions.forEach(cb => cb(questions));
     }
   }
 
@@ -148,15 +178,17 @@ class QuizStore {
   subscribeTeams(callback) {
     this.listeners.teams.push(callback);
 
+    const local = localStorage.getItem('quiz_local_teams');
+    const initialTeams = local ? JSON.parse(local) : {};
+    callback(initialTeams);
+
     if (this.isFirebaseReady && this.database) {
       this.database.ref('quiz/teams').on('value', snapshot => {
         const val = snapshot.val() || {};
         callback(val);
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeTeams error:", err);
       });
-    } else {
-      const local = localStorage.getItem('quiz_local_teams');
-      const teams = local ? JSON.parse(local) : {};
-      callback(teams);
     }
   }
 

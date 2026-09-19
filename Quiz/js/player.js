@@ -60,6 +60,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // 問題データ購読
   quizStore.subscribeQuestions(questions => {
     currentQuestions = questions || DEFAULT_QUESTIONS;
+    if (myTeam) {
+      applyState();
+    }
   });
 
   // チームデータ購読
