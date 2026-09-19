@@ -199,7 +199,7 @@ function setupTimer() {
   const totalDuration = q.timeLimitSeconds || 15;
   const startTime = currentState.questionStartTime || Date.now();
 
-  function tick() {
+  async function tick() {
     const elapsed = (Date.now() - startTime) / 1000;
     const remaining = Math.max(0, totalDuration - elapsed);
     const percent = Math.max(0, (remaining / totalDuration) * 100);
@@ -221,6 +221,8 @@ function setupTimer() {
       presTimerSeconds.textContent = "0s";
       presTimerFill.style.width = "0%";
       document.body.classList.remove('timer-warning-active');
+      // Auto‑advance to result scene when timer expires
+      await quizStore.updateState({ currentScene: 'result' });
     }
   }
 
