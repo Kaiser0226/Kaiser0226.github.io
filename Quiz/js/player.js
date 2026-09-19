@@ -482,10 +482,19 @@ function renderRankingsTable() {
     rankingTableBody.appendChild(tr);
   });
 
-  // 要件:「自身の順位が最初にフォーカスされスクロールで移動可能」
-  if (targetRowElement) {
+  // ページ全体ではなく、ランキング内だけを自チームの行へスクロールする
+  if (targetRowElement && rankingScrollBox) {
     setTimeout(() => {
-      targetRowElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const rowRect = targetRowElement.getBoundingClientRect();
+      const boxRect = rankingScrollBox.getBoundingClientRect();
+      const rowCenter = rowRect.top + rowRect.height / 2;
+      const boxCenter = boxRect.top + boxRect.height / 2;
+      const targetScrollTop = rankingScrollBox.scrollTop + rowCenter - boxCenter;
+
+      rankingScrollBox.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: 'smooth'
+      });
     }, 200);
   }
 }
