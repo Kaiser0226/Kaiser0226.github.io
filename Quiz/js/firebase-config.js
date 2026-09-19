@@ -9,7 +9,7 @@
 const FIREBASE_CONFIG_DEFAULT = {
   apiKey: "AIzaSyA-tsN_ANUMirM5lIUte7pOeSvt585nGt8",
   authDomain: "ryoko-quiz.firebaseapp.com",
-  databaseURL: "https://ryoko-quiz-default-rtdb.firebaseio.com",
+  databaseURL: "https://ryoko-quiz-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "ryoko-quiz",
   storageBucket: "ryoko-quiz.firebasestorage.app",
   messagingSenderId: "675351531312",
@@ -34,9 +34,14 @@ class FirebaseManager {
       }
     }
 
-    // databaseURLが抜けている場合はprojectIdから自動推定
+    // 古いus-central1のURLがLocalStorageに残っていた場合、正しいasia-southeast1へ自動補正
+    if (config.databaseURL && config.databaseURL.includes("ryoko-quiz-default-rtdb.firebaseio.com")) {
+      config.databaseURL = "https://ryoko-quiz-default-rtdb.asia-southeast1.firebasedatabase.app";
+      this.saveConfig(config);
+    }
+
     if (!config.databaseURL && config.projectId) {
-      config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+      config.databaseURL = `https://${config.projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`;
     }
 
     return config;
@@ -44,7 +49,7 @@ class FirebaseManager {
 
   static saveConfig(config) {
     if (!config.databaseURL && config.projectId) {
-      config.databaseURL = `https://${config.projectId}-default-rtdb.firebaseio.com`;
+      config.databaseURL = `https://${config.projectId}-default-rtdb.asia-southeast1.firebasedatabase.app`;
     }
     localStorage.setItem('quiz_firebase_config', JSON.stringify(config));
   }

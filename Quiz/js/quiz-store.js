@@ -42,6 +42,17 @@ class QuizStore {
         }
         this.database = firebase.database();
         this.isFirebaseReady = true;
+        this.isConnectedToFirebase = false;
+
+        // Firebase公式の接続状態監視
+        this.database.ref('.info/connected').on('value', snap => {
+          this.isConnectedToFirebase = (snap.val() === true);
+          console.log(`QuizStore: Firebase connection state => ${this.isConnectedToFirebase ? "ONLINE (Connected)" : "CONNECTING / OFFLINE"}`);
+          if (this.listeners.connection) {
+            this.listeners.connection.forEach(cb => cb(this.isConnectedToFirebase));
+          }
+        });
+
         console.log("QuizStore: Connected to Firebase Realtime Database");
       } catch (err) {
         console.warn("QuizStore: Firebase init failed, falling back to local mode", err);
@@ -51,6 +62,12 @@ class QuizStore {
       console.log("QuizStore: Running in Local Fallback mode (BroadcastChannel & LocalStorage)");
       this.isFirebaseReady = false;
     }
+  }
+
+  subscribeConnection(callback) {
+    if (!this.listeners.connection) this.listeners.connection = [];
+    this.listeners.connection.push(callback);
+    callback(Boolean(this.isConnectedToFirebase));
   }
 
   // --- デフォルト初期状態 ---
