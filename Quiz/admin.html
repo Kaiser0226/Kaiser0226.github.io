@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クイズ大会 - 管理者コントロールパネル</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/admin.css">
+
+  <!-- Firebase App & Realtime Database SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body class="admin-layout">
+
+  <!-- 管理ナビゲーションバー -->
+  <header class="admin-nav">
+    <div class="admin-logo">
+      <span>👑</span>
+      <span>クイズ大会 一括管理パネル</span>
+    </div>
+    <div class="admin-nav-actions">
+      <a href="presentation.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
+        📺 プレゼン画面を開く
+      </a>
+      <a href="player.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
+        📱 回答画面を開く
+      </a>
+      <button type="button" class="btn btn-secondary" id="btnOpenFirebaseModal" style="font-size: 0.9rem;">
+        ⚙️ Firebase設定
+      </button>
+    </div>
+  </header>
+
+  <main class="admin-main">
+    
+    <!-- 左側メイン操作エリア -->
+    <div class="admin-content-area">
+
+      <!-- 1. ゲーム進行・ステータスコントロール -->
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">
+            <span>🎮</span>
+            <span>クイズ進行コントロール</span>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn btn-success" id="btnToggleGameStatus">
+              ▶ クイズ開始
+            </button>
+            <button type="button" class="btn btn-danger" id="btnResetScores" style="font-size: 0.85rem; padding: 8px 12px;">
+              🔄 得点・回答リセット
+            </button>
+          </div>
+        </div>
+
+        <!-- 状態インジケータ -->
+        <div class="game-status-bar">
+          <div>
+            クイズ状態: <span id="lblGameStatus" class="status-badge-live stopped">停止中</span>
+          </div>
+          <div>
+            現在シーン: <strong id="lblCurrentScene" style="color: #38bdf8;">待機中</strong>
+          </div>
+          <div>
+            想定参加組数: <strong id="lblTargetTeams">100</strong> 組
+          </div>
+        </div>
+
+        <!-- シーン切替ボタン群 -->
+        <div class="form-label" style="margin-bottom: 8px;">▼ 画面シーン切替 (参加者端末・プレゼン画面連動)</div>
+        <div class="scene-flow-control">
+          <button type="button" class="scene-btn active" data-scene="waiting">1. 待機 (指示待ち)</button>
+          <button type="button" class="scene-btn" data-scene="question">2. 出題・回答受付</button>
+          <button type="button" class="scene-btn" data-scene="closed">3. 回答締切</button>
+          <button type="button" class="scene-btn" data-scene="result">4. 正解発表・解説</button>
+          <button type="button" class="scene-btn" data-scene="final">5. 最終結果発表</button>
+        </div>
+
+        <!-- 問題選択とナビゲーション -->
+        <div class="question-nav-row">
+          <button type="button" class="btn btn-secondary" id="btnPrevQuestion">◀ 前の問題</button>
+          <select id="selectCurrentQuestion" class="q-select-dropdown">
+            <!-- 動的生成 -->
+          </select>
+          <button type="button" class="btn btn-secondary" id="btnNextQuestion">次の問題 ▶</button>
+        </div>
+
+        <!-- タイマー切替パネル -->
+        <div class="timer-control-box">
+          <div>
+            <div style="font-weight: 700;">⏱️ タイマー制御</div>
+            <div id="timerDetailText" style="font-size: 0.85rem; color: #94a3b8;">
+              制限時間: 15秒 (タイマー稼働中)
+            </div>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="btnToggleTimerMode" style="font-size: 0.85rem;">
+              手動進行へ切替
+            </button>
+            <button type="button" class="btn btn-danger" id="btnForceCloseAnswers" style="font-size: 0.85rem;">
+              即時締切
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 問題データ編集 (GUI & JSON) -->
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">
+            <span>📝</span>
+            <span>問題データ管理 (GUI / JSON編集)</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="btnAddNewQuestion" style="font-size: 0.85rem;">
+              ＋ 新規問題追加
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnExportJson" style="font-size: 0.85rem;">
+              📥 JSON書出
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnOpenJsonModal" style="font-size: 0.85rem;">
+              📤 JSON一括編集
+            </button>
+          </div>
+        </div>
+
+        <!-- 選択中問題のGUIエディタフォーム -->
+        <form id="questionEditForm">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">問題文</label>
+              <textarea id="editQuestionText" class="form-textarea" rows="3" placeholder="問題文を入力"></textarea>
+            </div>
+            <div class="form-group">
+              <label class="form-label">問題画像パス (未指定なら空欄)</label>
+              <input type="text" id="editQuestionImage" class="form-input" placeholder="例: images/q_1_main.png">
+              <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+                構文: <code>images/q_{ID}_main.png</code>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">時間制限の設定</label>
+              <div style="display: flex; gap: 12px; align-items: center; margin-top: 6px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="checkbox" id="editHasTimeLimit" checked> 時間制限を有効にする
+                </label>
+                <input type="number" id="editTimeLimitSeconds" class="form-input" style="width: 90px;" value="15" min="5" max="120"> 秒
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">正解の選択肢</label>
+              <select id="editCorrectAnswer" class="form-input">
+                <option value="0">選択肢 1 (赤)</option>
+                <option value="1">選択肢 2 (青)</option>
+                <option value="2">選択肢 3 (黄)</option>
+                <option value="3">選択肢 4 (緑)</option>
+                <option value="4">選択肢 5 (水色)</option>
+                <option value="5">選択肢 6 (紫)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 選択肢 2〜6択動的エディタ -->
+          <div class="form-group">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <label class="form-label" style="margin: 0;">選択肢 (2〜6択)</label>
+              <div style="display: flex; gap: 6px;">
+                <button type="button" class="btn btn-secondary" id="btnAddOption" style="font-size: 0.8rem; padding: 4px 10px;">＋ 選択肢追加</button>
+                <button type="button" class="btn btn-secondary" id="btnRemoveOption" style="font-size: 0.8rem; padding: 4px 10px;">－ 削除</button>
+              </div>
+            </div>
+            <div id="optionsEditorContainer">
+              <!-- JSで動的に2〜6個生成 -->
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">解答解説</label>
+            <textarea id="editExplanation" class="form-textarea" rows="2" placeholder="正解発表時に表示される解説文"></textarea>
+          </div>
+
+          <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+            <button type="button" class="btn btn-danger" id="btnDeleteCurrentQuestion" style="font-size: 0.85rem;">
+              🗑️ この問題を削除
+            </button>
+            <button type="submit" class="btn btn-primary">
+              💾 問題変更を保存・反映
+            </button>
+          </div>
+        </form>
+      </section>
+
+      <!-- 3. ルール・得点・参加人数設定 -->
+      <section class="admin-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">
+            <span>⚙️</span>
+            <span>大会設定 (参加人数・得点ボーナス・順位非表示)</span>
+          </div>
+          <button type="button" class="btn btn-primary" id="btnSaveConfig">設定を保存</button>
+        </div>
+
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label">想定参加チーム数・組数 (デフォルト: 100)</label>
+            <input type="number" id="cfgTargetTeams" class="form-input" value="100" min="2" max="500">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+              プレゼン画面の水位が 100% に達する基準チーム数です。
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">スマホでの順位表示制限 (指定問題数まで表示)</label>
+            <input type="number" id="cfgRankLimit" class="form-input" value="999" min="1">
+            <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 4px;">
+              例: 「5」とすると第5問まで順位が表示され、第6問以降は非公開になります。
+            </div>
+          </div>
+        </div>
+
+        <div class="form-label" style="margin-top: 12px; margin-bottom: 8px;">得点ボーナス設定 (4種類 + 基本点)</div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">基本正解点</label>
+            <input type="number" id="cfgBasePoint" class="form-input" value="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">最速1位ボーナス</label>
+            <input type="number" id="cfgTop1" class="form-input" value="10">
+          </div>
+          <div class="form-group">
+            <label class="form-label">最速2位ボーナス</label>
+            <input type="number" id="cfgTop2" class="form-input" value="7">
+          </div>
+        </div>
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label">最速3位ボーナス</label>
+            <input type="number" id="cfgTop3" class="form-input" value="5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">上位50%ボーナス</label>
+            <input type="number" id="cfgTopHalf" class="form-input" value="5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">下位50%ボーナス</label>
+            <input type="number" id="cfgBottomHalf" class="form-input" value="2">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">単独正解ボーナス (正解が1組のみの場合)</label>
+          <input type="number" id="cfgSoloBonus" class="form-input" value="30">
+        </div>
+      </section>
+
+    </div>
+
+    <!-- 右側サイドバー: リアルタイムモニター & テスト支援 -->
+    <aside class="admin-sidebar">
+      
+      <!-- リアルタイム回答状況モニター -->
+      <section class="admin-card monitor-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">
+            <span>📊</span>
+            <span>回答状況モニター</span>
+          </div>
+        </div>
+
+        <div class="answer-live-stats">
+          <div class="mini-stat">
+            <div class="mini-stat-num" id="statConnectedTeams">0</div>
+            <div class="mini-stat-label">登録チーム</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-num" id="statAnsweredTeams" style="color: #10b981;">0</div>
+            <div class="mini-stat-label">回答済み</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-num" id="statUnansweredTeams" style="color: #ef4444;">0</div>
+            <div class="mini-stat-label">未回答</div>
+          </div>
+        </div>
+
+        <!-- テスト・シミュレーション支援 -->
+        <div style="background: #0f172a; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+          <div style="font-size: 0.85rem; font-weight: 700; margin-bottom: 6px;">🧪 動作テスト・シミュレーション</div>
+          <div style="display: flex; gap: 8px;">
+            <button type="button" class="btn btn-secondary" id="btnGenerateDummyTeams" style="font-size: 0.75rem; flex: 1; padding: 6px;">
+              60チーム生成
+            </button>
+            <button type="button" class="btn btn-secondary" id="btnSimulateAnswers" style="font-size: 0.75rem; flex: 1; padding: 6px;">
+              一括回答実行
+            </button>
+          </div>
+        </div>
+
+        <!-- 参加チーム一覧テーブル -->
+        <div style="max-height: 400px; overflow-y: auto;">
+          <table class="live-team-table">
+            <thead>
+              <tr>
+                <th>チーム名</th>
+                <th>回答</th>
+                <th>時間</th>
+                <th>累計得点</th>
+              </tr>
+            </thead>
+            <tbody id="teamMonitorBody">
+              <!-- 動的生成 -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </aside>
+
+  </main>
+
+  <!-- Firebase設定モーダル -->
+  <div class="modal-overlay" id="firebaseModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h2>⚙️ Google Firebase 接続設定</h2>
+        <button type="button" class="modal-close" id="btnCloseFirebaseModal">&times;</button>
+      </div>
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
+        Firebase Console の「プロジェクト設定」→「SDK の設定と構成」にある <code>firebaseConfig</code> を貼り付けてください。<br>
+        ※未設定でもローカルブラウザ同期で動作確認が可能です。
+      </p>
+      <div class="form-group">
+        <label class="form-label">Firebase Config (JSONまたはプロパティ)</label>
+        <textarea id="firebaseConfigInput" class="form-textarea" rows="8" placeholder='{\n  "apiKey": "AIzaSy...",\n  "authDomain": "...",\n  "databaseURL": "https://...",\n  "projectId": "..."\n}'></textarea>
+      </div>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="btnResetFirebaseConfig">設定クリア</button>
+        <button type="button" class="btn btn-primary" id="btnSaveFirebaseConfig">保存して接続</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JSON一括編集モーダル -->
+  <div class="modal-overlay" id="jsonModal">
+    <div class="modal-card" style="max-width: 800px;">
+      <div class="modal-header">
+        <h2>📤 問題JSON一括編集・インポート</h2>
+        <button type="button" class="modal-close" id="btnCloseJsonModal">&times;</button>
+      </div>
+      <p style="font-size: 0.9rem; color: #94a3b8; margin-bottom: 14px;">
+        問題配列のJSONを直接編集または貼り付けて反映できます。
+      </p>
+      <textarea id="jsonEditorArea" class="json-area" rows="14"></textarea>
+      <div style="display: flex; justify-content: space-between; margin-top: 16px;">
+        <button type="button" class="btn btn-secondary" id="btnFormatJson">JSON整形</button>
+        <button type="button" class="btn btn-primary" id="btnApplyJson">JSONを反映して保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- スクリプト群 -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/questions-data.js"></script>
+  <script src="js/score-engine.js"></script>
+  <script src="js/quiz-store.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

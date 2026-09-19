@@ -1,0 +1,371 @@
+/* =========================================================
+   プレゼンテーション画面専用スタイル (presentation.css)
+   ========================================================= */
+
+body.presentation-body {
+  background-color: #0b1120;
+  color: #f8fafc;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+  position: relative;
+  user-select: none;
+}
+
+/* 水位アニメーションの背景コンテナ */
+.water-bg-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 0%; /* 回答率 0%〜100% で動的に変動 */
+  transition: height 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  z-index: 1;
+  overflow: hidden;
+}
+
+/* 水のテクスチャと波 */
+.water-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(180deg, rgba(6, 182, 212, 0.45) 0%, rgba(37, 99, 235, 0.7) 100%);
+  box-shadow: inset 0 10px 30px rgba(255, 255, 255, 0.2);
+}
+
+.water-wave {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  width: 200%;
+  height: 48px;
+  background-repeat: repeat-x;
+  background-size: 50% 48px;
+  animation: waveMotion 4s linear infinite;
+  opacity: 0.85;
+}
+
+.water-wave.wave-front {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,90 350,-40 500,45 C650,130 900,10 1200,40 L1200,120 L0,120 Z' fill='%2306b6d4' opacity='0.7'/%3E%3C/svg%3E");
+  animation-duration: 5s;
+}
+
+.water-wave.wave-back {
+  top: -30px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C200,70 400,-30 600,50 C800,120 1000,10 1200,50 L1200,120 L0,120 Z' fill='%232563eb' opacity='0.4'/%3E%3C/svg%3E");
+  animation-duration: 8s;
+  animation-direction: reverse;
+}
+
+@keyframes waveMotion {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* 回答状況インジケーター（右下表示） */
+.answer-count-badge {
+  position: absolute;
+  bottom: 24px;
+  right: 32px;
+  z-index: 10;
+  background: rgba(15, 23, 42, 0.75);
+  border: 2px solid rgba(6, 182, 212, 0.6);
+  backdrop-filter: blur(8px);
+  padding: 10px 24px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: var(--shadow-lg);
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.answer-count-badge .bubble-icon {
+  font-size: 1.5rem;
+  animation: floatBubble 2s ease-in-out infinite;
+}
+
+@keyframes floatBubble {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+/* プレゼン全体のコンテナ */
+.pres-container {
+  position: relative;
+  z-index: 5;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 32px 50px;
+  box-sizing: border-box;
+}
+
+/* 上部ステータスバー (第何問、総合状況) */
+.pres-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.pres-q-badge {
+  background: linear-gradient(135deg, #4f46e5, #3b82f6);
+  font-size: 1.6rem;
+  font-weight: 800;
+  padding: 8px 30px;
+  border-radius: var(--radius-full);
+  letter-spacing: 2px;
+  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+}
+
+.pres-status-badge {
+  font-size: 1.3rem;
+  font-weight: 700;
+  padding: 6px 20px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(6px);
+}
+
+/* メイン出題エリア (中央揃え) */
+.pres-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 1300px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* 問題画像（中央揃え） */
+.pres-image-wrapper {
+  margin-bottom: 20px;
+  max-height: 28vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pres-image-wrapper img {
+  max-height: 28vh;
+  max-width: 80vw;
+  object-fit: contain;
+  border-radius: var(--radius-md);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  border: 3px solid rgba(255, 255, 255, 0.2);
+}
+
+/* 問題文（中央揃え） */
+.pres-question-text {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-align: center;
+  line-height: 1.35;
+  margin-bottom: 24px;
+  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+  max-width: 100%;
+}
+
+/* 制限時間バー（中央揃え） */
+.pres-timer-container {
+  width: 100%;
+  max-width: 860px;
+  margin-bottom: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.pres-timer-track {
+  width: 100%;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.pres-timer-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #10b981, #3b82f6);
+  border-radius: var(--radius-full);
+  transition: width 0.1s linear, background 0.3s ease;
+}
+
+.pres-timer-seconds {
+  font-size: 1.8rem;
+  font-weight: 800;
+  margin-top: 8px;
+  color: #38bdf8;
+  letter-spacing: 1px;
+}
+
+/* 制限時間 警告アニメーション */
+.pres-timer-container.warning .pres-timer-fill {
+  background: linear-gradient(90deg, #f59e0b, #ef4444);
+}
+
+.pres-timer-container.warning .pres-timer-seconds {
+  color: #ef4444;
+  animation: pulseWarning 0.5s infinite alternate;
+}
+
+@keyframes pulseWarning {
+  0% { transform: scale(1); filter: drop-shadow(0 0 4px #ef4444); }
+  100% { transform: scale(1.18); filter: drop-shadow(0 0 16px #ef4444); }
+}
+
+/* 画面全体の警告フラッシュパルス */
+body.timer-warning-active::after {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  border: 12px solid rgba(239, 68, 68, 0.4);
+  box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.4);
+  pointer-events: none;
+  z-index: 20;
+  animation: warningVignette 0.8s infinite alternate;
+}
+
+@keyframes warningVignette {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* 選択肢エリア: 2列配置 (◯◯ ◯◯ ◯◯) */
+.pres-options-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 1100px;
+}
+
+.pres-option-card {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 24px;
+  border-radius: var(--radius-lg);
+  color: #ffffff;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: rgba(30, 41, 59, 0.85);
+  border: 3px solid transparent;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(10px);
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+/* 選択肢番号バッジ */
+.opt-num-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 50px;
+  height: 50px;
+  border-radius: var(--radius-full);
+  font-size: 1.6rem;
+  font-weight: 900;
+  flex-shrink: 0;
+  color: #ffffff;
+}
+
+/* 各選択肢カラー定義 */
+.pres-option-card[data-index="0"] { border-color: var(--opt-1); }
+.pres-option-card[data-index="0"] .opt-num-badge { background: var(--opt-1); }
+
+.pres-option-card[data-index="1"] { border-color: var(--opt-2); }
+.pres-option-card[data-index="1"] .opt-num-badge { background: var(--opt-2); }
+
+.pres-option-card[data-index="2"] { border-color: var(--opt-3); }
+.pres-option-card[data-index="2"] .opt-num-badge { background: var(--opt-3); }
+
+.pres-option-card[data-index="3"] { border-color: var(--opt-4); }
+.pres-option-card[data-index="3"] .opt-num-badge { background: var(--opt-4); }
+
+.pres-option-card[data-index="4"] { border-color: var(--opt-5); }
+.pres-option-card[data-index="4"] .opt-num-badge { background: var(--opt-5); }
+
+.pres-option-card[data-index="5"] { border-color: var(--opt-6); }
+.pres-option-card[data-index="5"] .opt-num-badge { background: var(--opt-6); }
+
+/* 選択肢内画像 */
+.opt-thumb-image {
+  width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  flex-shrink: 0;
+}
+
+.opt-text-label {
+  flex: 1;
+  word-break: break-word;
+}
+
+/* 正解発表時のハイライト演出 */
+.pres-option-card.is-correct {
+  transform: scale(1.04);
+  border-width: 5px;
+  box-shadow: 0 0 35px rgba(255, 255, 255, 0.8);
+  animation: correctBounce 0.6s ease;
+}
+
+.pres-option-card.is-incorrect {
+  opacity: 0.25;
+  filter: grayscale(0.8);
+}
+
+@keyframes correctBounce {
+  0%, 100% { transform: scale(1.04); }
+  50% { transform: scale(1.1); }
+}
+
+/* 待機・結果・最終発表画面などのオーバーレイ */
+.pres-special-view {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  z-index: 15;
+  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+}
+
+.pres-special-title {
+  font-size: 3.5rem;
+  font-weight: 900;
+  margin-bottom: 24px;
+  text-align: center;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.pres-explanation-box {
+  background: rgba(30, 41, 59, 0.9);
+  border: 2px solid #38bdf8;
+  border-radius: var(--radius-lg);
+  padding: 24px 36px;
+  max-width: 900px;
+  margin-top: 24px;
+  font-size: 1.6rem;
+  line-height: 1.6;
+  text-align: center;
+  box-shadow: var(--shadow-xl);
+}

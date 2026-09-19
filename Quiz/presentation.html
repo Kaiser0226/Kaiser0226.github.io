@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クイズ大会 - プレゼンテーション表示</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/presentation.css">
+
+  <!-- Firebase App & Realtime Database SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body class="presentation-body">
+
+  <!-- 水位上昇アニメーション背景 (回答率 0%〜100% で上昇) -->
+  <div class="water-bg-container" id="waterContainer">
+    <div class="water-fill">
+      <div class="water-wave wave-back"></div>
+      <div class="water-wave wave-front"></div>
+    </div>
+  </div>
+
+  <!-- 回答済みチーム数バッジ (右下) -->
+  <div class="answer-count-badge" id="answerBadge">
+    <span class="bubble-icon">💧</span>
+    <span id="answeredCount">0</span> / <span id="targetCount">100</span> 組
+    <span style="font-size: 0.95rem; color: #38bdf8; margin-left: 6px;">(<span id="answeredPercent">0</span>%)</span>
+  </div>
+
+  <!-- メイン表示領域 -->
+  <div class="pres-container">
+    
+    <!-- 上部ヘッダー -->
+    <header class="pres-header">
+      <div class="pres-q-badge" id="qNumberBadge">Q 1</div>
+      <div class="pres-status-badge" id="sceneStatusBadge">待機中</div>
+    </header>
+
+    <!-- メイン出題・選択肢エリア (中央揃え) -->
+    <main class="pres-main" id="presMain">
+      
+      <!-- 1. 問題画像 (あれば表示・中央揃え) -->
+      <div class="pres-image-wrapper" id="presImageWrapper" style="display: none;">
+        <img id="presQuestionImage" src="" alt="問題画像">
+      </div>
+
+      <!-- 2. 問題文 (中央揃え) -->
+      <h1 class="pres-question-text" id="presQuestionText">問題文を読み込んでいます...</h1>
+
+      <!-- 3. 制限時間バー (中央揃え) -->
+      <div class="pres-timer-container" id="presTimerContainer">
+        <div class="pres-timer-track">
+          <div class="pres-timer-fill" id="presTimerFill"></div>
+        </div>
+        <div class="pres-timer-seconds" id="presTimerSeconds">15s</div>
+      </div>
+
+      <!-- 4. 選択肢: 2列配置 (◯◯ / ◯◯ / ◯◯) -->
+      <div class="pres-options-grid" id="presOptionsGrid">
+        <!-- JSで動的に2〜6個生成 -->
+      </div>
+
+      <!-- 正解発表時の解説ボックス -->
+      <div class="pres-explanation-box" id="presExplanationBox" style="display: none;">
+        <div style="color: #38bdf8; font-weight: 800; margin-bottom: 8px;">【解説】</div>
+        <p id="presExplanationText"></p>
+      </div>
+
+    </main>
+
+    <!-- 特殊全画面表示 (待機中 / 最終結果発表) -->
+    <div class="pres-special-view" id="specialView" style="display: none;">
+      <h2 class="pres-special-title" id="specialTitle">まもなく開始します</h2>
+      <p id="specialSubtitle" style="font-size: 1.8rem; color: #94a3b8; text-align: center; max-width: 800px;">
+        スマートフォンの画面を開き、運営者の合図をお待ちください。
+      </p>
+      <div id="finalRankingsContainer" style="width: 100%; max-width: 900px; margin-top: 30px; display: none;">
+        <!-- 最終順位テーブル -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- スクリプト群 -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/questions-data.js"></script>
+  <script src="js/score-engine.js"></script>
+  <script src="js/quiz-store.js"></script>
+  <script src="js/presentation.js"></script>
+</body>
+</html>

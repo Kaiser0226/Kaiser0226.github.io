@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>✨ メイド占い屋 シフト表 ✨</title>
+  <meta name="description" content="文化祭メイド占い屋のシフト表。担当メイドさんを時間帯別にチェックできます。" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&family=M+PLUS+Rounded+1c:wght@400;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+  <!-- ヘッダー -->
+  <header class="site-header-image">
+    <img src="photos/Kanban.png" alt="看板" class="header-kanban">
+  </header>
+
+  <!-- ========== 一覧タブ ========== -->
+  <div id="page-list" class="page-container active">
+
+    <!-- メインコンテンツ（一覧） -->
+    <main class="main-content" id="main-content">
+      <!-- JSで動的に生成 -->
+    </main>
+
+    <!-- 日付タブ -->
+    <div class="date-tabs">
+      <button class="date-tab" id="tab-512" onclick="switchDay('512')">
+        <span class="tab-month">5月</span>
+        <span class="tab-day">12日</span>
+        <span class="tab-week">火</span>
+      </button>
+      <button class="date-tab active" id="tab-513" onclick="switchDay('513')">
+        <span class="tab-month">5月</span>
+        <span class="tab-day">13日</span>
+        <span class="tab-week">水</span>
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ========== 相性診断タブ ========== -->
+  <div id="page-aisho" class="page-container">
+
+    <!-- ヘッダー -->
+    <div class="aisho-header">
+      <span class="aisho-header-icon">💫</span>
+      <span class="aisho-header-text">相性診断</span>
+    </div>
+
+    <!-- 質問画面 -->
+    <div id="aisho-quiz" class="aisho-quiz-wrap">
+      <div class="aisho-intro">
+        <p class="aisho-intro-text">7つの質問に答えて、<br>あなたと相性ぴったりのメンバーを見つけよう！</p>
+      </div>
+
+      <!-- プログレスバー -->
+      <div class="aisho-progress-wrap">
+        <div class="aisho-progress-bar">
+          <div class="aisho-progress-fill" id="aisho-progress-fill"></div>
+        </div>
+        <div class="aisho-progress-label" id="aisho-progress-label">1 / 7</div>
+      </div>
+
+      <!-- 質問カード -->
+      <div id="aisho-question-area"></div>
+
+      <!-- ナビボタン -->
+      <div class="aisho-nav-btns">
+        <button class="aisho-btn-back" id="aisho-btn-back" onclick="aishoBack()">← 戻る</button>
+        <button class="aisho-btn-next" id="aisho-btn-next" onclick="aishoNext()" disabled>次へ →</button>
+      </div>
+    </div>
+
+    <!-- 結果画面 -->
+    <div id="aisho-result" class="aisho-result-wrap" style="display:none;">
+      <div class="aisho-result-header">
+        <div class="aisho-result-title">🌟 診断結果</div>
+        <div class="aisho-result-sub">一致率の高い順に表示しています</div>
+      </div>
+      <div id="aisho-result-list" class="aisho-result-list"></div>
+      <button class="aisho-retry-btn" onclick="aishoRetry()">🔮 もう一度診断する</button>
+      <div class="footer-deco">✦ Made You Happy 製作委員会 ✦</div>
+    </div>
+
+  </div>
+
+  <!-- ========== ランキングタブ ========== -->
+  <div id="page-ranking" class="page-container">
+    <div class="ranking-header">
+      <span class="ranking-title-icon">👑</span>
+      <span class="ranking-title-text">人気ランキング</span>
+    </div>    <div class="voting-closed-notice">投票は終了しました</div>    <div id="ranking-list" class="ranking-list">
+      <!-- JSで動的に生成 -->
+    </div>
+    <div class="footer-deco">✦ Made You Happy 製作委員会 ✦</div>
+  </div>
+
+  <!-- ========== 店についてタブ ========== -->
+  <div id="page-store" class="page-container">
+    <div class="store-header">
+      <span class="store-header-icon">🏠</span>
+      <span class="store-header-text">店について</span>
+    </div>
+
+    <div class="store-content">
+      <!-- メインカード: 場所と占い -->
+      <div class="store-main-card">
+        <div class="store-info-item">
+          <div class="store-info-label">📍 場所</div>
+          <div class="store-info-value">4階の端のほう！<br><strong>407教室 (3-6)</strong></div>
+        </div>
+        <div class="store-info-item">
+          <div class="store-info-label">🔮 占い方法</div>
+          <div class="store-info-value">姓名占い ・ 生年月日占い</div>
+        </div>
+      </div>
+
+      <!-- 特典・お楽しみ -->
+      <div class="store-features">
+        <div class="store-feature-card gift">
+          <div class="feature-icon">🎁</div>
+          <div class="feature-title">限定特典</div>
+          <div class="feature-desc">入場時に限定ステッカーをプレゼント！</div>
+        </div>
+        <div class="store-feature-card love">
+          <div class="feature-icon">💖</div>
+          <div class="feature-title">恋のコンテンツ</div>
+          <div class="feature-desc">恋みくじ ＆ 匿名で書ける恋の掲示板</div>
+        </div>
+        <div class="store-feature-card photo">
+          <div class="feature-icon">📸</div>
+          <div class="feature-title">フォトスポット</div>
+          <div class="feature-desc">廊下側に2種類のフォトスペースがあるよ！</div>
+        </div>
+      </div>
+
+      <!-- お客さんの流れ -->
+      <div class="store-flow-section">
+        <div class="flow-title">✨ お客さんの流れ ✨</div>
+        <div class="flow-container">
+          <div class="flow-item">
+            <div class="flow-num">1</div>
+            <div class="flow-text">並ぶ</div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item">
+            <div class="flow-num">2</div>
+            <div class="flow-text">案内されたブースに入る</div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item">
+            <div class="flow-num">3</div>
+            <div class="flow-text">占ってもらう<div class="flow-sub">（姓名占い・生年月日占い）</div></div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item">
+            <div class="flow-num">4</div>
+            <div class="flow-text">フォトスペースで記念撮影<div class="flow-sub">（悪魔の顔はめパネル & ラプンツェルの船）</div></div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item">
+            <div class="flow-num">5</div>
+            <div class="flow-text">恋の掲示板に記入</div>
+          </div>
+          <div class="flow-arrow">↓</div>
+          <div class="flow-item">
+            <div class="flow-num">6</div>
+            <div class="flow-text">恋みくじを引く</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-deco">✦ Made You Happy 製作委員会 ✦</div>
+  </div>
+
+  <!-- ========== 店内状況タブ ========== -->
+  <div id="page-status" class="page-container">
+    <div class="status-header">
+      <span class="status-header-icon">🎯</span>
+      <span class="status-header-text">店内状況</span>
+    </div>
+
+    <div class="status-container">
+      <!-- 対応状況セクション -->
+      <div class="status-section">
+        <div class="status-section-title">📞 現在受け付けています</div>
+        <div class="status-toggle-card">
+          <div class="toggle-status-display" id="toggle-status-display">
+            <span class="status-icon">🟢</span>
+            <span class="status-text">営業中</span>
+          </div>
+          <button class="status-toggle-btn" id="status-toggle-btn" onclick="toggleStoreStatus()">
+            <span id="toggle-btn-text">オフにする</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- スタッフ在籍情報 -->
+      <div class="status-section">
+        <div class="status-section-title">👥 現在の対応スタッフ</div>
+        <div class="staff-status-grid" id="staff-status-grid">
+          <!-- JSで動的に生成 -->
+        </div>
+      </div>
+
+      <!-- 時刻表示 -->
+      <div class="status-section">
+        <div class="status-section-title">⏰ 営業時間</div>
+        <div class="operating-hours">
+          <div class="hours-card">
+            <div class="hours-icon">🕐</div>
+            <div class="hours-info">
+              <div class="hours-label">営業中の時間帯</div>
+              <div class="hours-time" id="current-time">9:00 - 16:00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="footer-deco">✦ Made You Happy 製作委員会 ✦</div>
+  </div>
+
+  <!-- モーダル -->
+  <div class="modal-overlay" id="modal-overlay" onclick="closeModal()">
+    <div class="modal-card" id="modal-card" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-inner" id="modal-inner"></div>
+    </div>
+  </div>
+
+  <!-- 下部タブバー -->
+  <nav class="bottom-tab-bar">
+    <button class="bottom-tab active" id="btab-list" onclick="switchTab('list')">
+      <span class="bottom-tab-icon">📋</span>
+      <span class="bottom-tab-label">シフト一覧</span>
+    </button>
+    <button class="bottom-tab" id="btab-aisho" onclick="switchTab('aisho')">
+      <span class="bottom-tab-icon">💫</span>
+      <span class="bottom-tab-label">相性診断</span>
+    </button>
+    <button class="bottom-tab" id="btab-ranking" onclick="switchTab('ranking')">
+      <span class="bottom-tab-icon">👑</span>
+      <span class="bottom-tab-label">ランキング</span>
+    </button>
+    <button class="bottom-tab" id="btab-store" onclick="switchTab('store')">
+      <span class="bottom-tab-icon">🏠</span>
+      <span class="bottom-tab-label">店について</span>
+    </button>
+    <button class="bottom-tab" id="btab-status" onclick="switchTab('status')">
+      <span class="bottom-tab-icon">🎯</span>
+      <span class="bottom-tab-label">店内状況</span>
+    </button>
+  </nav>
+
+  <script src="data.js"></script>
+  <script src="aisho.js"></script>
+  <!-- Firebase SDK (compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>

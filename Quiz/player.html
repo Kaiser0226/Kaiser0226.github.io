@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>クイズ回答端末</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/player.css">
+
+  <!-- Firebase App & Realtime Database SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body class="player-body" id="playerBody">
+
+  <!-- チーム登録画面 (初回のみ表示) -->
+  <div id="registerView" class="player-content" style="display: none;">
+    <div class="register-card">
+      <h2>🎉 クイズ大会へようこそ！</h2>
+      <p>あなたのチーム名（またはグループ名）を入力してください。</p>
+      <input type="text" id="teamNameInput" class="register-input" placeholder="例: チームA" maxlength="20">
+      <button type="button" class="btn btn-primary" id="btnRegisterTeam" style="width: 100%; padding: 14px;">
+        参加登録して待機する
+      </button>
+    </div>
+  </div>
+
+  <!-- メインゲーム画面 (登録後) -->
+  <div id="gameView" style="display: none; flex-direction: column; min-height: 100vh;">
+    
+    <!-- すべての画面共通: 上部ヘッダー -->
+    <header class="player-header">
+      <div class="header-team-info">
+        <span>🚩</span>
+        <span class="header-team-name" id="displayTeamName">チーム名</span>
+      </div>
+      <div class="header-q-badge" id="displayQBadge">第1問</div>
+
+      <div class="header-stats-row">
+        <div>現在の得点: <span class="header-score" id="displayScore">0</span> 点</div>
+        <div>現在の順位: <span class="header-rank" id="displayRank">- 位</span></div>
+      </div>
+    </header>
+
+    <main class="player-content">
+      
+      <!-- シーン1: 待機画面 -->
+      <section class="scene-waiting" id="sceneWaiting" style="display: none;">
+        <div class="waiting-icon">⏳</div>
+        <div class="waiting-message">運営者の指示に従ってください</div>
+        <div class="waiting-sub">クイズの開始・次の問題を待っています...</div>
+      </section>
+
+      <!-- シーン2: 回答画面 -->
+      <section class="scene-question" id="sceneQuestion" style="display: none;">
+        
+        <!-- 1. 問題画像 (あれば表示) -->
+        <div class="q-image-container" id="playerImageContainer" style="display: none;">
+          <img id="playerQuestionImage" src="" alt="問題画像">
+        </div>
+
+        <!-- 2. 問題文 -->
+        <div class="q-text-card" id="playerQuestionText">
+          問題文を読み込んでいます...
+        </div>
+
+        <!-- 3. 選択肢 1〜6 -->
+        <div class="options-list" id="playerOptionsList">
+          <!-- JSで動的にボタン生成 -->
+        </div>
+
+        <!-- 4. ロックボタン -->
+        <div class="lock-button-wrapper">
+          <button type="button" class="btn-lock" id="btnLock" disabled>
+            🔒 ロックする
+          </button>
+        </div>
+
+      </section>
+
+      <!-- シーン3: 回答後 (正解確認・解説・順位) -->
+      <section class="scene-result" id="sceneResult" style="display: none;">
+        
+        <!-- 正解/不正解バナー -->
+        <div class="verdict-banner" id="verdictBanner">
+          <div class="verdict-title" id="verdictTitle">判定中...</div>
+          <div class="verdict-points" id="verdictPoints">+0 点</div>
+        </div>
+
+        <!-- 正解率・回答速度情報 -->
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-box-val" id="statCorrectRate">0%</div>
+            <div class="stat-box-lbl">全体の正解率</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-box-val" id="statAnswerTime">0.0秒</div>
+            <div class="stat-box-lbl">あなたの回答時間</div>
+          </div>
+        </div>
+
+        <!-- 解答解説 -->
+        <div class="explanation-card" id="playerExplanationCard">
+          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 4px;">💡 解答解説</div>
+          <p id="playerExplanationText">解説テキスト</p>
+        </div>
+
+        <!-- 現在の順位一覧 (自身の順位フォーカス) -->
+        <div class="ranking-section" id="playerRankingSection">
+          <div class="ranking-title">
+            <span>🏆 現在のランキング</span>
+            <span id="rankNotice" style="font-size: 0.8rem; color: #94a3b8;"></span>
+          </div>
+          <div class="ranking-scroll-container" id="rankingScrollBox">
+            <table class="ranking-table" id="rankingTable">
+              <thead>
+                <tr>
+                  <th>順位</th>
+                  <th>チーム名</th>
+                  <th style="text-align: right;">得点</th>
+                </tr>
+              </thead>
+              <tbody id="rankingTableBody">
+                <!-- JSで動的生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- シーン4: 最終結果発表 -->
+      <section class="scene-final" id="sceneFinal" style="display: none;">
+        <div class="final-hero">
+          <div style="font-size: 1.1rem; opacity: 0.9;">最終結果</div>
+          <div class="final-rank-display" id="finalMyRank">第 - 位</div>
+          <div class="final-score-display" id="finalMyScore">獲得得点: 0 点</div>
+        </div>
+
+        <div class="ranking-section">
+          <div class="ranking-title">
+            <span>🎖️ 全チームの順位一覧</span>
+          </div>
+          <div class="ranking-scroll-container" id="finalScrollBox">
+            <table class="ranking-table">
+              <thead>
+                <tr>
+                  <th>順位</th>
+                  <th>チーム名</th>
+                  <th style="text-align: right;">得点</th>
+                </tr>
+              </thead>
+              <tbody id="finalTableBody">
+                <!-- JSで動的生成 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- スクリプト群 -->
+  <script src="js/firebase-config.js"></script>
+  <script src="js/questions-data.js"></script>
+  <script src="js/score-engine.js"></script>
+  <script src="js/quiz-store.js"></script>
+  <script src="js/player.js"></script>
+</body>
+</html>

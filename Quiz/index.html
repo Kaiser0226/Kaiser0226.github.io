@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>クイズ大会 一括管理システム</title>
+  <link rel="stylesheet" href="css/common.css">
+  <style>
+    .portal-container {
+      max-width: 960px;
+      margin: 60px auto;
+      padding: 20px;
+      text-align: center;
+    }
+    .portal-title {
+      font-size: 2.8rem;
+      font-weight: 900;
+      margin-bottom: 12px;
+      background: linear-gradient(135deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .portal-desc {
+      color: var(--text-muted);
+      font-size: 1.15rem;
+      margin-bottom: 48px;
+    }
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .portal-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+      box-shadow: var(--shadow-lg);
+      transition: all 0.3s ease;
+    }
+    .portal-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--primary);
+      box-shadow: 0 12px 24px rgba(59, 130, 246, 0.25);
+    }
+    .portal-icon {
+      font-size: 3.5rem;
+      margin-bottom: 18px;
+    }
+    .portal-card-title {
+      font-size: 1.4rem;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+    .portal-card-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 24px;
+      flex: 1;
+    }
+    .portal-badge {
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      background: #334155;
+      color: #38bdf8;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+  <div class="portal-container">
+    <h1 class="portal-title">🎯 60〜100チーム規模 クイズ大会</h1>
+    <p class="portal-desc">
+      プレゼンテーション画面、スマートフォン回答端末、管理者コントロールパネルがリアルタイムに連動します。
+    </p>
+
+    <div class="portal-grid">
+      
+      <!-- 参加者端末 -->
+      <a href="player.html" class="portal-card">
+        <div class="portal-icon">📱</div>
+        <div class="portal-card-title">参加者・チーム回答端末</div>
+        <div class="portal-card-desc">
+          スマートフォンからチーム名を登録して回答。ロックボタンで背景色が変わり、順位・解説をリアルタイム確認。
+        </div>
+        <span class="btn btn-primary" style="width: 100%;">回答画面を開く</span>
+      </a>
+
+      <!-- プレゼンテーション表示 -->
+      <a href="presentation.html" target="_blank" class="portal-card">
+        <div class="portal-icon">📺</div>
+        <div class="portal-card-title">プレゼンテーション表示</div>
+        <div class="portal-card-desc">
+          プロジェクター・大画面用。問題画像、制限時間バー、2列配置の選択肢、回答率に応じた水位上昇＆警告演出。
+        </div>
+        <span class="btn btn-secondary" style="width: 100%;">大画面を開く</span>
+      </a>
+
+      <!-- 管理者コントロール -->
+      <a href="admin.html" target="_blank" class="portal-card">
+        <div class="portal-icon">👑</div>
+        <div class="portal-card-title">管理者コントロールパネル</div>
+        <div class="portal-card-desc">
+          シーン進行、人数の設定(100組)、得点リセット、タイマー手動切替、問題GUI/JSON編集、ボーナス得点設定。
+        </div>
+        <span class="btn btn-secondary" style="width: 100%;">管理パネルを開く</span>
+      </a>
+
+    </div>
+
+    <div style="margin-top: 50px; padding: 20px; background: #1e293b; border-radius: 12px; border: 1px solid #475569; text-align: left;">
+      <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: #38bdf8;">💡 クイズ大会の準備・Firebase接続について</h3>
+      <p style="font-size: 0.9rem; color: #94a3b8; line-height: 1.6;">
+        ・FirebaseのAPIキーは <a href="admin.html" style="color: #60a5fa;">admin.html</a> の「⚙️ Firebase設定」からいつでも貼り付けて保存できます。<br>
+        ・Firebaseが未設定の状態でも、同一PCの複数タブ間で完全なリアルタイム同期テストが可能です（ダミー60チーム生成＆自動回答シミュレーション機能付き）。<br>
+        ・問題や画像の配置は <code>Quiz/images/</code> および <code>Quiz/js/questions-data.js</code> を参照してください。
+      </p>
+    </div>
+  </div>
+</body>
+</html>
