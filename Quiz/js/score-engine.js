@@ -10,13 +10,13 @@
  */
 
 const DEFAULT_SCORE_CONFIG = {
-  basePoint: 10,        // 基本正解点
-  top1Bonus: 10,        // 最速1位ボーナス
-  top2Bonus: 7,         // 最速2位ボーナス
-  top3Bonus: 5,         // 最速3位ボーナス
-  topHalfBonus: 5,      // 正解者上位50%ボーナス
-  bottomHalfBonus: 2,   // 正解者下位50%ボーナス
-  soloBonus: 30         // 単独正解特別ボーナス
+  basePoint: 80,        // 基本正解点
+  top1Bonus: 150,       // 最速1位ボーナス
+  top2Bonus: 100,       // 最速2位ボーナス
+  top3Bonus: 50,        // 最速3位ボーナス
+  topHalfBonus: 70,     // 正解者上位50%ボーナス
+  bottomHalfBonus: 20,  // 正解者下位50%ボーナス
+  soloBonus: 100        // 単独正解特別ボーナス
 };
 
 class ScoreEngine {

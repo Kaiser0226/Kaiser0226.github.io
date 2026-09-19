@@ -220,6 +220,8 @@ function setupEventListeners() {
       alert("JSONの構文エラー: " + e.message);
     }
   });
+  btnApplyJson.addEventListener('click', handleApplyJson);
+  btnExportJson.addEventListener('click', handleExportJson);
   // 出題順モーダル
   btnOpenOrderModal.addEventListener('click', openOrderModal);
   btnCloseOrderModal.addEventListener('click', () => orderModal.classList.remove('active'));
@@ -436,13 +438,13 @@ function applyStateToUI() {
   // 設定値の反映
   if (currentState.scoreConfig) {
     const sc = currentState.scoreConfig;
-    cfgBasePoint.value = sc.basePoint ?? 10;
-    cfgTop1.value = sc.top1Bonus ?? 10;
-    cfgTop2.value = sc.top2Bonus ?? 7;
-    cfgTop3.value = sc.top3Bonus ?? 5;
-    cfgTopHalf.value = sc.topHalfBonus ?? 5;
-    cfgBottomHalf.value = sc.bottomHalfBonus ?? 2;
-    cfgSoloBonus.value = sc.soloBonus ?? 30;
+    cfgBasePoint.value = sc.basePoint ?? DEFAULT_SCORE_CONFIG.basePoint;
+    cfgTop1.value = sc.top1Bonus ?? DEFAULT_SCORE_CONFIG.top1Bonus;
+    cfgTop2.value = sc.top2Bonus ?? DEFAULT_SCORE_CONFIG.top2Bonus;
+    cfgTop3.value = sc.top3Bonus ?? DEFAULT_SCORE_CONFIG.top3Bonus;
+    cfgTopHalf.value = sc.topHalfBonus ?? DEFAULT_SCORE_CONFIG.topHalfBonus;
+    cfgBottomHalf.value = sc.bottomHalfBonus ?? DEFAULT_SCORE_CONFIG.bottomHalfBonus;
+    cfgSoloBonus.value = sc.soloBonus ?? DEFAULT_SCORE_CONFIG.soloBonus;
   }
   if (currentState.rankDisplayLimit !== undefined) {
     cfgRankLimit.value = currentState.rankDisplayLimit;
@@ -674,17 +676,21 @@ async function deleteCurrentQuestion() {
 // --- 大会設定の保存 ---
 
 async function handleSaveConfig() {
+  const numberOrDefault = (input, defaultValue) => {
+    const value = Number(input.value);
+    return Number.isFinite(value) ? value : defaultValue;
+  };
   const updates = {
-    targetTeamCount: Number(cfgTargetTeams.value) || 100,
-    rankDisplayLimit: Number(cfgRankLimit.value) || 999,
+    targetTeamCount: numberOrDefault(cfgTargetTeams, 100),
+    rankDisplayLimit: numberOrDefault(cfgRankLimit, 999),
     scoreConfig: {
-      basePoint: Number(cfgBasePoint.value) || 10,
-      top1Bonus: Number(cfgTop1.value) || 10,
-      top2Bonus: Number(cfgTop2.value) || 7,
-      top3Bonus: Number(cfgTop3.value) || 5,
-      topHalfBonus: Number(cfgTopHalf.value) || 5,
-      bottomHalfBonus: Number(cfgBottomHalf.value) || 2,
-      soloBonus: Number(cfgSoloBonus.value) || 30
+      basePoint: numberOrDefault(cfgBasePoint, DEFAULT_SCORE_CONFIG.basePoint),
+      top1Bonus: numberOrDefault(cfgTop1, DEFAULT_SCORE_CONFIG.top1Bonus),
+      top2Bonus: numberOrDefault(cfgTop2, DEFAULT_SCORE_CONFIG.top2Bonus),
+      top3Bonus: numberOrDefault(cfgTop3, DEFAULT_SCORE_CONFIG.top3Bonus),
+      topHalfBonus: numberOrDefault(cfgTopHalf, DEFAULT_SCORE_CONFIG.topHalfBonus),
+      bottomHalfBonus: numberOrDefault(cfgBottomHalf, DEFAULT_SCORE_CONFIG.bottomHalfBonus),
+      soloBonus: numberOrDefault(cfgSoloBonus, DEFAULT_SCORE_CONFIG.soloBonus)
     }
   };
 

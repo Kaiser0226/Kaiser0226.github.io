@@ -83,15 +83,7 @@ class QuizStore {
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
       resetToken: 0, // 全体初期化トークン
-      scoreConfig: {
-        basePoint: 80,
-        top1Bonus: 150,
-        top2Bonus: 100,
-        top3Bonus: 50,
-        topHalfBonus: 70,
-        bottomHalfBonus: 20,
-        soloBonus: 100
-      },
+      scoreConfig: { ...DEFAULT_SCORE_CONFIG },
       updatedAt: Date.now()
     };
   }
