@@ -271,7 +271,7 @@ function updateMainAdvanceButton() {
 
     case 'result':
       if (qNum < totalQ) {
-        btnMainAdvance.textContent = `▶ 次の問題へ (第 ${qNum + 1} 問 待機)`;
+        btnMainAdvance.textContent = `▶ 次の問題へ (第 ${qNum + 1} 問)`;
         btnMainAdvance.style.background = 'linear-gradient(135deg, #10b981, #059669)';
         btnMainAdvance.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
       } else {
@@ -324,13 +324,13 @@ async function handleMainAdvance() {
 
     case 'result':
       if (qNum < totalQ) {
-        // 次の問題へ
+        // 次の問題へ (waiting画面をスキップ)
         selectedQIndex = (state.currentQuestionIndex || 0) + 1;
         selectCurrentQuestion.value = selectedQIndex;
         loadQuestionToEditor(selectedQIndex);
         await quizStore.updateState({
           currentQuestionIndex: selectedQIndex,
-          currentScene: 'waiting'
+          currentScene: 'question'
         });
       } else {
         // 最終結果発表
