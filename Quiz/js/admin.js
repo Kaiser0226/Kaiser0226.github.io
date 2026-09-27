@@ -33,6 +33,14 @@ const statConnectedTeams = document.getElementById('statConnectedTeams');
 const statAnsweredTeams = document.getElementById('statAnsweredTeams');
 const statUnansweredTeams = document.getElementById('statUnansweredTeams');
 const teamMonitorBody = document.getElementById('teamMonitorBody');
+const selectMonitorSort = document.getElementById('selectMonitorSort');
+const thSortId = document.getElementById('thSortId');
+const thSortTime = document.getElementById('thSortTime');
+const thSortScore = document.getElementById('thSortScore');
+
+let monitorSortKey = 'id'; // 'id', 'time', 'score'
+let monitorSortDir = 'asc'; // 'asc', 'desc'
+
 
 // シミュレーション
 const simTeamCount = document.getElementById('simTeamCount');
@@ -136,6 +144,26 @@ function setupEventListeners() {
   btnSimulateAnswers.addEventListener('click', handleSimulateAnswers);
   if (btnClearAnswersOnly) {
     btnClearAnswersOnly.addEventListener('click', handleClearAnswersOnly);
+  }
+
+  // モニターソート制御
+  if (selectMonitorSort) {
+    selectMonitorSort.addEventListener('change', e => {
+      const [key, dir] = e.target.value.split('-');
+      monitorSortKey = key;
+      monitorSortDir = dir;
+      updateMonitor();
+    });
+  }
+
+  if (thSortId) {
+    thSortId.addEventListener('click', () => toggleHeaderSort('id'));
+  }
+  if (thSortTime) {
+    thSortTime.addEventListener('click', () => toggleHeaderSort('time'));
+  }
+  if (thSortScore) {
+    thSortScore.addEventListener('click', () => toggleHeaderSort('score'));
   }
 
   // Firebaseモーダル
@@ -390,27 +418,94 @@ function populateQuestionDropdown() {
 
 // --- リアルタイムモニター ---
 
+function toggleHeaderSort(key) {
+  if (monitorSortKey === key) {
+    monitorSortDir = monitorSortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    monitorSortKey = key;
+    monitorSortDir = key === 'score' ? 'desc' : 'asc';
+  }
+  if (selectMonitorSort) {
+    selectMonitorSort.value = `${monitorSortKey}-${monitorSortDir}`;
+  }
+  updateMonitor();
+}
+
 function updateMonitor() {
   const teamsList = Object.values(allTeams);
   const totalTeams = teamsList.length;
   const answeredTotal = Object.keys(currentAnswers).length;
 
-  statConnectedTeams.textContent = totalTeams;
-  statAnsweredTeams.textContent = answeredTotal;
-  statUnansweredTeams.textContent = Math.max(0, totalTeams - answeredTotal);
+  if (statConnectedTeams) statConnectedTeams.textContent = totalTeams;
+  if (statAnsweredTeams) statAnsweredTeams.textContent = answeredTotal;
+  if (statUnansweredTeams) statUnansweredTeams.textContent = Math.max(0, totalTeams - answeredTotal);
 
+  // ヘッダーのソートインジケーター更新
+  [thSortId, thSortTime, thSortScore].forEach(th => {
+    if (!th) return;
+    th.classList.remove('sort-asc', 'sort-desc');
+    if (th.getAttribute('data-sort') === monitorSortKey) {
+      th.classList.add(monitorSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+  });
+
+  // 現在の問題の正解インデックス
+  const currentQ = currentQuestions[selectedQIndex];
+  const correctAnswerIdx = currentQ ? Number(currentQ.answer) : null;
+
+  // ソート処理
+  teamsList.sort((a, b) => {
+    const ansA = currentAnswers[a.teamId];
+    const ansB = currentAnswers[b.teamId];
+
+    if (monitorSortKey === 'id') {
+      const res = (a.teamId || '').localeCompare(b.teamId || '', undefined, { numeric: true, sensitivity: 'base' });
+      return monitorSortDir === 'asc' ? res : -res;
+    } else if (monitorSortKey === 'time') {
+      const timeA = (ansA && ansA.answerTimeMs !== undefined) ? ansA.answerTimeMs : null;
+      const timeB = (ansB && ansB.answerTimeMs !== undefined) ? ansB.answerTimeMs : null;
+      if (timeA === null && timeB === null) return 0;
+      if (timeA === null) return 1;
+      if (timeB === null) return -1;
+      const diff = timeA - timeB;
+      return monitorSortDir === 'asc' ? diff : -diff;
+    } else if (monitorSortKey === 'score') {
+      const diff = (a.totalScore || 0) - (b.totalScore || 0);
+      return monitorSortDir === 'asc' ? diff : -diff;
+    }
+    return 0;
+  });
+
+  if (!teamMonitorBody) return;
   teamMonitorBody.innerHTML = '';
+
   teamsList.forEach(t => {
     const ans = currentAnswers[t.teamId];
     const isAnswered = Boolean(ans);
-    const optNum = isAnswered ? Number(ans.selectedOption) + 1 : "-";
+    const selectedOpt = isAnswered ? Number(ans.selectedOption) : null;
+    const isCorrect = isAnswered && (correctAnswerIdx !== null) && (selectedOpt === correctAnswerIdx);
     const timeSec = isAnswered && ans.answerTimeMs ? (ans.answerTimeMs / 1000).toFixed(2) + "s" : "-";
 
+    let rowClass = "row-unanswered";
+    let badgeHtml = `<span class="badge-ans unanswered">-</span>`;
+
+    if (isAnswered) {
+      if (isCorrect) {
+        rowClass = "row-correct";
+        badgeHtml = `<span class="badge-ans correct">⭕ ${selectedOpt + 1}</span>`;
+      } else {
+        rowClass = "row-incorrect";
+        badgeHtml = `<span class="badge-ans incorrect">❌ ${selectedOpt + 1}</span>`;
+      }
+    }
+
     const tr = document.createElement('tr');
+    tr.className = rowClass;
     tr.innerHTML = `
+      <td style="font-size: 0.78rem; color: #64748b; font-family: monospace;">${escapeHtml(t.teamId)}</td>
       <td style="font-weight: 700; color: #0f172a;">${escapeHtml(t.teamName)}</td>
-      <td style="color: ${isAnswered ? '#16a34a' : '#64748b'}; font-weight: 800;">${optNum}</td>
-      <td style="color: #64748b; font-weight: 600;">${timeSec}</td>
+      <td style="text-align: center;">${badgeHtml}</td>
+      <td style="color: #475569; font-weight: 700;">${timeSec}</td>
       <td style="text-align: right; font-weight: 800; color: #2563eb;">${t.totalScore || 0}</td>
     `;
     teamMonitorBody.appendChild(tr);

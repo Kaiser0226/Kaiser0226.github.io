@@ -320,8 +320,96 @@
   z-index: 2;
 }
 
-.live-team-table tr:hover td {
+.live-team-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.live-team-table th.sortable:hover {
+  background-color: #e2e8f0;
+  color: #0f172a;
+}
+
+.live-team-table th.sort-asc::after {
+  content: " ▲";
+  font-size: 0.75rem;
+  color: var(--primary);
+}
+
+.live-team-table th.sort-desc::after {
+  content: " ▼";
+  font-size: 0.75rem;
+  color: var(--primary);
+}
+
+/* 正答・誤答・未回答の背景色分け (メリハリ・ソリッド) */
+.live-team-table tr.row-correct {
+  background-color: #f0fdf4 !important;
+  border-left: 4px solid #16a34a;
+}
+
+.live-team-table tr.row-correct:hover td {
+  background-color: #dcfce7 !important;
+}
+
+.live-team-table tr.row-incorrect {
+  background-color: #fef2f2 !important;
+  border-left: 4px solid #dc2626;
+}
+
+.live-team-table tr.row-incorrect:hover td {
+  background-color: #fee2e2 !important;
+}
+
+.live-team-table tr.row-unanswered {
+  background-color: #ffffff;
+  border-left: 4px solid #cbd5e1;
+}
+
+.live-team-table tr.row-unanswered:hover td {
   background-color: #f8fafc;
+}
+
+.badge-ans {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: var(--radius-sm);
+  font-weight: 800;
+  font-size: 0.8rem;
+}
+
+.badge-ans.correct {
+  background-color: #16a34a;
+  color: #ffffff;
+}
+
+.badge-ans.incorrect {
+  background-color: #dc2626;
+  color: #ffffff;
+}
+
+.badge-ans.unanswered {
+  color: #94a3b8;
+  font-weight: 700;
+}
+
+/* モニター操作ツールバー */
+.monitor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.8rem;
+}
+
+.monitor-legend {
+  display: flex;
+  gap: 8px;
+  font-weight: 700;
+  color: #64748b;
 }
 
 /* 画面下部シミュレーション制御ボックス */

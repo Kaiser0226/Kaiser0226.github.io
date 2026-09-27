@@ -151,15 +151,36 @@
           </div>
         </div>
 
+        <!-- ソートコントロール＆凡例 -->
+        <div class="monitor-toolbar">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <label for="selectMonitorSort" style="font-weight: 700; color: #475569;">ソート:</label>
+            <select id="selectMonitorSort" class="form-input" style="padding: 4px 8px; font-size: 0.8rem; width: auto; font-weight: 700;">
+              <option value="id-asc">チームID 昇順</option>
+              <option value="id-desc">チームID 降順</option>
+              <option value="time-asc">回答時間 早い順</option>
+              <option value="time-desc">回答時間 遅い順</option>
+              <option value="score-desc">累計得点 高い順</option>
+              <option value="score-asc">累計得点 低い順</option>
+            </select>
+          </div>
+          <div class="monitor-legend">
+            <span style="color: #16a34a;">🟢 正答</span>
+            <span style="color: #dc2626;">🔴 誤答</span>
+            <span style="color: #64748b;">⚪ 未回答</span>
+          </div>
+        </div>
+
         <!-- 参加チーム一覧テーブル -->
-        <div style="max-height: 480px; overflow-y: auto;">
+        <div style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
           <table class="live-team-table">
             <thead>
               <tr>
+                <th class="sortable" id="thSortId" data-sort="id" title="クリックしてチームIDでソート">ID</th>
                 <th>チーム名</th>
-                <th>回答</th>
-                <th>時間</th>
-                <th>累計得点</th>
+                <th style="text-align: center;">回答</th>
+                <th class="sortable" id="thSortTime" data-sort="time" title="クリックして回答時間でソート">時間</th>
+                <th class="sortable" id="thSortScore" data-sort="score" title="クリックして累計得点でソート" style="text-align: right;">累計得点</th>
               </tr>
             </thead>
             <tbody id="teamMonitorBody">
