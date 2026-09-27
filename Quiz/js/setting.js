@@ -1,0 +1,585 @@
+/**
+ * 問題データ管理 & 大会設定ロジック (setting.js)
+ */
+
+let rawQuestions = DEFAULT_QUESTIONS;
+let currentQuestionOrder = typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5];
+let currentQuestions = DEFAULT_QUESTIONS;
+let teamMasterList = typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : [];
+let currentState = null;
+let selectedQIndex = 0;
+
+// 問題選択・ナビゲーション
+const selectCurrentQuestion = document.getElementById('selectCurrentQuestion');
+const btnPrevQuestion = document.getElementById('btnPrevQuestion');
+const btnNextQuestion = document.getElementById('btnNextQuestion');
+
+// 問題編集フォーム
+const questionEditForm = document.getElementById('questionEditForm');
+const editQuestionText = document.getElementById('editQuestionText');
+const editQuestionImage = document.getElementById('editQuestionImage');
+const editHasTimeLimit = document.getElementById('editHasTimeLimit');
+const editTimeLimitSeconds = document.getElementById('editTimeLimitSeconds');
+const editCorrectAnswer = document.getElementById('editCorrectAnswer');
+const editExplanation = document.getElementById('editExplanation');
+const optionsEditorContainer = document.getElementById('optionsEditorContainer');
+const btnAddOption = document.getElementById('btnAddOption');
+const btnRemoveOption = document.getElementById('btnRemoveOption');
+const btnAddNewQuestion = document.getElementById('btnAddNewQuestion');
+const btnDeleteCurrentQuestion = document.getElementById('btnDeleteCurrentQuestion');
+
+// 設定フォーム
+const cfgTargetTeams = document.getElementById('cfgTargetTeams');
+const cfgRankLimit = document.getElementById('cfgRankLimit');
+const cfgBasePoint = document.getElementById('cfgBasePoint');
+const cfgTop1 = document.getElementById('cfgTop1');
+const cfgTop2 = document.getElementById('cfgTop2');
+const cfgTop3 = document.getElementById('cfgTop3');
+const cfgTopHalf = document.getElementById('cfgTopHalf');
+const cfgBottomHalf = document.getElementById('cfgBottomHalf');
+const cfgSoloBonus = document.getElementById('cfgSoloBonus');
+const btnSaveConfig = document.getElementById('btnSaveConfig');
+
+// モーダル関連
+const btnOpenFirebaseModal = document.getElementById('btnOpenFirebaseModal');
+const btnCloseFirebaseModal = document.getElementById('btnCloseFirebaseModal');
+const firebaseModal = document.getElementById('firebaseModal');
+const firebaseConfigInput = document.getElementById('firebaseConfigInput');
+const btnSaveFirebaseConfig = document.getElementById('btnSaveFirebaseConfig');
+const btnResetFirebaseConfig = document.getElementById('btnResetFirebaseConfig');
+
+const btnOpenJsonModal = document.getElementById('btnOpenJsonModal');
+const btnCloseJsonModal = document.getElementById('btnCloseJsonModal');
+const jsonModal = document.getElementById('jsonModal');
+const jsonEditorArea = document.getElementById('jsonEditorArea');
+const btnFormatJson = document.getElementById('btnFormatJson');
+const btnApplyJson = document.getElementById('btnApplyJson');
+const btnExportJson = document.getElementById('btnExportJson');
+const btnImportJsonFile = document.getElementById('btnImportJsonFile');
+const jsonFileInput = document.getElementById('jsonFileInput');
+const jsonFileName = document.getElementById('jsonFileName');
+
+// 出題順モーダル要素
+const btnOpenOrderModal = document.getElementById('btnOpenOrderModal');
+const btnCloseOrderModal = document.getElementById('btnCloseOrderModal');
+const orderModal = document.getElementById('orderModal');
+const orderListContainer = document.getElementById('orderListContainer');
+const btnSaveOrder = document.getElementById('btnSaveOrder');
+const btnCancelOrder = document.getElementById('btnCancelOrder');
+
+// チーム名定義モーダル要素
+const btnOpenTeamListModal = document.getElementById('btnOpenTeamListModal');
+const btnCloseTeamListModal = document.getElementById('btnCloseTeamListModal');
+const teamListModal = document.getElementById('teamListModal');
+const teamListTextArea = document.getElementById('teamListTextArea');
+const btnGenerate60TeamsText = document.getElementById('btnGenerate60TeamsText');
+const btnSaveTeamList = document.getElementById('btnSaveTeamList');
+
+// 初期化
+document.addEventListener('DOMContentLoaded', () => {
+  // 問題購読
+  quizStore.subscribeQuestions(questions => {
+    rawQuestions = questions || DEFAULT_QUESTIONS;
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    populateQuestionDropdown();
+    loadQuestionToEditor(selectedQIndex);
+  });
+
+  // 出題順購読
+  quizStore.subscribeQuestionOrder(order => {
+    currentQuestionOrder = order || [];
+    currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    populateQuestionDropdown();
+    loadQuestionToEditor(selectedQIndex);
+  });
+
+  // チーム名リスト購読
+  quizStore.subscribeTeamList(list => {
+    teamMasterList = list || [];
+  });
+
+  // 状態購読（設定値の初期ロード）
+  quizStore.subscribeState(state => {
+    currentState = state;
+    if (state) {
+      if (state.targetTeamCount) cfgTargetTeams.value = state.targetTeamCount;
+      if (state.rankDisplayLimit) cfgRankLimit.value = state.rankDisplayLimit;
+      if (state.scoreConfig) {
+        cfgBasePoint.value = state.scoreConfig.basePoint ?? 10;
+        cfgTop1.value = state.scoreConfig.top1SpeedBonus ?? 10;
+        cfgTop2.value = state.scoreConfig.top2SpeedBonus ?? 7;
+        cfgTop3.value = state.scoreConfig.top3SpeedBonus ?? 5;
+        cfgTopHalf.value = state.scoreConfig.topHalfBonus ?? 5;
+        cfgBottomHalf.value = state.scoreConfig.bottomHalfBonus ?? 2;
+        cfgSoloBonus.value = state.scoreConfig.soloBonus ?? 30;
+      }
+    }
+  });
+
+  setupEventListeners();
+});
+
+function setupEventListeners() {
+  // 問題移動
+  selectCurrentQuestion.addEventListener('change', e => {
+    selectedQIndex = Number(e.target.value);
+    loadQuestionToEditor(selectedQIndex);
+  });
+
+  btnPrevQuestion.addEventListener('click', () => {
+    if (selectedQIndex > 0) {
+      selectedQIndex--;
+      selectCurrentQuestion.value = selectedQIndex;
+      loadQuestionToEditor(selectedQIndex);
+    }
+  });
+
+  btnNextQuestion.addEventListener('click', () => {
+    if (selectedQIndex < currentQuestions.length - 1) {
+      selectedQIndex++;
+      selectCurrentQuestion.value = selectedQIndex;
+      loadQuestionToEditor(selectedQIndex);
+    }
+  });
+
+  // 問題編集
+  btnAddOption.addEventListener('click', addOptionField);
+  btnRemoveOption.addEventListener('click', removeOptionField);
+  btnAddNewQuestion.addEventListener('click', addNewQuestion);
+  btnDeleteCurrentQuestion.addEventListener('click', deleteCurrentQuestion);
+  questionEditForm.addEventListener('submit', handleSaveQuestionEdit);
+
+  // 設定保存
+  btnSaveConfig.addEventListener('click', handleSaveConfig);
+
+  // Firebaseモーダル
+  btnOpenFirebaseModal.addEventListener('click', () => {
+    firebaseConfigInput.value = JSON.stringify(FirebaseManager.getConfig(), null, 2);
+    openModal(firebaseModal);
+  });
+  btnCloseFirebaseModal.addEventListener('click', () => closeModal(firebaseModal));
+  btnSaveFirebaseConfig.addEventListener('click', handleSaveFirebaseConfig);
+  btnResetFirebaseConfig.addEventListener('click', () => {
+    if (confirm("Firebase設定をリセットしますか？")) {
+      FirebaseManager.resetConfig();
+      location.reload();
+    }
+  });
+
+  // JSONモーダル
+  btnOpenJsonModal.addEventListener('click', () => {
+    jsonEditorArea.value = JSON.stringify(rawQuestions, null, 2);
+    openModal(jsonModal);
+  });
+  btnCloseJsonModal.addEventListener('click', () => closeModal(jsonModal));
+  btnFormatJson.addEventListener('click', () => {
+    try {
+      const parsed = JSON.parse(jsonEditorArea.value);
+      jsonEditorArea.value = JSON.stringify(parsed, null, 2);
+    } catch (e) {
+      alert("JSON構文エラーです: " + e.message);
+    }
+  });
+  btnApplyJson.addEventListener('click', handleApplyJson);
+  btnExportJson.addEventListener('click', handleExportJson);
+  btnImportJsonFile.addEventListener('click', () => jsonFileInput.click());
+  jsonFileInput.addEventListener('change', handleImportJsonFile);
+
+  // 出題順モーダル
+  btnOpenOrderModal.addEventListener('click', () => {
+    renderOrderListEditor();
+    openModal(orderModal);
+  });
+  btnCloseOrderModal.addEventListener('click', () => closeModal(orderModal));
+  btnCancelOrder.addEventListener('click', () => closeModal(orderModal));
+  btnSaveOrder.addEventListener('click', handleSaveOrder);
+
+  // チーム定義モーダル
+  btnOpenTeamListModal.addEventListener('click', () => {
+    teamListTextArea.value = teamMasterList.join('\n');
+    openModal(teamListModal);
+  });
+  btnCloseTeamListModal.addEventListener('click', () => closeModal(teamListModal));
+  btnGenerate60TeamsText.addEventListener('click', () => {
+    const list = [];
+    for (let i = 1; i <= 60; i++) {
+      list.push(`チーム ${i}`);
+    }
+    teamListTextArea.value = list.join('\n');
+  });
+  btnSaveTeamList.addEventListener('click', handleSaveTeamList);
+
+  // モーダル外側クリックで閉じる
+  [firebaseModal, jsonModal, orderModal, teamListModal].forEach(m => {
+    m.addEventListener('click', e => {
+      if (e.target === m) closeModal(m);
+    });
+  });
+}
+
+// --- 問題編集 (GUI) ---
+
+function populateQuestionDropdown() {
+  selectCurrentQuestion.innerHTML = '';
+  currentQuestions.forEach((q, idx) => {
+    const opt = document.createElement('option');
+    opt.value = idx;
+    opt.textContent = `Q${idx + 1}: ${q.question.substring(0, 24)}...`;
+    selectCurrentQuestion.appendChild(opt);
+  });
+  if (selectedQIndex >= currentQuestions.length) {
+    selectedQIndex = Math.max(0, currentQuestions.length - 1);
+  }
+  selectCurrentQuestion.value = selectedQIndex;
+}
+
+function loadQuestionToEditor(index) {
+  const q = currentQuestions[index];
+  if (!q) return;
+
+  editQuestionText.value = q.question || '';
+  editQuestionImage.value = q.image || '';
+  editHasTimeLimit.checked = q.hasTimeLimit !== false;
+  editTimeLimitSeconds.value = q.timeLimitSeconds || 15;
+  editExplanation.value = q.explanation || '';
+
+  renderOptionInputs(q.options || []);
+  editCorrectAnswer.value = q.answer !== undefined ? q.answer : 0;
+}
+
+function renderOptionInputs(options) {
+  optionsEditorContainer.innerHTML = '';
+  options.forEach((opt, idx) => {
+    const row = document.createElement('div');
+    row.className = 'option-editor-item';
+    row.setAttribute('data-idx', idx);
+
+    row.innerHTML = `
+      <span style="font-weight: 800; width: 24px; color: #0f172a;">${idx + 1}</span>
+      <input type="text" class="form-input opt-text-input" value="${escapeHtml(opt.text)}" placeholder="選択肢テキスト" style="flex: 2;">
+      <input type="text" class="form-input opt-img-input" value="${escapeHtml(opt.image || '')}" placeholder="画像パス(任意)" style="flex: 1;">
+    `;
+    optionsEditorContainer.appendChild(row);
+  });
+
+  // 正解セレクトの選択肢更新
+  editCorrectAnswer.innerHTML = '';
+  const colors = ["赤", "青", "黄", "緑", "水色", "紫"];
+  options.forEach((_, idx) => {
+    const o = document.createElement('option');
+    o.value = idx;
+    o.textContent = `選択肢 ${idx + 1} (${colors[idx] || ''})`;
+    editCorrectAnswer.appendChild(o);
+  });
+}
+
+function addOptionField() {
+  const currentCount = optionsEditorContainer.querySelectorAll('.option-editor-item').length;
+  if (currentCount >= 6) {
+    alert("選択肢は最大6個までです。");
+    return;
+  }
+  const q = currentQuestions[selectedQIndex];
+  if (q) {
+    if (!q.options) q.options = [];
+    q.options.push({ text: `選択肢 ${currentCount + 1}`, image: "" });
+    renderOptionInputs(q.options);
+  }
+}
+
+function removeOptionField() {
+  const currentCount = optionsEditorContainer.querySelectorAll('.option-editor-item').length;
+  if (currentCount <= 2) {
+    alert("選択肢は最低2個必要です。");
+    return;
+  }
+  const q = currentQuestions[selectedQIndex];
+  if (q && q.options) {
+    q.options.pop();
+    renderOptionInputs(q.options);
+  }
+}
+
+async function handleSaveQuestionEdit(e) {
+  e.preventDefault();
+  const q = currentQuestions[selectedQIndex];
+  if (!q) return;
+
+  const newOptions = [];
+  const rows = optionsEditorContainer.querySelectorAll('.option-editor-item');
+  rows.forEach(r => {
+    const textInput = r.querySelector('.opt-text-input');
+    const imgInput = r.querySelector('.opt-img-input');
+    newOptions.push({
+      text: textInput.value.trim(),
+      image: imgInput.value.trim()
+    });
+  });
+
+  if (newOptions.length < 2) {
+    alert("選択肢は最低2個必要です。");
+    return;
+  }
+
+  q.question = editQuestionText.value.trim();
+  q.image = editQuestionImage.value.trim();
+  q.hasTimeLimit = editHasTimeLimit.checked;
+  q.timeLimitSeconds = parseInt(editTimeLimitSeconds.value, 10) || 15;
+  q.answer = parseInt(editCorrectAnswer.value, 10);
+  q.options = newOptions;
+  q.explanation = editExplanation.value.trim();
+
+  // rawQuestions を更新
+  const targetRawIndex = rawQuestions.findIndex(rq => rq.id === q.id);
+  if (targetRawIndex !== -1) {
+    rawQuestions[targetRawIndex] = { ...q };
+  } else {
+    rawQuestions.push({ ...q });
+  }
+
+  await quizStore.saveQuestions(rawQuestions);
+  alert("問題データを保存・同期しました！");
+}
+
+async function addNewQuestion() {
+  const maxId = rawQuestions.reduce((max, q) => Math.max(max, q.id || 0), 0);
+  const newQ = {
+    id: maxId + 1,
+    question: `新しい問題 ${maxId + 1}`,
+    image: "",
+    hasTimeLimit: true,
+    timeLimitSeconds: 15,
+    options: [
+      { text: "選択肢 1", image: "" },
+      { text: "選択肢 2", image: "" },
+      { text: "選択肢 3", image: "" },
+      { text: "選択肢 4", image: "" }
+    ],
+    answer: 0,
+    explanation: ""
+  };
+
+  rawQuestions.push(newQ);
+  if (currentQuestionOrder.length > 0) {
+    currentQuestionOrder.push(newQ.id);
+    await quizStore.saveQuestionOrder(currentQuestionOrder);
+  }
+  await quizStore.saveQuestions(rawQuestions);
+
+  selectedQIndex = currentQuestions.length; // 新しい問題
+  populateQuestionDropdown();
+  loadQuestionToEditor(selectedQIndex);
+  alert(`新規問題 (ID: ${newQ.id}) を追加しました。`);
+}
+
+async function deleteCurrentQuestion() {
+  if (currentQuestions.length <= 1) {
+    alert("問題が1問しかないため削除できません。");
+    return;
+  }
+  const q = currentQuestions[selectedQIndex];
+  if (!q) return;
+
+  if (confirm(`問題「${q.question}」を本当に削除しますか？`)) {
+    rawQuestions = rawQuestions.filter(rq => rq.id !== q.id);
+    currentQuestionOrder = currentQuestionOrder.filter(id => id !== q.id);
+    await quizStore.saveQuestionOrder(currentQuestionOrder);
+    await quizStore.saveQuestions(rawQuestions);
+
+    selectedQIndex = Math.max(0, selectedQIndex - 1);
+    populateQuestionDropdown();
+    loadQuestionToEditor(selectedQIndex);
+    alert("問題を削除しました。");
+  }
+}
+
+// --- 大会設定保存 ---
+
+async function handleSaveConfig() {
+  const updates = {
+    targetTeamCount: parseInt(cfgTargetTeams.value, 10) || 100,
+    rankDisplayLimit: parseInt(cfgRankLimit.value, 10) || 999,
+    scoreConfig: {
+      basePoint: parseInt(cfgBasePoint.value, 10) || 10,
+      top1SpeedBonus: parseInt(cfgTop1.value, 10) || 10,
+      top2SpeedBonus: parseInt(cfgTop2.value, 10) || 7,
+      top3SpeedBonus: parseInt(cfgTop3.value, 10) || 5,
+      topHalfBonus: parseInt(cfgTopHalf.value, 10) || 5,
+      bottomHalfBonus: parseInt(cfgBottomHalf.value, 10) || 2,
+      soloBonus: parseInt(cfgSoloBonus.value, 10) || 30
+    }
+  };
+
+  await quizStore.updateState(updates);
+  alert("大会設定（人数・ボーナス）を保存・反映しました！");
+}
+
+// --- 出題順 (Question Order) エディタ ---
+
+let tempOrder = [];
+
+function renderOrderListEditor() {
+  tempOrder = [...currentQuestionOrder];
+  if (tempOrder.length === 0) {
+    tempOrder = rawQuestions.map(q => q.id);
+  }
+
+  orderListContainer.innerHTML = '';
+  tempOrder.forEach((qid, idx) => {
+    const q = rawQuestions.find(rq => rq.id === qid);
+    const qText = q ? q.question : `(ID: ${qid} - 削除済み)`;
+
+    const item = document.createElement('div');
+    item.style.cssText = `
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0;
+      border-radius: 8px; margin-bottom: 8px;
+    `;
+
+    item.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+        <span style="font-weight: 800; color: #2563eb; width: 30px;">#${idx + 1}</span>
+        <span style="font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+          ${escapeHtml(qText)}
+        </span>
+      </div>
+      <div style="display: flex; gap: 6px; flex-shrink: 0;">
+        <button type="button" class="btn btn-secondary btn-order-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↑ 上へ</button>
+        <button type="button" class="btn btn-secondary btn-order-down" data-idx="${idx}" ${idx === tempOrder.length - 1 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↓ 下へ</button>
+      </div>
+    `;
+    orderListContainer.appendChild(item);
+  });
+
+  orderListContainer.querySelectorAll('.btn-order-up').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = Number(b.getAttribute('data-idx'));
+      if (idx > 0) {
+        const swap = tempOrder[idx];
+        tempOrder[idx] = tempOrder[idx - 1];
+        tempOrder[idx - 1] = swap;
+        refreshOrderEditor();
+      }
+    });
+  });
+
+  orderListContainer.querySelectorAll('.btn-order-down').forEach(b => {
+    b.addEventListener('click', () => {
+      const idx = Number(b.getAttribute('data-idx'));
+      if (idx < tempOrder.length - 1) {
+        const swap = tempOrder[idx];
+        tempOrder[idx] = tempOrder[idx + 1];
+        tempOrder[idx + 1] = swap;
+        refreshOrderEditor();
+      }
+    });
+  });
+}
+
+function refreshOrderEditor() {
+  currentQuestionOrder = [...tempOrder];
+  renderOrderListEditor();
+}
+
+async function handleSaveOrder() {
+  await quizStore.saveQuestionOrder(tempOrder);
+  closeModal(orderModal);
+  alert("出題順を保存・反映しました！");
+}
+
+// --- チーム一覧保存 ---
+
+async function handleSaveTeamList() {
+  const lines = teamListTextArea.value.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0);
+
+  if (lines.length === 0) {
+    alert("チーム名を1つ以上入力してください。");
+    return;
+  }
+
+  await quizStore.saveTeamList(lines);
+  closeModal(teamListModal);
+  alert(`${lines.length} チームの一覧を保存しました！`);
+}
+
+// --- Firebase & JSON 設定モーダル ---
+
+function handleSaveFirebaseConfig() {
+  let raw = firebaseConfigInput.value.trim();
+  try {
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) raw = match[0];
+
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      parsed = (new Function(`return (${raw});`))();
+    }
+
+    if (!parsed || typeof parsed !== 'object') {
+      throw new Error("オブジェクト形式ではありません。");
+    }
+
+    FirebaseManager.saveConfig(parsed);
+    alert("Firebase設定を保存しました。再接続のためページをリロードします。");
+    location.reload();
+  } catch (e) {
+    alert("設定の読み取りに失敗しました: " + e.message);
+  }
+}
+
+async function handleApplyJson() {
+  try {
+    const parsed = JSON.parse(jsonEditorArea.value);
+    if (!Array.isArray(parsed) || parsed.length === 0) {
+      alert("問題の配列JSONを指定してください。");
+      return;
+    }
+    rawQuestions = parsed;
+    await quizStore.saveQuestions(rawQuestions);
+    closeModal(jsonModal);
+    alert("問題JSONを保存・同期しました！");
+  } catch (e) {
+    alert("JSONのパースに失敗しました: " + e.message);
+  }
+}
+
+function handleExportJson() {
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rawQuestions, null, 2));
+  const downloadAnchor = document.createElement('a');
+  downloadAnchor.setAttribute("href", dataStr);
+  downloadAnchor.setAttribute("download", "quiz_questions.json");
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  downloadAnchor.remove();
+}
+
+function handleImportJsonFile(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  jsonFileName.textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    jsonEditorArea.value = ev.target.result;
+  };
+  reader.readAsText(file);
+}
+
+// モーダル共通制御
+function openModal(el) {
+  if (el) el.classList.add('active');
+}
+
+function closeModal(el) {
+  if (el) el.classList.remove('active');
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  })[m]);
+}

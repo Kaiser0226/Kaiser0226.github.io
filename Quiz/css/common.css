@@ -1,54 +1,61 @@
 /* =========================================================
-   クイズ大会Webアプリ 共通CSS
+   クイズ大会Webアプリ 共通CSS (白基調・メリハリ・ソリッドデザイン)
    ========================================================= */
 
 :root {
   /* 選択肢カラー指定 (1: 赤, 2: 青, 3: 黄色, 4: 緑, 5: 水色, 6: 紫) */
-  --opt-1: #e53e3e;
+  --opt-1: #dc2626;
   --opt-1-dark: #b91c1c;
-  --opt-1-bg: rgba(229, 62, 62, 0.15);
+  --opt-1-bg: #fef2f2;
+  --opt-1-border: #f87171;
 
   --opt-2: #2563eb;
   --opt-2-dark: #1d4ed8;
-  --opt-2-bg: rgba(37, 99, 235, 0.15);
+  --opt-2-bg: #eff6ff;
+  --opt-2-border: #60a5fa;
 
   --opt-3: #d97706;
   --opt-3-dark: #b45309;
-  --opt-3-bg: rgba(217, 119, 6, 0.15);
+  --opt-3-bg: #fffbeb;
+  --opt-3-border: #fbbf24;
 
   --opt-4: #16a34a;
   --opt-4-dark: #15803d;
-  --opt-4-bg: rgba(22, 163, 74, 0.15);
+  --opt-4-bg: #f0fdf4;
+  --opt-4-border: #4ade80;
 
   --opt-5: #0284c7;
   --opt-5-dark: #0369a1;
-  --opt-5-bg: rgba(2, 132, 199, 0.15);
+  --opt-5-bg: #f0f9ff;
+  --opt-5-border: #38bdf8;
 
-  --opt-6: #9333ea;
-  --opt-6-dark: #7e22ce;
-  --opt-6-bg: rgba(147, 51, 234, 0.15);
+  --opt-6: #7c3aed;
+  --opt-6-dark: #6d28d9;
+  --opt-6-bg: #faf5ff;
+  --opt-6-border: #a78bfa;
 
-  /* システムテーマカラー */
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-card: #334155;
-  --text-main: #f8fafc;
-  --text-muted: #94a3b8;
-  --border-color: #475569;
-  --primary: #3b82f6;
+  /* システムテーマカラー (白基調・ソリッド) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+  --border-color: #e2e8f0;
+  --border-strong: #cbd5e1;
+  --primary: #2563eb;
   --primary-hover: #1d4ed8;
-  --accent: #f59e0b;
-  --success: #10b981;
-  --danger: #ef4444;
+  --accent: #d97706;
+  --success: #16a34a;
+  --danger: #dc2626;
 
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.35);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.45);
-  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.55);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.04);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.04);
 
   --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-full: 9999px;
 }
 
@@ -68,7 +75,7 @@ body {
   overflow-x: hidden;
 }
 
-/* 汎用ボタンスタイル */
+/* 汎用ボタンスタイル (グラデーションなし・ソリッド) */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -76,11 +83,11 @@ body {
   gap: 8px;
   padding: 10px 20px;
   font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
   border-radius: var(--radius-md);
-  border: none;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
   text-decoration: none;
 }
 
@@ -89,29 +96,82 @@ body {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary-hover);
+  box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background-color: var(--primary-hover);
 }
 
 .btn-success {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
+  background-color: var(--success);
+  color: #ffffff;
+  border-color: #15803d;
+  box-shadow: 0 2px 4px rgba(22, 163, 74, 0.2);
 }
+.btn-success:hover {
+  background-color: #15803d;
+}
+
 .btn-danger {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  color: white;
+  background-color: var(--danger);
+  color: #ffffff;
+  border-color: #b91c1c;
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.2);
 }
+.btn-danger:hover {
+  background-color: #b91c1c;
+}
+
 .btn-secondary {
-  background: var(--bg-card);
-  color: var(--text-main);
-  border: 1px solid var(--border-color);
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-sm);
 }
 .btn-secondary:hover {
-  background: #475569;
+  background-color: #f1f5f9;
+  border-color: #94a3b8;
+  color: #0f172a;
+}
+
+/* フォーム共通スタイル */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.form-input,
+.form-textarea,
+.q-select-dropdown,
+.register-input {
+  width: 100%;
+  padding: 10px 14px;
+  background-color: #ffffff;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  color: #0f172a;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.q-select-dropdown:focus,
+.register-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
 /* モーダル */
@@ -121,15 +181,15 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(3px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.25s ease;
+  transition: opacity 0.2s ease;
 }
 
 .modal-overlay.active {
@@ -138,8 +198,8 @@ body {
 }
 
 .modal-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1px solid var(--border-strong);
   border-radius: var(--radius-lg);
   padding: 24px;
   max-width: 600px;
@@ -147,18 +207,22 @@ body {
   max-height: 85vh;
   overflow-y: auto;
   box-shadow: var(--shadow-xl);
+  color: var(--text-main);
 }
 
 .modal-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .modal-header h2 {
-  font-size: 1.3rem;
-  font-weight: 700;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .modal-close {
@@ -167,4 +231,10 @@ body {
   color: var(--text-muted);
   font-size: 1.5rem;
   cursor: pointer;
+  line-height: 1;
+  padding: 4px;
+}
+
+.modal-close:hover {
+  color: #0f172a;
 }

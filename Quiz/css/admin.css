@@ -1,16 +1,18 @@
 /* =========================================================
    管理者用コントロールパネル専用スタイル (admin.css)
+   白基調・グラデーションなし・メリハリのあるソリッドデザイン
    ========================================================= */
 
 .admin-layout {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  background-color: var(--bg-primary);
 }
 
 .admin-nav {
-  background: var(--bg-secondary);
-  border-bottom: 1px solid var(--border-color);
+  background: #ffffff;
+  border-bottom: 1.5px solid var(--border-color);
   padding: 12px 24px;
   display: flex;
   justify-content: space-between;
@@ -18,6 +20,7 @@
   position: sticky;
   top: 0;
   z-index: 100;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .admin-logo {
@@ -26,7 +29,11 @@
   gap: 10px;
   font-size: 1.25rem;
   font-weight: 800;
-  color: #38bdf8;
+  color: #0f172a;
+}
+
+.admin-logo span.logo-highlight {
+  color: var(--primary);
 }
 
 .admin-nav-actions {
@@ -45,6 +52,11 @@
   gap: 24px;
 }
 
+/* 画面下部全体のフルワイドエリア */
+.admin-full-bottom {
+  grid-column: 1 / -1;
+}
+
 @media (max-width: 1024px) {
   .admin-main {
     grid-template-columns: 1fr;
@@ -53,29 +65,63 @@
 
 /* カードコンポーネント */
 .admin-card {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color);
+  background: #ffffff;
+  border: 1.5px solid var(--border-strong);
   border-radius: var(--radius-lg);
-  padding: 20px;
+  padding: 22px;
   margin-bottom: 24px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-sm);
 }
 
 .admin-card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 18px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .admin-card-title {
   font-size: 1.15rem;
-  font-weight: 700;
+  font-weight: 800;
+  color: #0f172a;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+/* メイン進行ワンボタンボックス (ソリッド・メリハリ) */
+.main-advance-card {
+  background-color: #f0fdf4;
+  border: 2px solid #86efac;
+  border-radius: var(--radius-md);
+  padding: 20px;
+  margin-bottom: 22px;
+  text-align: center;
+}
+
+.main-advance-label {
+  font-size: 0.85rem;
+  font-weight: 800;
+  color: #166534;
+  margin-bottom: 10px;
+  letter-spacing: 0.5px;
+}
+
+.btn-main-advance {
+  flex: 1;
+  padding: 16px 24px;
+  font-size: 1.3rem;
+  font-weight: 900;
+  border-radius: var(--radius-md);
+  background-color: #16a34a;
+  color: #ffffff;
+  border: 1px solid #15803d;
+  box-shadow: 0 4px 6px -1px rgba(22, 163, 74, 0.3);
+}
+.btn-main-advance:hover {
+  background-color: #15803d;
 }
 
 /* クイズ進行コントロールパネル */
@@ -83,11 +129,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #0f172a;
+  background: #f1f5f9;
+  border: 1px solid var(--border-color);
   padding: 14px 20px;
   border-radius: var(--radius-md);
-  margin-bottom: 16px;
-  border-left: 5px solid #3b82f6;
+  margin-bottom: 18px;
+  border-left: 5px solid var(--primary);
+  font-weight: 600;
+  color: #334155;
 }
 
 .status-badge-live {
@@ -98,20 +147,20 @@
 }
 
 .status-badge-live.running {
-  background: #10b981;
-  color: white;
+  background-color: #16a34a;
+  color: #ffffff;
 }
 
 .status-badge-live.stopped {
-  background: #ef4444;
-  color: white;
+  background-color: #dc2626;
+  color: #ffffff;
 }
 
 .scene-flow-control {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .scene-btn {
@@ -121,40 +170,38 @@
   font-size: 0.95rem;
   font-weight: 700;
   border-radius: var(--radius-md);
-  border: 1px solid var(--border-color);
-  background: var(--bg-card);
-  color: var(--text-main);
+  border: 1.5px solid var(--border-strong);
+  background-color: #ffffff;
+  color: #334155;
   cursor: pointer;
   text-align: center;
-  transition: all 0.2s;
+  transition: all 0.15s ease;
+}
+
+.scene-btn:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+  color: #0f172a;
 }
 
 .scene-btn.active {
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  border-color: #60a5fa;
-  box-shadow: 0 0 12px rgba(59, 130, 246, 0.5);
-  color: white;
+  background-color: var(--primary);
+  border-color: var(--primary-hover);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
 /* タイマー切替エリア */
 .timer-control-box {
-  background: #0f172a;
-  padding: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 14px 18px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 12px;
-}
-
-.timer-toggle-btn {
-  padding: 8px 16px;
-  border-radius: var(--radius-md);
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: none;
+  margin-top: 14px;
 }
 
 /* 問題選択・ナビゲーション */
@@ -163,7 +210,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  background: #0f172a;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
   padding: 12px 16px;
   border-radius: var(--radius-md);
   margin-bottom: 16px;
@@ -171,53 +219,27 @@
 
 .q-select-dropdown {
   flex: 1;
-  padding: 10px;
-  border-radius: var(--radius-sm);
-  background: var(--bg-card);
-  color: white;
-  border: 1px solid var(--border-color);
-  font-size: 1rem;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 /* 設定フォーム系 */
-.form-group {
-  margin-bottom: 14px;
-}
-
-.form-label {
-  display: block;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-  margin-bottom: 6px;
-}
-
-.form-input, .form-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border-color);
-  background: #0f172a;
-  color: white;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.form-input:focus, .form-textarea:focus {
-  border-color: var(--primary);
-}
-
 .form-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
 }
 
 .form-row-3 {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 12px;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .form-row-2,
+  .form-row-3 {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* 選択肢エディタ */
@@ -226,10 +248,11 @@
   align-items: center;
   gap: 10px;
   margin-bottom: 10px;
-  background: #0f172a;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
   padding: 8px 12px;
   border-radius: var(--radius-sm);
-  border-left: 4px solid #94a3b8;
+  border-left: 5px solid #94a3b8;
 }
 
 .option-editor-item[data-idx="0"] { border-left-color: var(--opt-1); }
@@ -243,32 +266,34 @@
 .monitor-card {
   max-height: calc(100vh - 120px);
   position: sticky;
-  top: 90px;
+  top: 80px;
   overflow-y: auto;
 }
 
 .answer-live-stats {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
+  gap: 10px;
   text-align: center;
   margin-bottom: 16px;
 }
 
 .mini-stat {
-  background: #0f172a;
-  padding: 10px;
+  background: #f8fafc;
+  border: 1px solid var(--border-color);
+  padding: 12px 8px;
   border-radius: var(--radius-sm);
 }
 
 .mini-stat-num {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  color: #38bdf8;
+  color: var(--primary);
 }
 
 .mini-stat-label {
   font-size: 0.75rem;
+  font-weight: 700;
   color: var(--text-muted);
 }
 
@@ -279,27 +304,59 @@
   font-size: 0.85rem;
 }
 
-.live-team-table th, .live-team-table td {
-  padding: 8px;
+.live-team-table th,
+.live-team-table td {
+  padding: 10px 8px;
   text-align: left;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .live-team-table th {
-  background: #0f172a;
-  color: var(--text-muted);
+  background: #f1f5f9;
+  color: #475569;
+  font-weight: 800;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.live-team-table tr:hover td {
+  background-color: #f8fafc;
+}
+
+/* 画面下部シミュレーション制御ボックス */
+.simulation-panel {
+  background-color: #ffffff;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.simulation-controls-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-top: 12px;
 }
 
 /* JSONエディタエリア */
 .json-area {
   width: 100%;
   height: 280px;
-  font-family: monospace;
-  font-size: 0.85rem;
-  background: #090d16;
-  color: #38bdf8;
-  border: 1px solid var(--border-color);
+  font-family: Consolas, Monaco, "Courier New", monospace;
+  font-size: 0.9rem;
+  background: #f8fafc;
+  color: #0f172a;
+  border: 1.5px solid var(--border-strong);
   border-radius: var(--radius-sm);
   padding: 12px;
   resize: vertical;
+}
+
+.json-area:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }

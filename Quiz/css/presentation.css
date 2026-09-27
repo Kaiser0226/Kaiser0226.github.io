@@ -1,18 +1,20 @@
 /* =========================================================
    プレゼンテーション画面専用スタイル (presentation.css)
+   白基調・メリハリ・見切れ防止レスポンシブ・アニメーション順位発表
    ========================================================= */
 
 body.presentation-body {
-  background-color: #0b1120;
-  color: #f8fafc;
+  background-color: #ffffff;
+  color: #0f172a;
   overflow: hidden;
   height: 100vh;
   width: 100vw;
   position: relative;
   user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
 }
 
-/* 水位アニメーションの背景コンテナ */
+/* 水位アニメーションの背景コンテナ (白基調に合わせた淡いクリアブルー) */
 .water-bg-container {
   position: absolute;
   bottom: 0;
@@ -25,38 +27,38 @@ body.presentation-body {
   overflow: hidden;
 }
 
-/* 水のテクスチャと波 */
+/* 水のテクスチャと波 (ソリッド・クリア) */
 .water-fill {
   position: absolute;
   bottom: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(180deg, rgba(6, 182, 212, 0.45) 0%, rgba(37, 99, 235, 0.7) 100%);
-  box-shadow: inset 0 10px 30px rgba(255, 255, 255, 0.2);
+  background-color: rgba(2, 132, 199, 0.12);
+  border-top: 2px solid #0284c7;
 }
 
 .water-wave {
   position: absolute;
-  top: -24px;
+  top: -20px;
   left: 0;
   width: 200%;
-  height: 48px;
+  height: 40px;
   background-repeat: repeat-x;
-  background-size: 50% 48px;
-  animation: waveMotion 4s linear infinite;
-  opacity: 0.85;
+  background-size: 50% 40px;
+  animation: waveMotion 5s linear infinite;
+  opacity: 0.6;
 }
 
 .water-wave.wave-front {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,90 350,-40 500,45 C650,130 900,10 1200,40 L1200,120 L0,120 Z' fill='%2306b6d4' opacity='0.7'/%3E%3C/svg%3E");
-  animation-duration: 5s;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C150,90 350,-40 500,45 C650,130 900,10 1200,40 L1200,120 L0,120 Z' fill='%230284c7' opacity='0.4'/%3E%3C/svg%3E");
+  animation-duration: 6s;
 }
 
 .water-wave.wave-back {
-  top: -30px;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C200,70 400,-30 600,50 C800,120 1000,10 1200,50 L1200,120 L0,120 Z' fill='%232563eb' opacity='0.4'/%3E%3C/svg%3E");
-  animation-duration: 8s;
+  top: -24px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M0,0 C200,70 400,-30 600,50 C800,120 1000,10 1200,50 L1200,120 L0,120 Z' fill='%2338bdf8' opacity='0.3'/%3E%3C/svg%3E");
+  animation-duration: 9s;
   animation-direction: reverse;
 }
 
@@ -68,24 +70,24 @@ body.presentation-body {
 /* 回答状況インジケーター（右下表示） */
 .answer-count-badge {
   position: absolute;
-  bottom: 24px;
-  right: 32px;
+  bottom: 20px;
+  right: 28px;
   z-index: 10;
-  background: rgba(15, 23, 42, 0.75);
-  border: 2px solid rgba(6, 182, 212, 0.6);
-  backdrop-filter: blur(8px);
-  padding: 10px 24px;
+  background: #ffffff;
+  border: 2px solid #0284c7;
+  padding: 8px 20px;
   border-radius: var(--radius-full);
   display: flex;
   align-items: center;
-  gap: 12px;
-  box-shadow: var(--shadow-lg);
-  font-size: 1.3rem;
-  font-weight: 700;
+  gap: 10px;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.15);
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
 }
 
 .answer-count-badge .bubble-icon {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   animation: floatBubble 2s ease-in-out infinite;
 }
 
@@ -94,16 +96,18 @@ body.presentation-body {
   50% { transform: translateY(-4px); }
 }
 
-/* プレゼン全体のコンテナ */
+/* プレゼン全体のコンテナ (必ず100vhに収まるようパディング・flexbox最適化) */
 .pres-container {
   position: relative;
   z-index: 5;
   height: 100vh;
+  max-height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding: 32px 50px;
+  padding: clamp(12px, 2vh, 24px) clamp(20px, 3vw, 48px);
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* 上部ステータスバー (第何問、総合状況) */
@@ -111,117 +115,125 @@ body.presentation-body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
+  height: 48px;
 }
 
 .pres-q-badge {
-  background: linear-gradient(135deg, #4f46e5, #3b82f6);
-  font-size: 1.6rem;
-  font-weight: 800;
-  padding: 8px 30px;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: clamp(1.2rem, 2vw, 1.5rem);
+  font-weight: 900;
+  padding: 6px 24px;
   border-radius: var(--radius-full);
-  letter-spacing: 2px;
-  box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+  letter-spacing: 1.5px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 }
 
 .pres-status-badge {
-  font-size: 1.3rem;
-  font-weight: 700;
-  padding: 6px 20px;
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  font-weight: 800;
+  padding: 6px 18px;
   border-radius: var(--radius-full);
-  background: rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(6px);
+  background: #f1f5f9;
+  border: 1.5px solid #cbd5e1;
+  color: #0f172a;
 }
 
-/* メイン出題エリア (中央揃え) */
+/* メイン出題エリア (中央揃え・見切れ防止) */
 .pres-main {
   flex: 1;
+  min-height: 0; /* flexアイテムの縮小を許可 */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  max-width: 1300px;
+  max-width: 1200px;
   margin: 0 auto;
   width: 100%;
+  gap: clamp(6px, 1.4vh, 14px);
+  overflow-y: auto; /* 万一の超長文でも見切れずスクロール可能 */
+  padding: 4px 8px;
 }
 
-/* 問題画像（中央揃え） */
+/* 問題画像（サイズを最適化して見切れ防止） */
 .pres-image-wrapper {
-  margin-bottom: 20px;
-  max-height: 28vh;
+  max-height: clamp(80px, 16vh, 150px);
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .pres-image-wrapper img {
-  max-height: 28vh;
-  max-width: 80vw;
+  max-height: clamp(80px, 16vh, 150px);
+  max-width: 70vw;
   object-fit: contain;
   border-radius: var(--radius-md);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-  border: 3px solid rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-md);
+  border: 2px solid #cbd5e1;
 }
 
-/* 問題文（中央揃え） */
+/* 問題文（文字サイズをvw/vhで自動スケーリング） */
 .pres-question-text {
-  font-size: 2.5rem;
-  font-weight: 800;
+  font-size: clamp(1.35rem, 2.6vw, 2.1rem);
+  font-weight: 900;
   text-align: center;
   line-height: 1.35;
-  margin-bottom: 24px;
-  text-shadow: 0 3px 10px rgba(0, 0, 0, 0.7);
+  color: #0f172a;
   max-width: 100%;
+  flex-shrink: 0;
 }
 
-/* 制限時間バー（中央揃え） */
+/* 制限時間バー（中央揃え・コンパクト化） */
 .pres-timer-container {
   width: 100%;
-  max-width: 860px;
-  margin-bottom: 30px;
+  max-width: 760px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .pres-timer-track {
   width: 100%;
-  height: 20px;
-  background: rgba(255, 255, 255, 0.15);
+  height: 14px;
+  background: #e2e8f0;
   border-radius: var(--radius-full);
   overflow: hidden;
-  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
   position: relative;
 }
 
 .pres-timer-fill {
   height: 100%;
   width: 100%;
-  background: linear-gradient(90deg, #10b981, #3b82f6);
+  background-color: #2563eb;
   border-radius: var(--radius-full);
-  transition: width 0.1s linear, background 0.3s ease;
+  transition: width 0.1s linear, background-color 0.2s ease;
 }
 
 .pres-timer-seconds {
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin-top: 8px;
-  color: #38bdf8;
-  letter-spacing: 1px;
+  font-size: 1.35rem;
+  font-weight: 900;
+  margin-top: 4px;
+  color: #2563eb;
+  letter-spacing: 0.5px;
 }
 
 /* 制限時間 警告アニメーション */
 .pres-timer-container.warning .pres-timer-fill {
-  background: linear-gradient(90deg, #f59e0b, #ef4444);
+  background-color: #dc2626;
 }
 
 .pres-timer-container.warning .pres-timer-seconds {
-  color: #ef4444;
+  color: #dc2626;
   animation: pulseWarning 0.5s infinite alternate;
 }
 
 @keyframes pulseWarning {
-  0% { transform: scale(1); filter: drop-shadow(0 0 4px #ef4444); }
-  100% { transform: scale(1.18); filter: drop-shadow(0 0 16px #ef4444); }
+  0% { transform: scale(1); }
+  100% { transform: scale(1.15); }
 }
 
 /* 画面全体の警告フラッシュパルス */
@@ -229,8 +241,8 @@ body.timer-warning-active::after {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
-  border: 12px solid rgba(239, 68, 68, 0.4);
-  box-shadow: inset 0 0 60px rgba(239, 68, 68, 0.4);
+  border: 10px solid rgba(220, 38, 38, 0.35);
+  box-shadow: inset 0 0 40px rgba(220, 38, 38, 0.2);
   pointer-events: none;
   z-index: 20;
   animation: warningVignette 0.8s infinite alternate;
@@ -241,31 +253,31 @@ body.timer-warning-active::after {
   100% { opacity: 1; }
 }
 
-/* 選択肢エリア: 2列配置 (◯◯ ◯◯ ◯◯) */
+/* 選択肢エリア: 2列配置 (◯◯ ◯◯ ◯◯) 見切れ防止設計 */
 .pres-options-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
+  gap: clamp(8px, 1.4vh, 14px);
   width: 100%;
-  max-width: 1100px;
+  max-width: 1040px;
+  flex-shrink: 1;
 }
 
 .pres-option-card {
   display: flex;
   align-items: center;
-  gap: 18px;
-  padding: 16px 24px;
-  border-radius: var(--radius-lg);
-  color: #ffffff;
-  font-size: 1.8rem;
-  font-weight: 700;
-  background: rgba(30, 41, 59, 0.85);
-  border: 3px solid transparent;
-  box-shadow: var(--shadow-lg);
-  backdrop-filter: blur(10px);
+  gap: clamp(10px, 1.5vw, 16px);
+  padding: clamp(8px, 1.3vh, 14px) clamp(12px, 1.8vw, 20px);
+  border-radius: var(--radius-md);
+  color: #0f172a;
+  font-size: clamp(1.1rem, 1.8vw, 1.45rem);
+  font-weight: 800;
+  background: #ffffff;
+  border: 3px solid #cbd5e1;
+  box-shadow: var(--shadow-sm);
   position: relative;
   overflow: hidden;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
 /* 選択肢番号バッジ */
@@ -273,41 +285,41 @@ body.timer-warning-active::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 50px;
-  height: 50px;
+  width: clamp(34px, 4.5vh, 44px);
+  height: clamp(34px, 4.5vh, 44px);
   border-radius: var(--radius-full);
-  font-size: 1.6rem;
+  font-size: clamp(1rem, 2vh, 1.3rem);
   font-weight: 900;
   flex-shrink: 0;
   color: #ffffff;
 }
 
-/* 各選択肢カラー定義 */
+/* 各選択肢カラー定義 (メリハリ・ソリッド) */
 .pres-option-card[data-index="0"] { border-color: var(--opt-1); }
-.pres-option-card[data-index="0"] .opt-num-badge { background: var(--opt-1); }
+.pres-option-card[data-index="0"] .opt-num-badge { background-color: var(--opt-1); }
 
 .pres-option-card[data-index="1"] { border-color: var(--opt-2); }
-.pres-option-card[data-index="1"] .opt-num-badge { background: var(--opt-2); }
+.pres-option-card[data-index="1"] .opt-num-badge { background-color: var(--opt-2); }
 
 .pres-option-card[data-index="2"] { border-color: var(--opt-3); }
-.pres-option-card[data-index="2"] .opt-num-badge { background: var(--opt-3); }
+.pres-option-card[data-index="2"] .opt-num-badge { background-color: var(--opt-3); }
 
 .pres-option-card[data-index="3"] { border-color: var(--opt-4); }
-.pres-option-card[data-index="3"] .opt-num-badge { background: var(--opt-4); }
+.pres-option-card[data-index="3"] .opt-num-badge { background-color: var(--opt-4); }
 
 .pres-option-card[data-index="4"] { border-color: var(--opt-5); }
-.pres-option-card[data-index="4"] .opt-num-badge { background: var(--opt-5); }
+.pres-option-card[data-index="4"] .opt-num-badge { background-color: var(--opt-5); }
 
 .pres-option-card[data-index="5"] { border-color: var(--opt-6); }
-.pres-option-card[data-index="5"] .opt-num-badge { background: var(--opt-6); }
+.pres-option-card[data-index="5"] .opt-num-badge { background-color: var(--opt-6); }
 
 /* 選択肢内画像 */
 .opt-thumb-image {
-  width: 70px;
-  height: 70px;
+  width: clamp(40px, 6vh, 60px);
+  height: clamp(40px, 6vh, 60px);
   object-fit: cover;
   border-radius: var(--radius-sm);
-  border: 2px solid rgba(255, 255, 255, 0.4);
+  border: 1.5px solid #cbd5e1;
   flex-shrink: 0;
 }
 
@@ -318,23 +330,48 @@ body.timer-warning-active::after {
 
 /* 正解発表時のハイライト演出 */
 .pres-option-card.is-correct {
-  transform: scale(1.04);
-  border-width: 5px;
-  box-shadow: 0 0 35px rgba(255, 255, 255, 0.8);
-  animation: correctBounce 0.6s ease;
+  transform: scale(1.03);
+  border-width: 4px;
+  background-color: #f0fdf4;
+  border-color: #16a34a !important;
+  box-shadow: 0 4px 18px rgba(22, 163, 74, 0.35);
+  animation: correctBounce 0.5s ease;
 }
 
 .pres-option-card.is-incorrect {
-  opacity: 0.25;
-  filter: grayscale(0.8);
+  opacity: 0.3;
+  filter: grayscale(0.9);
 }
 
 @keyframes correctBounce {
-  0%, 100% { transform: scale(1.04); }
-  50% { transform: scale(1.1); }
+  0%, 100% { transform: scale(1.03); }
+  50% { transform: scale(1.07); }
 }
 
-/* 待機・結果・最終発表画面などのオーバーレイ */
+/* 正解発表時の解説ボックス (見切れ防止・ソリッドブルー) */
+.pres-explanation-box {
+  background: #eff6ff;
+  border: 2px solid #2563eb;
+  border-radius: var(--radius-md);
+  padding: clamp(8px, 1.4vh, 16px) clamp(16px, 2vw, 28px);
+  max-width: 1040px;
+  width: 100%;
+  font-size: clamp(1rem, 1.6vw, 1.25rem);
+  line-height: 1.45;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  flex-shrink: 0;
+  margin-top: 4px;
+}
+
+.pres-explanation-title {
+  color: #2563eb;
+  font-weight: 900;
+  margin-bottom: 4px;
+  font-size: clamp(0.95rem, 1.5vw, 1.15rem);
+}
+
+/* 特殊全画面表示 (待機中 / 最終結果発表) */
 .pres-special-view {
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -342,30 +379,134 @@ body.timer-warning-active::after {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
+  padding: 30px;
   z-index: 15;
-  background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+  background-color: #ffffff;
 }
 
 .pres-special-title {
-  font-size: 3.5rem;
+  font-size: clamp(2.2rem, 4.5vw, 3.5rem);
   font-weight: 900;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
   text-align: center;
-  background: linear-gradient(135deg, #38bdf8, #818cf8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  color: #0f172a;
 }
 
-.pres-explanation-box {
-  background: rgba(30, 41, 59, 0.9);
-  border: 2px solid #38bdf8;
-  border-radius: var(--radius-lg);
-  padding: 24px 36px;
-  max-width: 900px;
-  margin-top: 24px;
+/* 最終結果: 5位〜1位順位発表アニメーションコンテナ */
+.ranking-reveal-container {
+  width: 100%;
+  max-width: 920px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ranking-control-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.ranking-cards-stack {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 個別順位カード */
+.rank-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 28px;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  border: 2px solid #e2e8f0;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+  transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.rank-card.revealed {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.rank-badge-text {
   font-size: 1.6rem;
-  line-height: 1.6;
-  text-align: center;
-  box-shadow: var(--shadow-xl);
+  font-weight: 900;
+  width: 140px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rank-team-text {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #0f172a;
+  flex: 1;
+  text-align: left;
+  padding: 0 16px;
+}
+
+.rank-score-text {
+  font-size: 1.7rem;
+  font-weight: 900;
+  color: #2563eb;
+}
+
+/* 1位・2位・3位の特別スタイル (ソリッド・メリハリ) */
+.rank-card.rank-1 {
+  background: #fffbeb;
+  border: 3.5px solid #d97706;
+  box-shadow: 0 8px 24px rgba(217, 119, 6, 0.25);
+  transform: scale(1.05);
+}
+.rank-card.rank-1 .rank-badge-text { color: #d97706; font-size: 1.9rem; }
+.rank-card.rank-1 .rank-team-text { font-size: 1.75rem; color: #78350f; }
+.rank-card.rank-1 .rank-score-text { font-size: 2.1rem; color: #d97706; }
+
+.rank-card.rank-2 {
+  background: #f8fafc;
+  border: 2.5px solid #64748b;
+  box-shadow: 0 4px 16px rgba(100, 116, 139, 0.2);
+}
+.rank-card.rank-2 .rank-badge-text { color: #475569; font-size: 1.7rem; }
+
+.rank-card.rank-3 {
+  background: #fff7ed;
+  border: 2px solid #ea580c;
+  box-shadow: 0 4px 14px rgba(234, 88, 12, 0.15);
+}
+.rank-card.rank-3 .rank-badge-text { color: #c2410c; }
+
+/* 全体ランキング表 (切り替え時) */
+.full-ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  font-size: 1.15rem;
+}
+
+.full-ranking-table th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 800;
+  padding: 12px 16px;
+  text-align: left;
+}
+
+.full-ranking-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e2e8f0;
 }

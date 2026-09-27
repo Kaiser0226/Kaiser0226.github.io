@@ -25,7 +25,7 @@
   <div class="answer-count-badge" id="answerBadge">
     <span class="bubble-icon">💧</span>
     <span id="answeredCount">0</span> / <span id="targetCount">100</span> 組
-    <span style="font-size: 0.95rem; color: #38bdf8; margin-left: 6px;">(<span id="answeredPercent">0</span>%)</span>
+    <span style="font-size: 0.95rem; color: #0284c7; margin-left: 6px;">(<span id="answeredPercent">0</span>%)</span>
   </div>
 
   <!-- メイン表示領域 -->
@@ -37,7 +37,7 @@
       <div class="pres-status-badge" id="sceneStatusBadge">待機中</div>
     </header>
 
-    <!-- メイン出題・選択肢エリア (中央揃え) -->
+    <!-- メイン出題・選択肢エリア (中央揃え・見切れ防止) -->
     <main class="pres-main" id="presMain">
       
       <!-- 1. 問題画像 (あれば表示・中央揃え) -->
@@ -61,9 +61,9 @@
         <!-- JSで動的に2〜6個生成 -->
       </div>
 
-      <!-- 正解発表時の解説ボックス -->
+      <!-- 5. 正解発表時の解説ボックス -->
       <div class="pres-explanation-box" id="presExplanationBox" style="display: none;">
-        <div style="color: #38bdf8; font-weight: 800; margin-bottom: 8px;">【解説】</div>
+        <div class="pres-explanation-title">【解説】</div>
         <p id="presExplanationText"></p>
       </div>
 
@@ -72,11 +72,39 @@
     <!-- 特殊全画面表示 (待機中 / 最終結果発表) -->
     <div class="pres-special-view" id="specialView" style="display: none;">
       <h2 class="pres-special-title" id="specialTitle">まもなく開始します</h2>
-      <p id="specialSubtitle" style="font-size: 1.8rem; color: #94a3b8; text-align: center; max-width: 800px;">
+      <p id="specialSubtitle" style="font-size: 1.4rem; color: #64748b; text-align: center; max-width: 800px;">
         スマートフォンの画面を開き、運営者の合図をお待ちください。
       </p>
-      <div id="finalRankingsContainer" style="width: 100%; max-width: 900px; margin-top: 30px; display: none;">
-        <!-- 最終順位テーブル -->
+
+      <!-- 最終結果発表: 5位〜1位アニメーション表示コンテナ -->
+      <div class="ranking-reveal-container" id="rankingRevealContainer" style="display: none;">
+        
+        <!-- 操作バー (司会用ボタン: 次へ、自動再生、全一覧切替) -->
+        <div class="ranking-control-bar" id="rankingControlBar">
+          <button type="button" class="btn btn-primary" id="btnRevealNextRank" style="font-size: 1.1rem; padding: 10px 24px;">
+            ▶ 次の順位を発表する
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnAutoRevealRanks" style="font-size: 0.95rem;">
+            ⏩ 1位まで自動再生
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnToggleFullRanking" style="font-size: 0.95rem;">
+            📋 全体ランキング表
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnResetReveal" style="font-size: 0.85rem;" title="発表を最初からやり直す">
+            🔄 最初から
+          </button>
+        </div>
+
+        <!-- 5位から1位までのカードスタック -->
+        <div class="ranking-cards-stack" id="rankingCardsStack">
+          <!-- JSで動的生成 -->
+        </div>
+
+        <!-- 全体ランキングテーブル (切り替え表示) -->
+        <div id="fullRankingView" style="width: 100%; max-height: 55vh; overflow-y: auto; display: none;">
+          <!-- JSで動的生成 -->
+        </div>
+
       </div>
     </div>
 
