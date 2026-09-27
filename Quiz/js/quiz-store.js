@@ -389,6 +389,10 @@ class QuizStore {
     this.listeners.answers.forEach(cb => cb({}));
   }
 
+  async resetGameData() {
+    return this.resetAllData();
+  }
+
   /**
    * 参加チーム自体の全削除
    */

@@ -328,9 +328,20 @@ async function changeScene(scene) {
 
 // 完全初期化
 async function handleResetScores() {
-  if (confirm("⚠️ 【警告】\n登録チーム、回答、累積得点など、すべてのゲームデータを初期化しますか？\n（問題データは消去されません）")) {
-    await quizStore.resetGameData();
-    alert("全データを初期化しました。");
+  const msg = "⚠️ 【警告: 全データ完全初期化】\n\n登録チーム、回答ログ、獲得得点をすべて消去し、ゲーム進行を初期状態にリセットします。\n参加者のスマートフォン画面も初期チーム選択画面に戻ります。\n\n本当に実行しますか？";
+  if (confirm(msg)) {
+    try {
+      await quizStore.resetAllData();
+      selectedQIndex = 0;
+      if (selectCurrentQuestion) selectCurrentQuestion.value = 0;
+      allTeams = {};
+      currentAnswers = {};
+      updateMonitor();
+      alert("チームデータ・得点・回答ログをすべて初期化しました。");
+    } catch (e) {
+      console.error("初期化エラー:", e);
+      alert("初期化中にエラーが発生しました: " + e.message);
+    }
   }
 }
 
