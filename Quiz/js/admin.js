@@ -148,6 +148,12 @@ function setupEventListeners() {
 
   // モニターソート制御
   if (selectMonitorSort) {
+    // Initialize dropdown to current sort setting
+    const initialValue = `${monitorSortKey}-${monitorSortDir}`;
+    selectMonitorSort.value = initialValue;
+    // Apply initial sorting
+    updateMonitor();
+    // Handle changes
     selectMonitorSort.addEventListener('change', e => {
       const [key, dir] = e.target.value.split('-');
       monitorSortKey = key;
@@ -156,14 +162,18 @@ function setupEventListeners() {
     });
   }
 
-  if (thSortId) {
-    thSortId.addEventListener('click', () => toggleHeaderSort('id'));
-  }
-  if (thSortTime) {
-    thSortTime.addEventListener('click', () => toggleHeaderSort('time'));
-  }
-  if (thSortScore) {
-    thSortScore.addEventListener('click', () => toggleHeaderSort('score'));
+  // Header sort click handlers
+  if (thSortId) { thSortId.addEventListener('click', () => toggleHeaderSort('id')); }
+  if (thSortTime) { thSortTime.addEventListener('click', () => toggleHeaderSort('time')); }
+  if (thSortScore) { thSortScore.addEventListener('click', () => toggleHeaderSort('score')); }
+
+  // Admin ranking button listener (broadcast to presentation and player)
+  const rankingChannel = new BroadcastChannel('quiz-ranking');
+  const btnNextRankAdmin = document.getElementById('btnNextRankAdmin');
+  if (btnNextRankAdmin) {
+    btnNextRankAdmin.addEventListener('click', () => {
+      rankingChannel.postMessage({ type: 'nextRank' });
+    });
   }
 
   // Firebaseモーダル

@@ -156,23 +156,25 @@
           <div class="final-score-display" id="finalMyScore">獲得得点: 0 点</div>
         </div>
 
-        <div class="ranking-section">
-          <div class="ranking-title">
-            <span>🎖️ 全チームの順位一覧</span>
-          </div>
-          <div class="ranking-scroll-container" id="finalScrollBox">
-            <table class="ranking-table">
-              <thead>
-                <tr>
-                  <th>順位</th>
-                  <th>チーム名</th>
-                  <th style="text-align: right;">得点</th>
-                </tr>
-              </thead>
-              <tbody id="finalTableBody">
-                <!-- JSで動的生成 -->
-              </tbody>
-            </table>
+        <div id="finalRankingContainer" style="display:none;">
+          <div class="ranking-section">
+            <div class="ranking-title">
+              <span>🎖️ 全チームの順位一覧</span>
+            </div>
+            <div class="ranking-scroll-container" id="finalScrollBox">
+              <table class="ranking-table">
+                <thead>
+                  <tr>
+                    <th>順位</th>
+                    <th>チーム名</th>
+                    <th style="text-align: right;">得点</th>
+                  </tr>
+                </thead>
+                <tbody id="finalTableBody">
+                  <!-- JSで動的生成 -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>
