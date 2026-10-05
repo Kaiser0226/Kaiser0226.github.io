@@ -182,7 +182,7 @@
           </div>
         </div>
 
-        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">順位別得点設定 (正解者の回答速度順)</div>
+        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">順位・割合別得点設定 (正解者の回答速度順)</div>
         <div class="form-row-3">
           <div class="form-group">
             <label class="form-label">🥇 1位の得点</label>
@@ -197,18 +197,20 @@
             <input type="number" id="cfgRank3" class="form-input" value="50" min="0">
           </div>
         </div>
-        <div class="form-row-3">
+        <div class="form-row-2">
           <div class="form-group">
-            <label class="form-label">4位の得点</label>
-            <input type="number" id="cfgRank4" class="form-input" value="40" min="0">
+            <label class="form-label">🎖️ 正解者の上位50%の得点 (4位〜)</label>
+            <input type="number" id="cfgTopHalf" class="form-input" value="30" min="0">
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              4位以降の正解者のうち、回答速度が上位半数に入るチームの得点です。
+            </div>
           </div>
           <div class="form-group">
-            <label class="form-label">5位の得点</label>
-            <input type="number" id="cfgRank5" class="form-input" value="30" min="0">
-          </div>
-          <div class="form-group">
-            <label class="form-label">6位以降（その他正解者）の得点</label>
-            <input type="number" id="cfgRankDefault" class="form-input" value="10" min="0">
+            <label class="form-label">🎗️ 正解者の下位50%の得点</label>
+            <input type="number" id="cfgBottomHalf" class="form-input" value="10" min="0">
+            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+              正解者のうち、回答速度が下位半数のチームの得点です。
+            </div>
           </div>
         </div>
       </section>

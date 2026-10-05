@@ -2,20 +2,17 @@
  * 得点計算エンジン (Score Engine)
  * 
  * 正解順位ごとの得点指定 + ダブルポイント対応:
- * - 1位〜5位などの順位に応じた直接得点指定
- * - 指定順位以降の正解者デフォルト得点
+ * - 1位、2位、3位の直接得点指定
+ * - 上位50%、下位50%の得点指定 (4位以降の正解者)
  * - ダブルポイント（問題ごとの得点2倍設定）
  */
 
 const DEFAULT_SCORE_CONFIG = {
-  rankPoints: {
-    1: 100, // 1位
-    2: 70,  // 2位
-    3: 50,  // 3位
-    4: 40,  // 4位
-    5: 30   // 5位
-  },
-  defaultPoint: 10 // 6位以降の正解者得点
+  rank1: 100,      // 1位の得点
+  rank2: 70,       // 2位の得点
+  rank3: 50,       // 3位の得点
+  topHalf: 30,     // 上位50%の得点
+  bottomHalf: 10   // 下位50%の得点
 };
 
 class ScoreEngine {
@@ -57,6 +54,7 @@ class ScoreEngine {
           pointsAwarded: 0,
           breakdown: {
             rankPoint: 0,
+            tier: 'incorrect',
             isDoublePoints: Boolean(isDoublePoints),
             multiplier
           },
@@ -70,21 +68,40 @@ class ScoreEngine {
       return { results, correctCount, totalAnswers, correctRate, isDoublePoints: Boolean(isDoublePoints) };
     }
 
-    // 各正解者の得点を順位別に算出
+    // 正解者の中で上位50%の境界値 (端数はCeilで計算)
+    const topHalfCutoff = Math.ceil(correctCount / 2);
+
+    // 設定値の取得 (下位互換性フォールバック付き)
+    const pRank1 = Number(config.rank1 ?? (config.rankPoints ? config.rankPoints[1] : (config.basePoint ? config.basePoint + (config.top1SpeedBonus || 0) : 100)));
+    const pRank2 = Number(config.rank2 ?? (config.rankPoints ? config.rankPoints[2] : (config.basePoint ? config.basePoint + (config.top2SpeedBonus || 0) : 70)));
+    const pRank3 = Number(config.rank3 ?? (config.rankPoints ? config.rankPoints[3] : (config.basePoint ? config.basePoint + (config.top3SpeedBonus || 0) : 50)));
+    const pTopHalf = Number(config.topHalf ?? (config.rankPoints ? config.rankPoints[4] : (config.topHalfBonus ?? 30)));
+    const pBottomHalf = Number(config.bottomHalf ?? (config.defaultPoint ?? (config.bottomHalfBonus ?? 10)));
+
+    // 各正解者の得点を順位・パーセンタイル別に算出
     correctAnswers.forEach((ans, index) => {
       const rank = index + 1; // 1-indexed (1位, 2位, ...)
-      let baseEarned = 10;
+      let baseEarned = pBottomHalf;
+      let tier = 'bottomHalf';
 
-      // 順位別得点設定から取得
-      if (config && config.rankPoints) {
-        if (config.rankPoints[rank] !== undefined) {
-          baseEarned = Number(config.rankPoints[rank]);
+      if (rank === 1) {
+        baseEarned = pRank1;
+        tier = 'rank1';
+      } else if (rank === 2) {
+        baseEarned = pRank2;
+        tier = 'rank2';
+      } else if (rank === 3) {
+        baseEarned = pRank3;
+        tier = 'rank3';
+      } else {
+        // 4位以降: 上位50%か下位50%か
+        if (rank <= topHalfCutoff) {
+          baseEarned = pTopHalf;
+          tier = 'topHalf';
         } else {
-          baseEarned = Number(config.defaultPoint !== undefined ? config.defaultPoint : 10);
+          baseEarned = pBottomHalf;
+          tier = 'bottomHalf';
         }
-      } else if (config && config.basePoint !== undefined) {
-        // 旧設定フォーマット互換
-        baseEarned = Number(config.basePoint);
       }
 
       // ダブルポイント適用
@@ -97,6 +114,7 @@ class ScoreEngine {
         pointsAwarded: totalEarned,
         breakdown: {
           rankPoint: baseEarned,
+          tier,
           isDoublePoints: Boolean(isDoublePoints),
           multiplier
         },
