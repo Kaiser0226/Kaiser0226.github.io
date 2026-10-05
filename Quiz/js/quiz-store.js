@@ -467,6 +467,18 @@ class QuizStore {
   // --- 正解判定・スコア保存 ---
 
   async saveQuestionResults(questionId, calculationResults, updatedTeams) {
+    // ローカルキャッシュも即座に更新
+    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    allResults[questionId] = calculationResults;
+    localStorage.setItem('quiz_local_results', JSON.stringify(allResults));
+    localStorage.setItem('quiz_local_teams', JSON.stringify(updatedTeams));
+
+    if (this.channel) {
+      this.channel.postMessage({ type: 'results', questionId, data: calculationResults });
+      this.channel.postMessage({ type: 'teams', data: updatedTeams });
+    }
+    this.listeners.teams.forEach(cb => cb(updatedTeams));
+
     if (this.isFirebaseReady && this.database) {
       const updates = {};
       updates[`quiz/results/${questionId}`] = calculationResults;
@@ -474,27 +486,76 @@ class QuizStore {
         updates[`quiz/teams/${id}/totalScore`] = updatedTeams[id].totalScore;
       });
       await this.database.ref().update(updates);
-    } else {
-      const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
-      allResults[questionId] = calculationResults;
-      localStorage.setItem('quiz_local_results', JSON.stringify(allResults));
-      localStorage.setItem('quiz_local_teams', JSON.stringify(updatedTeams));
-
-      if (this.channel) {
-        this.channel.postMessage({ type: 'teams', data: updatedTeams });
-      }
-      this.listeners.teams.forEach(cb => cb(updatedTeams));
     }
   }
 
   async getQuestionResults(questionId) {
     if (this.isFirebaseReady && this.database) {
-      const snap = await this.database.ref(`quiz/results/${questionId}`).once('value');
-      return snap.val();
-    } else {
-      const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
-      return allResults[questionId];
+      try {
+        const snap = await this.database.ref(`quiz/results/${questionId}`).once('value');
+        const val = snap.val();
+        if (val) return val;
+      } catch (err) {
+        console.warn(`QuizStore: getQuestionResults failed for ${questionId}, falling back to cache:`, err);
+      }
     }
+    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    return allResults[questionId] || null;
+  }
+
+  /**
+   * 結果データのリアルタイム購読（Firebase遅延時にも自動反映・再読込不要化）
+   * @param {string|number} questionId
+   * @param {function} callback 
+   * @returns {function} unsubscribe関数
+   */
+  subscribeQuestionResults(questionId, callback) {
+    // 1. ローカルキャッシュに既にあれば即時コールバック
+    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    if (allResults[questionId]) {
+      callback(allResults[questionId]);
+    }
+
+    // 2. Firebase Realtime Database による監視
+    let firebaseRef = null;
+    let firebaseCallback = null;
+
+    if (this.isFirebaseReady && this.database) {
+      firebaseRef = this.database.ref(`quiz/results/${questionId}`);
+      firebaseCallback = snapshot => {
+        const val = snapshot.val();
+        if (val) {
+          // ローカルキャッシュも同期
+          const currentLocal = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+          currentLocal[questionId] = val;
+          localStorage.setItem('quiz_local_results', JSON.stringify(currentLocal));
+          callback(val);
+        }
+      };
+      firebaseRef.on('value', firebaseCallback, err => {
+        console.warn(`QuizStore: Firebase subscribeQuestionResults error for ${questionId}:`, err);
+      });
+    }
+
+    // 3. BroadcastChannel 受信
+    const channelHandler = (event) => {
+      if (event.data && event.data.type === 'results' && event.data.questionId === questionId) {
+        callback(event.data.data);
+      }
+    };
+    if (this.channel) {
+      this.channel.addEventListener('message', channelHandler);
+    }
+
+    // クリーンアップ関数
+    return () => {
+      if (firebaseRef && firebaseCallback) {
+        firebaseRef.off('value', firebaseCallback);
+      }
+      if (this.channel) {
+        this.channel.removeEventListener('message', channelHandler);
+      }
+    };
   }
 }
 

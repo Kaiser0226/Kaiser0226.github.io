@@ -364,7 +364,7 @@ function setupFinalRankings() {
     card.id = `rankCard-${rank}`;
 
     let badgeIcon = `${rank}位`;
-    if (rank === 1) badgeIcon = `🥇 1位 (優勝)`;
+    if (rank === 1) badgeIcon = `🥇 1位`;
     else if (rank === 2) badgeIcon = `🥈 2位`;
     else if (rank === 3) badgeIcon = `🥉 3位`;
 
@@ -387,7 +387,7 @@ function updateRevealButtonText() {
   if (currentRevealIndex < revealOrder.length) {
     const nextRank = revealOrder[currentRevealIndex];
     let nextText = `${nextRank}位`;
-    if (nextRank === 1) nextText = "🥇 栄光の第1位 (優勝)";
+    if (nextRank === 1) nextText = "🥇 1位";
     btnRevealNextRank.textContent = `▶ 第 ${nextText} を発表する`;
     btnRevealNextRank.disabled = false;
   } else {

@@ -344,6 +344,15 @@ async function handleMainRollback() {
 
 // シーン変更
 async function changeScene(scene) {
+  // 正解発表シーンに移行する場合、クライアントの受信遅延・フライング誤判定を防ぐため
+  // 先に得点計算とFirebase/キャッシュへの保存を確実に完了させる
+  if (scene === 'result') {
+    const currentQ = currentQuestions[selectedQIndex];
+    if (currentQ) {
+      await calculateAndApplyScores(currentQ);
+    }
+  }
+
   const updates = { currentScene: scene };
 
   if (scene === 'question') {
@@ -354,14 +363,6 @@ async function changeScene(scene) {
   }
 
   await quizStore.updateState(updates);
-
-  // 正解発表シーンに移行した場合、得点計算を実行
-  if (scene === 'result') {
-    const currentQ = currentQuestions[selectedQIndex];
-    if (currentQ) {
-      await calculateAndApplyScores(currentQ);
-    }
-  }
 }
 
 // 完全初期化

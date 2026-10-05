@@ -100,49 +100,63 @@
       <!-- シーン3: 回答後 (正解確認・解説・順位) -->
       <section class="scene-result" id="sceneResult" style="display: none;">
         
-        <!-- 正解/不正解バナー -->
-        <div class="verdict-banner" id="verdictBanner">
-          <div class="verdict-title" id="verdictTitle">判定中...</div>
-          <div class="verdict-points" id="verdictPoints">+0 点</div>
-        </div>
-
-        <!-- 正解率・回答速度情報 -->
-        <div class="stats-grid">
-          <div class="stat-box">
-            <div class="stat-box-val" id="statCorrectRate">0%</div>
-            <div class="stat-box-lbl">全体の正解率</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-box-val" id="statAnswerTime">0.0秒</div>
-            <div class="stat-box-lbl">あなたの回答時間</div>
+        <!-- ロード中・集計中表示（受信遅延時の画面） -->
+        <div class="result-loading-card" id="resultLoadingBox">
+          <div class="result-spinner"></div>
+          <div class="loading-text-main">📊 結果を集計中...</div>
+          <div class="loading-text-sub">Firebaseから判定データを受信しています</div>
+          <div class="loading-delayed-notice" id="loadingDelayedNotice" style="display: none;">
+            <span>⚠️ 通信が遅延しています。自動的に最新状態を受信します...</span>
+            <button type="button" class="btn-retry-sync" id="btnRetrySyncResult">🔄 結果を再読み込み</button>
           </div>
         </div>
 
-        <!-- 解答解説 -->
-        <div class="explanation-card" id="playerExplanationCard">
-          <div style="font-weight: 800; color: #38bdf8; margin-bottom: 4px;">💡 解答解説</div>
-          <p id="playerExplanationText">解説テキスト</p>
-        </div>
-
-        <!-- 現在の順位一覧 (自身の順位フォーカス) -->
-        <div class="ranking-section" id="playerRankingSection">
-          <div class="ranking-title">
-            <span>🏆 現在のランキング</span>
-            <span id="rankNotice" style="font-size: 0.8rem; color: #94a3b8;"></span>
+        <!-- 結果コンテンツ領域（データ受信完了で表示） -->
+        <div class="result-content-container" id="resultContentArea" style="display: none;">
+          <!-- 正解/不正解バナー -->
+          <div class="verdict-banner" id="verdictBanner">
+            <div class="verdict-title" id="verdictTitle">判定中...</div>
+            <div class="verdict-points" id="verdictPoints">+0 点</div>
           </div>
-          <div class="ranking-scroll-container" id="rankingScrollBox">
-            <table class="ranking-table" id="rankingTable">
-              <thead>
-                <tr>
-                  <th>順位</th>
-                  <th>チーム名</th>
-                  <th style="text-align: right;">得点</th>
-                </tr>
-              </thead>
-              <tbody id="rankingTableBody">
-                <!-- JSで動的生成 -->
-              </tbody>
-            </table>
+
+          <!-- 正解率・回答速度情報 -->
+          <div class="stats-grid">
+            <div class="stat-box">
+              <div class="stat-box-val" id="statCorrectRate">0%</div>
+              <div class="stat-box-lbl">全体の正解率</div>
+            </div>
+            <div class="stat-box">
+              <div class="stat-box-val" id="statAnswerTime">0.0秒</div>
+              <div class="stat-box-lbl">あなたの回答時間</div>
+            </div>
+          </div>
+
+          <!-- 解答解説 -->
+          <div class="explanation-card" id="playerExplanationCard">
+            <div style="font-weight: 800; color: #38bdf8; margin-bottom: 4px;">💡 解答解説</div>
+            <p id="playerExplanationText">解説テキスト</p>
+          </div>
+
+          <!-- 現在の順位一覧 (自身の順位フォーカス) -->
+          <div class="ranking-section" id="playerRankingSection">
+            <div class="ranking-title">
+              <span>🏆 現在のランキング</span>
+              <span id="rankNotice" style="font-size: 0.8rem; color: #94a3b8;"></span>
+            </div>
+            <div class="ranking-scroll-container" id="rankingScrollBox">
+              <table class="ranking-table" id="rankingTable">
+                <thead>
+                  <tr>
+                    <th>順位</th>
+                    <th>チーム名</th>
+                    <th style="text-align: right;">得点</th>
+                  </tr>
+                </thead>
+                <tbody id="rankingTableBody">
+                  <!-- JSで動的生成 -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
 

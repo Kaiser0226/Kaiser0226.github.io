@@ -12,6 +12,8 @@ let allTeams = {};
 let selectedOptionIndex = null;
 let isAnswerLocked = false;
 let currentQuestionResults = null;
+let unsubscribeCurrentResults = null;
+let resultSyncTimeoutId = null;
 
 // DOM要素
 const playerBody = document.getElementById('playerBody');
@@ -40,6 +42,10 @@ const playerOptionsList = document.getElementById('playerOptionsList');
 const btnLock = document.getElementById('btnLock');
 
 // 結果シーン要素
+const resultLoadingBox = document.getElementById('resultLoadingBox');
+const resultContentArea = document.getElementById('resultContentArea');
+const loadingDelayedNotice = document.getElementById('loadingDelayedNotice');
+const btnRetrySyncResult = document.getElementById('btnRetrySyncResult');
 const verdictBanner = document.getElementById('verdictBanner');
 const verdictTitle = document.getElementById('verdictTitle');
 const verdictPoints = document.getElementById('verdictPoints');
@@ -126,6 +132,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // チーム登録ボタン
   btnRegisterTeam.addEventListener('click', handleRegister);
   btnLock.addEventListener('click', handleLockAnswer);
+  if (btnRetrySyncResult) {
+    btnRetrySyncResult.addEventListener('click', () => {
+      if (currentState && currentState.currentScene === 'result') {
+        const qIndex = currentState.currentQuestionIndex || 0;
+        const currentQ = currentQuestions[qIndex] || currentQuestions[0];
+        if (currentQ) {
+          fetchAndRenderResults(currentQ, true);
+        }
+      }
+    });
+  }
 
   initTeam();
 });
@@ -227,6 +244,11 @@ function applyState() {
   // 背景カラーリセット
   if (currentScene !== 'question' && currentScene !== 'closed') {
     resetBodyLockedColor();
+  }
+
+  // 結果購読リスナーのクリーンアップ（result以外のシーンへ移動時）
+  if (currentScene !== 'result') {
+    cleanupResultSubscription();
   }
 
   if (status === 'stopped' || currentScene === 'waiting') {
@@ -411,18 +433,81 @@ function resetBodyLockedColor() {
 
 // --- 回答後（結果・順位）シーン ---
 
-async function showResultScene(q) {
-  resetBodyLockedColor();
-  const resultsData = await quizStore.getQuestionResults(q.id);
+function cleanupResultSubscription() {
+  if (unsubscribeCurrentResults) {
+    unsubscribeCurrentResults();
+    unsubscribeCurrentResults = null;
+  }
+  if (resultSyncTimeoutId) {
+    clearTimeout(resultSyncTimeoutId);
+    resultSyncTimeoutId = null;
+  }
+}
 
-  const teamResult = resultsData && resultsData.results ? resultsData.results[myTeam.teamId] : null;
-  const isCorrect = teamResult ? teamResult.isCorrect : false;
-  const points = teamResult ? teamResult.pointsAwarded : 0;
-  const correctRate = resultsData ? resultsData.correctRate : 0;
+function showResultScene(q) {
+  resetBodyLockedColor();
+  if (!q) return;
+
+  cleanupResultSubscription();
+
+  // 1. ロード画面を表示、コンテンツ画面を一旦非表示
+  resultLoadingBox.style.display = 'flex';
+  resultContentArea.style.display = 'none';
+  loadingDelayedNotice.style.display = 'none';
+
+  let isDataReceived = false;
+
+  // 2. ネットワーク遅延時（2.5秒経過しても未受信の場合）のフォールバックタイマー
+  resultSyncTimeoutId = setTimeout(() => {
+    if (!isDataReceived) {
+      console.warn("Quiz: Firebase result reception delayed, applying local fallback evaluation");
+      loadingDelayedNotice.style.display = 'flex';
+      applyLocalResultFallback(q);
+    }
+  }, 2500);
+
+  // 3. リアルタイム購読（Firebaseからデータが届いたら自動的に即時反映・再読込不要化）
+  unsubscribeCurrentResults = quizStore.subscribeQuestionResults(q.id, (resultsData) => {
+    if (resultsData && resultsData.results) {
+      isDataReceived = true;
+      if (resultSyncTimeoutId) {
+        clearTimeout(resultSyncTimeoutId);
+        resultSyncTimeoutId = null;
+      }
+      renderActualResultData(q, resultsData);
+    }
+  });
+}
+
+function renderActualResultData(q, resultsData) {
+  // ロード画面を隠し、結果コンテンツを表示
+  resultLoadingBox.style.display = 'none';
+  resultContentArea.style.display = 'flex';
+  loadingDelayedNotice.style.display = 'none';
+
+  const teamResult = (resultsData && resultsData.results && myTeam) ? resultsData.results[myTeam.teamId] : null;
+
+  // チーム自身が回答していたか、ローカル保存回答も確認
+  const savedAnswerIndex = sessionStorage.getItem(`q_answered_${q.id}`);
+  const hasLocalAnswer = savedAnswerIndex !== null && savedAnswerIndex !== undefined;
+
+  let isCorrect = false;
+  let points = 0;
+
+  if (teamResult) {
+    isCorrect = Boolean(teamResult.isCorrect);
+    points = teamResult.pointsAwarded || 0;
+  } else if (hasLocalAnswer) {
+    // もしFirebase側で何らかの理由で自チームの集計が遅れた場合のセーフティ
+    isCorrect = (Number(savedAnswerIndex) === Number(q.answer));
+    points = isCorrect ? 80 : 0;
+  }
+
+  const correctRate = resultsData ? (resultsData.correctRate || 0) : 0;
 
   // 保存されていた回答時間
   const savedTime = sessionStorage.getItem(`q_time_${q.id}`);
-  const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : "--";
+  const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : (teamResult && teamResult.answerTimeMs ? (teamResult.answerTimeMs / 1000).toFixed(2) : "--");
 
   // 正解・不正解バナー
   if (isCorrect) {
@@ -441,6 +526,54 @@ async function showResultScene(q) {
 
   // 順位一覧テーブルの描画
   renderRankingsTable();
+}
+
+function applyLocalResultFallback(q) {
+  // ローカルに回答情報があるかチェック
+  const savedAnswerIndex = sessionStorage.getItem(`q_answered_${q.id}`);
+  const savedTime = sessionStorage.getItem(`q_time_${q.id}`);
+  const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : "--";
+
+  if (savedAnswerIndex !== null && savedAnswerIndex !== undefined) {
+    const isCorrect = (Number(savedAnswerIndex) === Number(q.answer));
+
+    resultLoadingBox.style.display = 'none';
+    resultContentArea.style.display = 'flex';
+
+    if (isCorrect) {
+      verdictBanner.className = 'verdict-banner correct';
+      verdictTitle.textContent = "🎉 正解！";
+      verdictPoints.textContent = `得点を同期中...`;
+    } else {
+      verdictBanner.className = 'verdict-banner incorrect';
+      verdictTitle.textContent = "✕ 不正解...";
+      verdictPoints.textContent = `+0 点`;
+    }
+  }
+
+  statAnswerTime.textContent = `${answerSeconds}秒`;
+  statCorrectRate.textContent = `集計中...`;
+  playerExplanationText.textContent = q.explanation || "解説はありません。";
+  renderRankingsTable();
+}
+
+async function fetchAndRenderResults(q, forceDirectFetch = false) {
+  resultLoadingBox.style.display = 'flex';
+  resultContentArea.style.display = 'none';
+  loadingDelayedNotice.style.display = 'none';
+
+  try {
+    const resultsData = await quizStore.getQuestionResults(q.id);
+    if (resultsData && resultsData.results) {
+      renderActualResultData(q, resultsData);
+      return;
+    }
+  } catch (err) {
+    console.warn("fetchAndRenderResults error:", err);
+  }
+
+  loadingDelayedNotice.style.display = 'flex';
+  applyLocalResultFallback(q);
 }
 
 function renderRankingsTable() {
