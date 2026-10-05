@@ -1,22 +1,21 @@
 /**
  * 得点計算エンジン (Score Engine)
  * 
- * 4種類の得点ボーナス + 基本点:
- * 1. 基本点 (basePoint)
- * 2. 速かった方から3グループ (top1, top2, top3)
- * 3. 正解者の中で上位50% (topHalf)
- * 4. 正解者の中で下位50% (bottomHalf)
- * 5. 単独正解ボーナス (soloBonus: 正解者が1チームのみの場合)
+ * 正解順位ごとの得点指定 + ダブルポイント対応:
+ * - 1位〜5位などの順位に応じた直接得点指定
+ * - 指定順位以降の正解者デフォルト得点
+ * - ダブルポイント（問題ごとの得点2倍設定）
  */
 
 const DEFAULT_SCORE_CONFIG = {
-  basePoint: 80,        // 基本正解点
-  top1Bonus: 150,       // 最速1位ボーナス
-  top2Bonus: 100,       // 最速2位ボーナス
-  top3Bonus: 50,        // 最速3位ボーナス
-  topHalfBonus: 70,     // 正解者上位50%ボーナス
-  bottomHalfBonus: 20,  // 正解者下位50%ボーナス
-  soloBonus: 100        // 単独正解特別ボーナス
+  rankPoints: {
+    1: 100, // 1位
+    2: 70,  // 2位
+    3: 50,  // 3位
+    4: 40,  // 4位
+    5: 30   // 5位
+  },
+  defaultPoint: 10 // 6位以降の正解者得点
 };
 
 class ScoreEngine {
@@ -25,9 +24,10 @@ class ScoreEngine {
    * @param {Array} answers [{ teamId, teamName, selectedOption, answerTimeMs }]
    * @param {number} correctOption 正解の選択肢インデックス
    * @param {Object} config 得点設定オブジェクト
+   * @param {boolean} isDoublePoints ダブルポイント(得点2倍)フラグ
    * @returns {Object} { results: { [teamId]: { isCorrect, pointsAwarded, breakdown, rankInCorrect } }, correctCount, totalAnswers, correctRate }
    */
-  static calculateQuestionScores(answers, correctOption, config = DEFAULT_SCORE_CONFIG) {
+  static calculateQuestionScores(answers, correctOption, config = DEFAULT_SCORE_CONFIG, isDoublePoints = false) {
     const results = {};
     const totalAnswers = answers.length;
 
@@ -44,6 +44,7 @@ class ScoreEngine {
 
     const correctCount = correctAnswers.length;
     const correctRate = totalAnswers > 0 ? Math.round((correctCount / totalAnswers) * 100) : 0;
+    const multiplier = isDoublePoints ? 2 : 1;
 
     // 不正解チームの初期化
     answers.forEach(a => {
@@ -55,10 +56,9 @@ class ScoreEngine {
           isCorrect: false,
           pointsAwarded: 0,
           breakdown: {
-            base: 0,
-            topSpeed: 0,
-            halfTier: 0,
-            solo: 0
+            rankPoint: 0,
+            isDoublePoints: Boolean(isDoublePoints),
+            multiplier
           },
           answerTimeMs: a.answerTimeMs,
           rankInCorrect: null
@@ -67,38 +67,28 @@ class ScoreEngine {
     });
 
     if (correctCount === 0) {
-      return { results, correctCount, totalAnswers, correctRate };
+      return { results, correctCount, totalAnswers, correctRate, isDoublePoints: Boolean(isDoublePoints) };
     }
 
-    // 単独正解判定
-    const isSolo = (correctCount === 1);
-
-    // 正解者の中で上位50%の境界値 (同着や端数はCeilで計算)
-    const topHalfCutoff = Math.ceil(correctCount / 2);
-
+    // 各正解者の得点を順位別に算出
     correctAnswers.forEach((ans, index) => {
-      const rank = index + 1; // 1-indexed
-      let speedBonus = 0;
-      let halfTierBonus = 0;
-      let soloBonus = 0;
+      const rank = index + 1; // 1-indexed (1位, 2位, ...)
+      let baseEarned = 10;
 
-      // 1. 最速Top 3ボーナス
-      if (rank === 1) speedBonus = config.top1Bonus || 0;
-      else if (rank === 2) speedBonus = config.top2Bonus || 0;
-      else if (rank === 3) speedBonus = config.top3Bonus || 0;
-
-      // 2. 単独正解ボーナス or 上位・下位50%
-      if (isSolo) {
-        soloBonus = config.soloBonus || 0;
-      } else {
-        if (rank <= topHalfCutoff) {
-          halfTierBonus = config.topHalfBonus || 0;
+      // 順位別得点設定から取得
+      if (config && config.rankPoints) {
+        if (config.rankPoints[rank] !== undefined) {
+          baseEarned = Number(config.rankPoints[rank]);
         } else {
-          halfTierBonus = config.bottomHalfBonus || 0;
+          baseEarned = Number(config.defaultPoint !== undefined ? config.defaultPoint : 10);
         }
+      } else if (config && config.basePoint !== undefined) {
+        // 旧設定フォーマット互換
+        baseEarned = Number(config.basePoint);
       }
 
-      const totalEarned = (config.basePoint || 0) + speedBonus + halfTierBonus + soloBonus;
+      // ダブルポイント適用
+      const totalEarned = baseEarned * multiplier;
 
       results[ans.teamId] = {
         teamId: ans.teamId,
@@ -106,10 +96,9 @@ class ScoreEngine {
         isCorrect: true,
         pointsAwarded: totalEarned,
         breakdown: {
-          base: config.basePoint || 0,
-          topSpeed: speedBonus,
-          halfTier: halfTierBonus,
-          solo: soloBonus
+          rankPoint: baseEarned,
+          isDoublePoints: Boolean(isDoublePoints),
+          multiplier
         },
         answerTimeMs: ans.answerTimeMs,
         rankInCorrect: rank
@@ -120,7 +109,8 @@ class ScoreEngine {
       results,
       correctCount,
       totalAnswers,
-      correctRate
+      correctRate,
+      isDoublePoints: Boolean(isDoublePoints)
     };
   }
 }

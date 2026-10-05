@@ -11,8 +11,8 @@
  * - explanation: 解答解説テキスト
  * - hasTimeLimit: 制限時間の有無 (boolean)
  * - timeLimitSeconds: 制限時間(秒)
+ * - isDoublePoints: ダブルポイント(獲得得点2倍)の有無 (boolean)
  */
-//制限時間設定したらバグるよ
 
 const DEFAULT_QUESTIONS = [
   {
@@ -28,7 +28,8 @@ const DEFAULT_QUESTIONS = [
     answer: 0,
     explanation: "現在の日本の首都は東京都です。政治・経済の中心地となっています。",
     hasTimeLimit: false,
-    timeLimitSeconds: 15
+    timeLimitSeconds: 15,
+    isDoublePoints: false
   },
   {
     id: 2,
@@ -42,7 +43,8 @@ const DEFAULT_QUESTIONS = [
     answer: 1,
     explanation: "緑・白・赤の縦三色旗はイタリア共和国の国旗です。（フランスは青・白・赤）",
     hasTimeLimit: false,
-    timeLimitSeconds: 20
+    timeLimitSeconds: 20,
+    isDoublePoints: false
   },
   {
     id: 3,
@@ -59,7 +61,8 @@ const DEFAULT_QUESTIONS = [
     answer: 2,
     explanation: "木星は太陽系最大の惑星で、直径は地球の約11倍、質量は地球の約318倍あります。",
     hasTimeLimit: false,
-    timeLimitSeconds: 30
+    timeLimitSeconds: 30,
+    isDoublePoints: false
   },
   {
     id: 4,
@@ -72,7 +75,8 @@ const DEFAULT_QUESTIONS = [
     answer: 0,
     explanation: "カモノハシは卵を産みますが、母乳で子どもを育てるため哺乳類（単孔目）に分類されます。ペンギンは鳥類です。",
     hasTimeLimit: false,
-    timeLimitSeconds: 15
+    timeLimitSeconds: 15,
+    isDoublePoints: false
   },
   {
     id: 5,
@@ -87,7 +91,8 @@ const DEFAULT_QUESTIONS = [
     answer: 1,
     explanation: "富士山の最高峰（剣ヶ峰）の標高は3,776メートルです。「みななろう（3776）富士山」と覚えられます。",
     hasTimeLimit: false,
-    timeLimitSeconds: 15
+    timeLimitSeconds: 15,
+    isDoublePoints: true
   }
 ];
 

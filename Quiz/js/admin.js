@@ -395,7 +395,7 @@ async function calculateAndApplyScores(q) {
   const answersList = Object.values(currentAnswers);
   const scoreConfig = (currentState && currentState.scoreConfig) ? currentState.scoreConfig : DEFAULT_SCORE_CONFIG;
 
-  const scoreResult = ScoreEngine.calculateQuestionScores(answersList, q.answer, scoreConfig);
+  const scoreResult = ScoreEngine.calculateQuestionScores(answersList, q.answer, scoreConfig, q.isDoublePoints);
 
   // 各チームの総得点に加算
   const updatedTeams = { ...allTeams };
@@ -421,7 +421,8 @@ function populateQuestionDropdown() {
   currentQuestions.forEach((q, idx) => {
     const opt = document.createElement('option');
     opt.value = idx;
-    opt.textContent = `Q${idx + 1}: ${q.question.substring(0, 24)}...`;
+    const doubleBadge = q.isDoublePoints ? ' [🌟x2]' : '';
+    opt.textContent = `Q${idx + 1}${doubleBadge}: ${q.question.substring(0, 22)}...`;
     selectCurrentQuestion.appendChild(opt);
   });
   selectCurrentQuestion.value = selectedQIndex;

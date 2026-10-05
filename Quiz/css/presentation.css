@@ -133,6 +133,24 @@ body.presentation-body {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
+.pres-double-badge {
+  background-color: #d97706;
+  border: 2px solid #b45309;
+  color: #ffffff;
+  font-size: clamp(1rem, 1.6vw, 1.35rem);
+  font-weight: 900;
+  padding: 8px 24px;
+  border-radius: var(--radius-full);
+  letter-spacing: 1px;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.35);
+  animation: doublePulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes doublePulse {
+  0% { transform: scale(0.97); }
+  100% { transform: scale(1.03); }
+}
+
 .pres-status-badge {
   font-size: clamp(1.15rem, 1.8vw, 1.5rem);
   font-weight: 800;

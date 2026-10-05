@@ -21,6 +21,7 @@ const editQuestionImage = document.getElementById('editQuestionImage');
 const editHasTimeLimit = document.getElementById('editHasTimeLimit');
 const editTimeLimitSeconds = document.getElementById('editTimeLimitSeconds');
 const editCorrectAnswer = document.getElementById('editCorrectAnswer');
+const editIsDoublePoints = document.getElementById('editIsDoublePoints');
 const editExplanation = document.getElementById('editExplanation');
 const optionsEditorContainer = document.getElementById('optionsEditorContainer');
 const btnAddOption = document.getElementById('btnAddOption');
@@ -31,13 +32,12 @@ const btnDeleteCurrentQuestion = document.getElementById('btnDeleteCurrentQuesti
 // 設定フォーム
 const cfgTargetTeams = document.getElementById('cfgTargetTeams');
 const cfgRankLimit = document.getElementById('cfgRankLimit');
-const cfgBasePoint = document.getElementById('cfgBasePoint');
-const cfgTop1 = document.getElementById('cfgTop1');
-const cfgTop2 = document.getElementById('cfgTop2');
-const cfgTop3 = document.getElementById('cfgTop3');
-const cfgTopHalf = document.getElementById('cfgTopHalf');
-const cfgBottomHalf = document.getElementById('cfgBottomHalf');
-const cfgSoloBonus = document.getElementById('cfgSoloBonus');
+const cfgRank1 = document.getElementById('cfgRank1');
+const cfgRank2 = document.getElementById('cfgRank2');
+const cfgRank3 = document.getElementById('cfgRank3');
+const cfgRank4 = document.getElementById('cfgRank4');
+const cfgRank5 = document.getElementById('cfgRank5');
+const cfgRankDefault = document.getElementById('cfgRankDefault');
 const btnSaveConfig = document.getElementById('btnSaveConfig');
 
 // モーダル関連
@@ -105,13 +105,14 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.targetTeamCount) cfgTargetTeams.value = state.targetTeamCount;
       if (state.rankDisplayLimit) cfgRankLimit.value = state.rankDisplayLimit;
       if (state.scoreConfig) {
-        cfgBasePoint.value = state.scoreConfig.basePoint ?? 10;
-        cfgTop1.value = state.scoreConfig.top1SpeedBonus ?? 10;
-        cfgTop2.value = state.scoreConfig.top2SpeedBonus ?? 7;
-        cfgTop3.value = state.scoreConfig.top3SpeedBonus ?? 5;
-        cfgTopHalf.value = state.scoreConfig.topHalfBonus ?? 5;
-        cfgBottomHalf.value = state.scoreConfig.bottomHalfBonus ?? 2;
-        cfgSoloBonus.value = state.scoreConfig.soloBonus ?? 30;
+        const sc = state.scoreConfig;
+        const rp = sc.rankPoints || {};
+        cfgRank1.value = rp[1] ?? (sc.basePoint ? sc.basePoint + (sc.top1SpeedBonus || 0) : 100);
+        cfgRank2.value = rp[2] ?? (sc.basePoint ? sc.basePoint + (sc.top2SpeedBonus || 0) : 70);
+        cfgRank3.value = rp[3] ?? (sc.basePoint ? sc.basePoint + (sc.top3SpeedBonus || 0) : 50);
+        cfgRank4.value = rp[4] ?? 40;
+        cfgRank5.value = rp[5] ?? 30;
+        cfgRankDefault.value = sc.defaultPoint ?? (sc.basePoint ?? 10);
       }
     }
   });
@@ -224,7 +225,8 @@ function populateQuestionDropdown() {
   currentQuestions.forEach((q, idx) => {
     const opt = document.createElement('option');
     opt.value = idx;
-    opt.textContent = `Q${idx + 1}: ${q.question.substring(0, 24)}...`;
+    const doubleBadge = q.isDoublePoints ? ' [🌟x2]' : '';
+    opt.textContent = `Q${idx + 1}${doubleBadge}: ${q.question.substring(0, 22)}...`;
     selectCurrentQuestion.appendChild(opt);
   });
   if (selectedQIndex >= currentQuestions.length) {
@@ -241,6 +243,9 @@ function loadQuestionToEditor(index) {
   editQuestionImage.value = q.image || '';
   editHasTimeLimit.checked = q.hasTimeLimit !== false;
   editTimeLimitSeconds.value = q.timeLimitSeconds || 15;
+  if (editIsDoublePoints) {
+    editIsDoublePoints.checked = Boolean(q.isDoublePoints);
+  }
   editExplanation.value = q.explanation || '';
 
   renderOptionInputs(q.options || []);
@@ -326,6 +331,7 @@ async function handleSaveQuestionEdit(e) {
   q.hasTimeLimit = editHasTimeLimit.checked;
   q.timeLimitSeconds = parseInt(editTimeLimitSeconds.value, 10) || 15;
   q.answer = parseInt(editCorrectAnswer.value, 10);
+  q.isDoublePoints = editIsDoublePoints ? editIsDoublePoints.checked : false;
   q.options = newOptions;
   q.explanation = editExplanation.value.trim();
 
@@ -349,6 +355,7 @@ async function addNewQuestion() {
     image: "",
     hasTimeLimit: true,
     timeLimitSeconds: 15,
+    isDoublePoints: false,
     options: [
       { text: "選択肢 1", image: "" },
       { text: "選択肢 2", image: "" },
@@ -400,18 +407,19 @@ async function handleSaveConfig() {
     targetTeamCount: parseInt(cfgTargetTeams.value, 10) || 100,
     rankDisplayLimit: parseInt(cfgRankLimit.value, 10) || 999,
     scoreConfig: {
-      basePoint: parseInt(cfgBasePoint.value, 10) || 10,
-      top1SpeedBonus: parseInt(cfgTop1.value, 10) || 10,
-      top2SpeedBonus: parseInt(cfgTop2.value, 10) || 7,
-      top3SpeedBonus: parseInt(cfgTop3.value, 10) || 5,
-      topHalfBonus: parseInt(cfgTopHalf.value, 10) || 5,
-      bottomHalfBonus: parseInt(cfgBottomHalf.value, 10) || 2,
-      soloBonus: parseInt(cfgSoloBonus.value, 10) || 30
+      rankPoints: {
+        1: parseInt(cfgRank1.value, 10) || 0,
+        2: parseInt(cfgRank2.value, 10) || 0,
+        3: parseInt(cfgRank3.value, 10) || 0,
+        4: parseInt(cfgRank4.value, 10) || 0,
+        5: parseInt(cfgRank5.value, 10) || 0
+      },
+      defaultPoint: parseInt(cfgRankDefault.value, 10) || 0
     }
   };
 
   await quizStore.updateState(updates);
-  alert("大会設定（人数・ボーナス）を保存・反映しました！");
+  alert("大会設定（人数・順位別得点）を保存・反映しました！");
 }
 
 // --- 出題順 (Question Order) エディタ ---
@@ -428,6 +436,7 @@ function renderOrderListEditor() {
   tempOrder.forEach((qid, idx) => {
     const q = rawQuestions.find(rq => rq.id === qid);
     const qText = q ? q.question : `(ID: ${qid} - 削除済み)`;
+    const doubleBadge = q && q.isDoublePoints ? ' <span style="display:inline-block; font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:800; margin-left:4px;">🌟2倍</span>' : '';
 
     const item = document.createElement('div');
     item.style.cssText = `
@@ -440,7 +449,7 @@ function renderOrderListEditor() {
       <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
         <span style="font-weight: 800; color: #2563eb; width: 30px;">#${idx + 1}</span>
         <span style="font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-          ${escapeHtml(qText)}
+          ${escapeHtml(qText)}${doubleBadge}
         </span>
       </div>
       <div style="display: flex; gap: 6px; flex-shrink: 0;">

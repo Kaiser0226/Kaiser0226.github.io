@@ -19,6 +19,7 @@ const answeredPercentEl = document.getElementById('answeredPercent');
 const answerBadge = document.getElementById('answerBadge');
 
 const qNumberBadge = document.getElementById('qNumberBadge');
+const presDoubleBadge = document.getElementById('presDoubleBadge');
 const sceneStatusBadge = document.getElementById('sceneStatusBadge');
 
 const presMain = document.getElementById('presMain');
@@ -197,6 +198,11 @@ function renderCurrentQuestion() {
 
   // 2. 問題文
   presQuestionText.textContent = q.question;
+
+  // ダブルポイントバッジ表示制御
+  if (presDoubleBadge) {
+    presDoubleBadge.style.display = q.isDoublePoints ? 'inline-block' : 'none';
+  }
 
   // 3. 選択肢 (2列グリッド: ◯◯ ◯◯ ◯◯)
   presOptionsGrid.innerHTML = '';

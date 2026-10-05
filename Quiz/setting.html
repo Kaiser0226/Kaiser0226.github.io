@@ -116,6 +116,13 @@
             </div>
           </div>
 
+          <div class="form-group" style="margin-bottom: 16px;">
+            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #b45309; background: #fffbeb; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #fde68a;">
+              <input type="checkbox" id="editIsDoublePoints" style="width: 18px; height: 18px; accent-color: #d97706;">
+              <span>🌟 この問題を「ダブルポイント（獲得得点2倍）」に設定する</span>
+            </label>
+          </div>
+
           <!-- 選択肢 2〜6択動的エディタ -->
           <div class="form-group">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -153,7 +160,7 @@
         <div class="admin-card-header">
           <div class="admin-card-title">
             <span>⚙️</span>
-            <span>大会設定 (参加人数・得点ボーナス・順位非表示)</span>
+            <span>大会設定 (参加人数・順位別得点・順位非表示)</span>
           </div>
           <button type="button" class="btn btn-primary" id="btnSaveConfig">設定を保存</button>
         </div>
@@ -175,38 +182,34 @@
           </div>
         </div>
 
-        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">得点ボーナス設定 (4種類 + 基本点)</div>
+        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">順位別得点設定 (正解者の回答速度順)</div>
         <div class="form-row-3">
           <div class="form-group">
-            <label class="form-label">基本正解点</label>
-            <input type="number" id="cfgBasePoint" class="form-input" value="10">
+            <label class="form-label">🥇 1位の得点</label>
+            <input type="number" id="cfgRank1" class="form-input" value="100" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">最速1位ボーナス</label>
-            <input type="number" id="cfgTop1" class="form-input" value="10">
+            <label class="form-label">🥈 2位の得点</label>
+            <input type="number" id="cfgRank2" class="form-input" value="70" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">最速2位ボーナス</label>
-            <input type="number" id="cfgTop2" class="form-input" value="7">
+            <label class="form-label">🥉 3位の得点</label>
+            <input type="number" id="cfgRank3" class="form-input" value="50" min="0">
           </div>
         </div>
         <div class="form-row-3">
           <div class="form-group">
-            <label class="form-label">最速3位ボーナス</label>
-            <input type="number" id="cfgTop3" class="form-input" value="5">
+            <label class="form-label">4位の得点</label>
+            <input type="number" id="cfgRank4" class="form-input" value="40" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">上位50%ボーナス</label>
-            <input type="number" id="cfgTopHalf" class="form-input" value="5">
+            <label class="form-label">5位の得点</label>
+            <input type="number" id="cfgRank5" class="form-input" value="30" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">下位50%ボーナス</label>
-            <input type="number" id="cfgBottomHalf" class="form-input" value="2">
+            <label class="form-label">6位以降（その他正解者）の得点</label>
+            <input type="number" id="cfgRankDefault" class="form-input" value="10" min="0">
           </div>
-        </div>
-        <div class="form-group">
-          <label class="form-label">単独正解ボーナス (正解が1組のみの場合)</label>
-          <input type="number" id="cfgSoloBonus" class="form-input" value="30">
         </div>
       </section>
 

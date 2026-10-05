@@ -35,6 +35,7 @@ const sceneResult = document.getElementById('sceneResult');
 const sceneFinal = document.getElementById('sceneFinal');
 
 // 回答シーン要素
+const playerDoubleBadge = document.getElementById('playerDoubleBadge');
 const playerImageContainer = document.getElementById('playerImageContainer');
 const playerQuestionImage = document.getElementById('playerQuestionImage');
 const playerQuestionText = document.getElementById('playerQuestionText');
@@ -304,6 +305,11 @@ function updateHeaderStats() {
 function setupQuestionScene(q) {
   if (!q) return;
 
+  // ダブルポイントバッジ表示
+  if (playerDoubleBadge) {
+    playerDoubleBadge.style.display = q.isDoublePoints ? 'block' : 'none';
+  }
+
   // 新しい問題になったらリセット
   const questionKey = `q_answered_${q.id}`;
   const alreadyAnswered = sessionStorage.getItem(questionKey);
@@ -510,10 +516,13 @@ function renderActualResultData(q, resultsData) {
   const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : (teamResult && teamResult.answerTimeMs ? (teamResult.answerTimeMs / 1000).toFixed(2) : "--");
 
   // 正解・不正解バナー
+  const isDouble = Boolean(q.isDoublePoints || (resultsData && resultsData.isDoublePoints));
+  const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';
+
   if (isCorrect) {
     verdictBanner.className = 'verdict-banner correct';
     verdictTitle.textContent = "🎉 正解！";
-    verdictPoints.textContent = `+${points} 点 獲得！`;
+    verdictPoints.textContent = `+${points} 点 獲得！${doubleTag}`;
   } else {
     verdictBanner.className = 'verdict-banner incorrect';
     verdictTitle.textContent = "✕ 不正解...";
@@ -536,6 +545,8 @@ function applyLocalResultFallback(q) {
 
   if (savedAnswerIndex !== null && savedAnswerIndex !== undefined) {
     const isCorrect = (Number(savedAnswerIndex) === Number(q.answer));
+    const isDouble = Boolean(q.isDoublePoints);
+    const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';
 
     resultLoadingBox.style.display = 'none';
     resultContentArea.style.display = 'flex';
@@ -543,7 +554,7 @@ function applyLocalResultFallback(q) {
     if (isCorrect) {
       verdictBanner.className = 'verdict-banner correct';
       verdictTitle.textContent = "🎉 正解！";
-      verdictPoints.textContent = `得点を同期中...`;
+      verdictPoints.textContent = `得点を同期中...${doubleTag}`;
     } else {
       verdictBanner.className = 'verdict-banner incorrect';
       verdictTitle.textContent = "✕ 不正解...";
