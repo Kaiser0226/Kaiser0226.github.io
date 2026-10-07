@@ -8,6 +8,7 @@
  *   - text: 選択肢テキスト
  *   - image: 選択肢画像パス (任意)
  * - answer: 正解のインデックス (0始まり: 0=赤, 1=青, 2=黄, 3=緑, 4=水色, 5=紫)
+ * - answerType: 'choice' (省略時) または 'text' (記述式・手動採点)
  * - explanation: 解答解説テキスト
  * - hasTimeLimit: 制限時間の有無 (boolean)
  * - timeLimitSeconds: 制限時間(秒)

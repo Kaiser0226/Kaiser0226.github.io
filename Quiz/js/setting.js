@@ -20,10 +20,15 @@ const editQuestionText = document.getElementById('editQuestionText');
 const editQuestionImage = document.getElementById('editQuestionImage');
 const editHasTimeLimit = document.getElementById('editHasTimeLimit');
 const editTimeLimitSeconds = document.getElementById('editTimeLimitSeconds');
+const editAnswerType = document.getElementById('editAnswerType');
 const editCorrectAnswer = document.getElementById('editCorrectAnswer');
+const editTextAnswer = document.getElementById('editTextAnswer');
+const editChoiceAnswerGroup = document.getElementById('editChoiceAnswerGroup');
+const editTextAnswerGroup = document.getElementById('editTextAnswerGroup');
 const editIsDoublePoints = document.getElementById('editIsDoublePoints');
 const editExplanation = document.getElementById('editExplanation');
 const optionsEditorContainer = document.getElementById('optionsEditorContainer');
+const optionsEditorGroup = document.getElementById('optionsEditorGroup');
 const btnAddOption = document.getElementById('btnAddOption');
 const btnRemoveOption = document.getElementById('btnRemoveOption');
 const btnAddNewQuestion = document.getElementById('btnAddNewQuestion');
@@ -69,7 +74,6 @@ const btnOpenTeamListModal = document.getElementById('btnOpenTeamListModal');
 const btnCloseTeamListModal = document.getElementById('btnCloseTeamListModal');
 const teamListModal = document.getElementById('teamListModal');
 const teamListTextArea = document.getElementById('teamListTextArea');
-const btnGenerate60TeamsText = document.getElementById('btnGenerate60TeamsText');
 const btnSaveTeamList = document.getElementById('btnSaveTeamList');
 
 // 初期化
@@ -117,6 +121,8 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function setupEventListeners() {
+  editAnswerType.addEventListener('change', updateAnswerTypeFields);
+
   // 問題移動
   selectCurrentQuestion.addEventListener('change', e => {
     selectedQIndex = Number(e.target.value);
@@ -197,13 +203,6 @@ function setupEventListeners() {
     openModal(teamListModal);
   });
   btnCloseTeamListModal.addEventListener('click', () => closeModal(teamListModal));
-  btnGenerate60TeamsText.addEventListener('click', () => {
-    const list = [];
-    for (let i = 1; i <= 60; i++) {
-      list.push(`チーム ${i}`);
-    }
-    teamListTextArea.value = list.join('\n');
-  });
   btnSaveTeamList.addEventListener('click', handleSaveTeamList);
 
   // モーダル外側クリックで閉じる
@@ -239,13 +238,23 @@ function loadQuestionToEditor(index) {
   editQuestionImage.value = q.image || '';
   editHasTimeLimit.checked = q.hasTimeLimit !== false;
   editTimeLimitSeconds.value = q.timeLimitSeconds || 15;
+  editAnswerType.value = q.answerType === 'text' ? 'text' : 'choice';
+  editTextAnswer.value = typeof q.answer === 'string' ? q.answer : '';
+  updateAnswerTypeFields();
   if (editIsDoublePoints) {
     editIsDoublePoints.checked = Boolean(q.isDoublePoints);
   }
   editExplanation.value = q.explanation || '';
 
   renderOptionInputs(q.options || []);
-  editCorrectAnswer.value = q.answer !== undefined ? q.answer : 0;
+  editCorrectAnswer.value = typeof q.answer === 'number' ? q.answer : 0;
+}
+
+function updateAnswerTypeFields() {
+  const isTextAnswer = editAnswerType.value === 'text';
+  editChoiceAnswerGroup.style.display = isTextAnswer ? 'none' : '';
+  editTextAnswerGroup.style.display = isTextAnswer ? '' : 'none';
+  optionsEditorGroup.style.display = isTextAnswer ? 'none' : '';
 }
 
 function renderOptionInputs(options) {
@@ -317,7 +326,8 @@ async function handleSaveQuestionEdit(e) {
     });
   });
 
-  if (newOptions.length < 2) {
+  const isTextAnswer = editAnswerType.value === 'text';
+  if (!isTextAnswer && newOptions.length < 2) {
     alert("選択肢は最低2個必要です。");
     return;
   }
@@ -326,7 +336,8 @@ async function handleSaveQuestionEdit(e) {
   q.image = editQuestionImage.value.trim();
   q.hasTimeLimit = editHasTimeLimit.checked;
   q.timeLimitSeconds = parseInt(editTimeLimitSeconds.value, 10) || 15;
-  q.answer = parseInt(editCorrectAnswer.value, 10);
+  q.answerType = isTextAnswer ? 'text' : 'choice';
+  q.answer = isTextAnswer ? editTextAnswer.value.trim() : parseInt(editCorrectAnswer.value, 10);
   q.isDoublePoints = editIsDoublePoints ? editIsDoublePoints.checked : false;
   q.options = newOptions;
   q.explanation = editExplanation.value.trim();
@@ -351,6 +362,7 @@ async function addNewQuestion() {
     image: "",
     hasTimeLimit: true,
     timeLimitSeconds: 15,
+    answerType: 'choice',
     isDoublePoints: false,
     options: [
       { text: "選択肢 1", image: "" },
@@ -434,6 +446,8 @@ function renderOrderListEditor() {
     const doubleBadge = q && q.isDoublePoints ? ' <span style="display:inline-block; font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:800; margin-left:4px;">🌟2倍</span>' : '';
 
     const item = document.createElement('div');
+    item.draggable = true;
+    item.classList.add('order-list-item');
     item.style.cssText = `
       display: flex; align-items: center; justify-content: space-between;
       padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0;
@@ -453,6 +467,28 @@ function renderOrderListEditor() {
       </div>
     `;
     orderListContainer.appendChild(item);
+
+    item.addEventListener('dragstart', event => {
+      event.dataTransfer.effectAllowed = 'move';
+      event.dataTransfer.setData('text/plain', String(idx));
+      item.classList.add('dragging');
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragover', event => {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', event => {
+      event.preventDefault();
+      item.classList.remove('drag-over');
+      const fromIndex = Number(event.dataTransfer.getData('text/plain'));
+      if (!Number.isInteger(fromIndex) || fromIndex < 0 || fromIndex >= tempOrder.length || fromIndex === idx) return;
+      const [movedQuestion] = tempOrder.splice(fromIndex, 1);
+      tempOrder.splice(idx, 0, movedQuestion);
+      refreshOrderEditor();
+    });
   });
 
   orderListContainer.querySelectorAll('.btn-order-up').forEach(b => {

@@ -10,6 +10,9 @@ let allTeams = {};
 let currentAnswers = {};
 let selectedQIndex = 0;
 let rankingChannel = null;
+let subscribedAnswerQuestionId = null;
+let unsubscribeCurrentAnswers = null;
+let lastSimulationTargetCount = null;
 
 // DOM要素
 const lblGameStatus = document.getElementById('lblGameStatus');
@@ -33,14 +36,6 @@ const timerDetailText = document.getElementById('timerDetailText');
 const statConnectedTeams = document.getElementById('statConnectedTeams');
 const statAnsweredTeams = document.getElementById('statAnsweredTeams');
 const statUnansweredTeams = document.getElementById('statUnansweredTeams');
-const teamMonitorBody = document.getElementById('teamMonitorBody');
-const selectMonitorSort = document.getElementById('selectMonitorSort');
-const thSortId = document.getElementById('thSortId');
-const thSortTime = document.getElementById('thSortTime');
-const thSortScore = document.getElementById('thSortScore');
-
-let monitorSortKey = 'id'; // 'id', 'time', 'score'
-let monitorSortDir = 'asc'; // 'asc', 'desc'
 
 
 // シミュレーション
@@ -56,6 +51,7 @@ const firebaseModal = document.getElementById('firebaseModal');
 const firebaseConfigInput = document.getElementById('firebaseConfigInput');
 const btnSaveFirebaseConfig = document.getElementById('btnSaveFirebaseConfig');
 const btnResetFirebaseConfig = document.getElementById('btnResetFirebaseConfig');
+const btnTogglePlayerQr = document.getElementById('btnTogglePlayerQr');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -64,6 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
     populateQuestionDropdown();
+    subscribeToSelectedQuestionAnswers();
   });
 
   // 出題順購読
@@ -71,6 +68,7 @@ document.addEventListener('DOMContentLoaded', () => {
     currentQuestionOrder = order || [];
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
     populateQuestionDropdown();
+    subscribeToSelectedQuestionAnswers();
   });
 
   // チーム購読
@@ -89,14 +87,7 @@ document.addEventListener('DOMContentLoaded', () => {
       rankingChannel.postMessage({ type: 'getRevealStatus' });
     }
 
-    // 現在の問題の回答購読
-    const currentQ = currentQuestions[selectedQIndex] || currentQuestions[0];
-    if (currentQ) {
-      quizStore.subscribeAnswers(currentQ.id, answers => {
-        currentAnswers = answers || {};
-        updateMonitor();
-      });
-    }
+    subscribeToSelectedQuestionAnswers();
   });
 
   setupEventListeners();
@@ -151,27 +142,6 @@ function setupEventListeners() {
     btnClearAnswersOnly.addEventListener('click', handleClearAnswersOnly);
   }
 
-  // モニターソート制御
-  if (selectMonitorSort) {
-    // Initialize dropdown to current sort setting
-    const initialValue = `${monitorSortKey}-${monitorSortDir}`;
-    selectMonitorSort.value = initialValue;
-    // Apply initial sorting
-    updateMonitor();
-    // Handle changes
-    selectMonitorSort.addEventListener('change', e => {
-      const [key, dir] = e.target.value.split('-');
-      monitorSortKey = key;
-      monitorSortDir = dir;
-      updateMonitor();
-    });
-  }
-
-  // Header sort click handlers
-  if (thSortId) { thSortId.addEventListener('click', () => toggleHeaderSort('id')); }
-  if (thSortTime) { thSortTime.addEventListener('click', () => toggleHeaderSort('time')); }
-  if (thSortScore) { thSortScore.addEventListener('click', () => toggleHeaderSort('score')); }
-
   // Admin ranking button listener (broadcast to presentation and player)
   rankingChannel = new BroadcastChannel('quiz-ranking');
   rankingChannel.addEventListener('message', event => {
@@ -205,6 +175,12 @@ function setupEventListeners() {
       if (e.target === firebaseModal) firebaseModal.classList.remove('active');
     });
   }
+
+  btnTogglePlayerQr.addEventListener('click', () => {
+    const channel = new BroadcastChannel('quiz-presentation');
+    channel.postMessage({ type: 'togglePlayerQr' });
+    channel.close();
+  });
 }
 
 // UI状態の反映
@@ -219,7 +195,12 @@ function applyStateToUI() {
   lblGameStatus.className = `status-badge-live ${status}`;
 
   // 想定チーム数
-  lblTargetTeams.textContent = targetTeamCount || 100;
+  const expectedTeamCount = targetTeamCount || 100;
+  lblTargetTeams.textContent = expectedTeamCount;
+  if (simTeamCount && lastSimulationTargetCount !== expectedTeamCount) {
+    simTeamCount.value = expectedTeamCount;
+    lastSimulationTargetCount = expectedTeamCount;
+  }
 
   // シーン名ラベル
   const sceneMap = {
@@ -430,15 +411,18 @@ async function calculateAndApplyScores(q) {
   const scoreConfig = (currentState && currentState.scoreConfig) ? currentState.scoreConfig : DEFAULT_SCORE_CONFIG;
 
   const scoreResult = ScoreEngine.calculateQuestionScores(answersList, q.answer, scoreConfig, q.isDoublePoints);
+  const previousResults = await quizStore.getQuestionResults(q.id);
 
-  // 各チームの総得点に加算
+  // 再集計時は以前のこの問題の得点との差分だけを反映する
   const updatedTeams = { ...allTeams };
   Object.keys(scoreResult.results).forEach(teamId => {
     const earned = scoreResult.results[teamId].pointsAwarded || 0;
+    const previousEarned = Number(previousResults && previousResults.results
+      && previousResults.results[teamId] && previousResults.results[teamId].pointsAwarded) || 0;
     if (updatedTeams[teamId]) {
       updatedTeams[teamId] = {
         ...updatedTeams[teamId],
-        totalScore: (updatedTeams[teamId].totalScore || 0) + earned
+        totalScore: Math.max(0, (updatedTeams[teamId].totalScore || 0) + earned - previousEarned)
       };
     }
   });
@@ -464,104 +448,31 @@ function populateQuestionDropdown() {
 
 // --- リアルタイムモニター ---
 
-function toggleHeaderSort(key) {
-  if (monitorSortKey === key) {
-    monitorSortDir = monitorSortDir === 'asc' ? 'desc' : 'asc';
-  } else {
-    monitorSortKey = key;
-    monitorSortDir = key === 'score' ? 'desc' : 'asc';
-  }
-  if (selectMonitorSort) {
-    selectMonitorSort.value = `${monitorSortKey}-${monitorSortDir}`;
-  }
-  updateMonitor();
-}
-
 function updateMonitor() {
-  const teamsList = Object.values(allTeams);
-  const totalTeams = teamsList.length;
+  const totalTeams = Object.keys(allTeams).length;
   const answeredTotal = Object.keys(currentAnswers).length;
 
   if (statConnectedTeams) statConnectedTeams.textContent = totalTeams;
   if (statAnsweredTeams) statAnsweredTeams.textContent = answeredTotal;
   if (statUnansweredTeams) statUnansweredTeams.textContent = Math.max(0, totalTeams - answeredTotal);
+}
 
-  // ヘッダーのソートインジケーター更新
-  [thSortId, thSortTime, thSortScore].forEach(th => {
-    if (!th) return;
-    th.classList.remove('sort-asc', 'sort-desc');
-    if (th.getAttribute('data-sort') === monitorSortKey) {
-      th.classList.add(monitorSortDir === 'asc' ? 'sort-asc' : 'sort-desc');
-    }
-  });
-
-  // 現在の問題の正解インデックス
-  const currentQ = currentQuestions[selectedQIndex];
-  const correctAnswerIdx = currentQ ? Number(currentQ.answer) : null;
-
-  // ソート処理
-  teamsList.sort((a, b) => {
-    const ansA = currentAnswers[a.teamId];
-    const ansB = currentAnswers[b.teamId];
-
-    if (monitorSortKey === 'id') {
-      const res = (a.teamId || '').localeCompare(b.teamId || '', undefined, { numeric: true, sensitivity: 'base' });
-      return monitorSortDir === 'asc' ? res : -res;
-    } else if (monitorSortKey === 'time') {
-      const timeA = (ansA && ansA.answerTimeMs !== undefined) ? ansA.answerTimeMs : null;
-      const timeB = (ansB && ansB.answerTimeMs !== undefined) ? ansB.answerTimeMs : null;
-      if (timeA === null && timeB === null) return 0;
-      if (timeA === null) return 1;
-      if (timeB === null) return -1;
-      const diff = timeA - timeB;
-      return monitorSortDir === 'asc' ? diff : -diff;
-    } else if (monitorSortKey === 'score') {
-      const diff = (a.totalScore || 0) - (b.totalScore || 0);
-      return monitorSortDir === 'asc' ? diff : -diff;
-    }
-    return 0;
-  });
-
-  if (!teamMonitorBody) return;
-  teamMonitorBody.innerHTML = '';
-
-  teamsList.forEach(t => {
-    const ans = currentAnswers[t.teamId];
-    const isAnswered = Boolean(ans);
-    const selectedOpt = isAnswered ? Number(ans.selectedOption) : null;
-    const isCorrect = isAnswered && (correctAnswerIdx !== null) && (selectedOpt === correctAnswerIdx);
-    const timeSec = isAnswered && ans.answerTimeMs ? (ans.answerTimeMs / 1000).toFixed(2) + "s" : "-";
-
-    let rowClass = "row-unanswered";
-    let badgeHtml = `<span class="badge-ans unanswered">-</span>`;
-
-    if (isAnswered) {
-      if (isCorrect) {
-        rowClass = "row-correct";
-        badgeHtml = `<span class="badge-ans correct">⭕ ${selectedOpt + 1}</span>`;
-      } else {
-        rowClass = "row-incorrect";
-        badgeHtml = `<span class="badge-ans incorrect">❌ ${selectedOpt + 1}</span>`;
-      }
-    }
-
-    const tr = document.createElement('tr');
-    tr.className = rowClass;
-    tr.innerHTML = `
-      <td style="font-size: 0.78rem; color: #64748b; font-family: monospace;">${escapeHtml(t.teamId)}</td>
-      <td style="font-weight: 700; color: #0f172a;">${escapeHtml(t.teamName)}</td>
-      <td style="text-align: center;">${badgeHtml}</td>
-      <td style="color: #475569; font-weight: 700;">${timeSec}</td>
-      <td style="text-align: right; font-weight: 800; color: #2563eb;">${t.totalScore || 0}</td>
-    `;
-    teamMonitorBody.appendChild(tr);
+function subscribeToSelectedQuestionAnswers() {
+  const currentQ = currentQuestions[selectedQIndex] || currentQuestions[0];
+  if (!currentQ || currentQ.id === subscribedAnswerQuestionId) return;
+  if (unsubscribeCurrentAnswers) unsubscribeCurrentAnswers();
+  subscribedAnswerQuestionId = currentQ.id;
+  currentAnswers = {};
+  unsubscribeCurrentAnswers = quizStore.subscribeAnswers(currentQ.id, answers => {
+    currentAnswers = answers || {};
+    updateMonitor();
   });
 }
 
 // --- テスト支援 (指定チーム数のダミー生成 & シミュレーション) ---
 
 async function handleGenerateDummyTeams() {
-  const count = parseInt(simTeamCount.value, 10) || 10;
+  const count = parseInt(simTeamCount.value, 10) || 100;
   if (count <= 0 || count > 500) {
     alert("チーム数は 1〜500 の範囲で指定してください。");
     return;
@@ -587,12 +498,14 @@ async function handleSimulateAnswers() {
     return;
   }
 
-  const numOptions = currentQ.options.length;
+  const numOptions = (currentQ.options || []).length;
 
   for (const t of teamsList) {
-    const randomOption = Math.floor(Math.random() * numOptions);
+    const randomOption = currentQ.answerType === 'text'
+      ? `テスト回答 ${Math.floor(Math.random() * 100) + 1}`
+      : Math.floor(Math.random() * numOptions);
     const randomTime = Math.floor(Math.random() * 12000) + 1500; // 1.5s〜13.5s
-    await quizStore.submitAnswer(currentQ.id, t.teamId, t.teamName, randomOption, randomTime);
+    await quizStore.submitAnswer(currentQ.id, t.teamId, t.teamName, randomOption, randomTime, currentQ.answerType);
   }
   alert(`${teamsList.length} チームの回答シミュレーションを完了しました！`);
 }

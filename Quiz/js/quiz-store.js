@@ -20,9 +20,17 @@ class QuizStore {
     if (this.channel) {
       this.channel.onmessage = (event) => {
         const { type, data } = event.data;
-        if (this.listeners[type]) {
-          this.listeners[type].forEach(callback => callback(data));
-        }
+          if (type === 'answers') {
+            this.listeners.answers.forEach(subscription => {
+              if (!event.data.questionId || subscription.questionId === event.data.questionId) {
+                subscription.callback(data);
+              }
+            });
+            return;
+          }
+          if (this.listeners[type]) {
+            this.listeners[type].forEach(callback => callback(data));
+          }
       };
     }
 
@@ -389,7 +397,7 @@ class QuizStore {
 
     this.listeners.state.forEach(cb => cb(defaultState));
     this.listeners.teams.forEach(cb => cb({}));
-    this.listeners.answers.forEach(cb => cb({}));
+    this.listeners.answers.forEach(subscription => subscription.callback({}));
   }
 
   async resetGameData() {
@@ -413,48 +421,128 @@ class QuizStore {
         this.channel.postMessage({ type: 'answers', data: {} });
       }
       this.listeners.teams.forEach(cb => cb({}));
-      this.listeners.answers.forEach(cb => cb({}));
+      this.listeners.answers.forEach(subscription => subscription.callback({}));
     }
   }
 
   // --- 回答の送信・集計 ---
 
   subscribeAnswers(questionId, callback) {
-    this.listeners.answers.push(callback);
+    const subscription = { questionId, callback };
+    this.listeners.answers.push(subscription);
 
+    let firebaseRef = null;
+    let firebaseCallback = null;
     if (this.isFirebaseReady && this.database) {
-      this.database.ref(`quiz/answers/${questionId}`).on('value', snapshot => {
+      firebaseRef = this.database.ref(`quiz/answers/${questionId}`);
+      firebaseCallback = snapshot => {
         const val = snapshot.val() || {};
         callback(val);
-      });
+      };
+      firebaseRef.on('value', firebaseCallback);
     } else {
       const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
       const qAnswers = allAnswers[questionId] || {};
       callback(qAnswers);
     }
+
+    return () => {
+      this.listeners.answers = this.listeners.answers.filter(item => item !== subscription);
+      if (firebaseRef && firebaseCallback) firebaseRef.off('value', firebaseCallback);
+    };
   }
 
-  async submitAnswer(questionId, teamId, teamName, selectedOption, answerTimeMs) {
+  async submitAnswer(questionId, teamId, teamName, answer, answerTimeMs, answerType = 'choice') {
     const answerData = {
       teamId,
       teamName,
-      selectedOption: Number(selectedOption),
       answerTimeMs: Number(answerTimeMs),
       answeredAt: Date.now()
     };
+    if (answerType === 'text') {
+      answerData.answerText = String(answer);
+    } else {
+      answerData.selectedOption = Number(answer);
+    }
+
+    const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+    if (!allAnswers[questionId]) allAnswers[questionId] = {};
+    allAnswers[questionId][teamId] = answerData;
+    localStorage.setItem('quiz_local_answers', JSON.stringify(allAnswers));
 
     if (this.isFirebaseReady && this.database) {
       await this.database.ref(`quiz/answers/${questionId}/${teamId}`).set(answerData);
     } else {
-      const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
-      if (!allAnswers[questionId]) allAnswers[questionId] = {};
-      allAnswers[questionId][teamId] = answerData;
-      localStorage.setItem('quiz_local_answers', JSON.stringify(allAnswers));
-      if (this.channel) {
-        this.channel.postMessage({ type: 'answers', data: allAnswers[questionId] });
-      }
-      this.listeners.answers.forEach(cb => cb(allAnswers[questionId]));
+      this.publishAnswers(allAnswers[questionId], questionId);
     }
+  }
+
+  publishAnswers(answers, questionId) {
+    if (this.channel) {
+      this.channel.postMessage({ type: 'answers', questionId, data: answers });
+    }
+    this.listeners.answers.forEach(subscription => {
+      if (subscription.questionId === questionId) subscription.callback(answers);
+    });
+  }
+
+  async setManualGrade(question, teamId, isCorrect) {
+    if (question.answerType !== 'text') {
+      throw new Error('記述式問題のみ手動採点できます。');
+    }
+
+    const answers = await this.getAnswersForQuestion(question.id);
+    const answer = answers[teamId];
+    if (!answer || typeof answer.answerText !== 'string') {
+      throw new Error('採点対象の回答が見つかりません。');
+    }
+    answer.manualIsCorrect = Boolean(isCorrect);
+    answer.gradedAt = Date.now();
+
+    const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+    allAnswers[question.id] = answers;
+    localStorage.setItem('quiz_local_answers', JSON.stringify(allAnswers));
+    if (this.isFirebaseReady && this.database) {
+      await this.database.ref(`quiz/answers/${question.id}/${teamId}`).update({
+        manualIsCorrect: answer.manualIsCorrect,
+        gradedAt: answer.gradedAt
+      });
+    } else {
+      this.publishAnswers(allAnswers[question.id], question.id);
+    }
+
+    const previousResults = await this.getQuestionResults(question.id);
+    if (!previousResults || !previousResults.results) return;
+
+    let teams = JSON.parse(localStorage.getItem('quiz_local_teams') || '{}');
+    let state = JSON.parse(localStorage.getItem('quiz_local_state') || JSON.stringify(this.getDefaultState()));
+    if (this.isFirebaseReady && this.database) {
+      const [teamsSnapshot, stateSnapshot] = await Promise.all([
+        this.database.ref('quiz/teams').once('value'),
+        this.database.ref('quiz/state').once('value')
+      ]);
+      teams = teamsSnapshot.val() || {};
+      state = stateSnapshot.val() || state;
+    }
+
+    const scoreConfig = state.scoreConfig || DEFAULT_SCORE_CONFIG;
+    const scoreResult = ScoreEngine.calculateQuestionScores(
+      Object.values(allAnswers[question.id]),
+      question.answer,
+      scoreConfig,
+      question.isDoublePoints
+    );
+    const updatedTeams = { ...teams };
+    Object.keys(scoreResult.results).forEach(id => {
+      if (!updatedTeams[id]) return;
+      const previousPoints = Number(previousResults.results[id]?.pointsAwarded) || 0;
+      const nextPoints = Number(scoreResult.results[id].pointsAwarded) || 0;
+      updatedTeams[id] = {
+        ...updatedTeams[id],
+        totalScore: Math.max(0, (Number(updatedTeams[id].totalScore) || 0) + nextPoints - previousPoints)
+      };
+    });
+    await this.saveQuestionResults(question.id, scoreResult, updatedTeams);
   }
 
   async getAnswersForQuestion(questionId) {

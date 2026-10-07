@@ -91,6 +91,64 @@ body.presentation-body {
   animation: floatBubble 2s ease-in-out infinite;
 }
 
+.pres-text-answer-notice {
+  padding: 18px 28px;
+  border: 2px solid #94a3b8;
+  border-radius: var(--radius-md);
+  background: #ffffff;
+  color: #334155;
+  font-size: clamp(1.15rem, 2vw, 1.8rem);
+  font-weight: 800;
+  text-align: center;
+}
+
+.player-qr-panel {
+  position: fixed;
+  z-index: 30;
+  left: 28px;
+  bottom: 28px;
+  display: none;
+  width: 290px;
+  padding: 18px;
+  border: 3px solid #0284c7;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.2);
+  text-align: center;
+}
+
+.player-qr-panel.is-visible {
+  display: block;
+}
+
+.player-qr-panel h2 {
+  margin: 0 0 12px;
+  color: #0f172a;
+  font-size: 1.15rem;
+}
+
+#playerQrCode {
+  display: flex;
+  justify-content: center;
+  min-height: 240px;
+  margin-bottom: 10px;
+  color: #b91c1c;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+#playerQrCode img,
+#playerQrCode canvas {
+  max-width: 100%;
+}
+
+#playerQrUrl {
+  display: block;
+  color: #0369a1;
+  font-size: 0.75rem;
+  overflow-wrap: anywhere;
+}
+
 @keyframes floatBubble {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-4px); }

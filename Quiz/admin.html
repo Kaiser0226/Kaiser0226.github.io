@@ -28,6 +28,12 @@
       <a href="presentation.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
         📺 プレゼン画面
       </a>
+      <a href="monitor.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
+        📊 回答状況モニター
+      </a>
+      <button type="button" class="btn btn-secondary" id="btnTogglePlayerQr" style="font-size: 0.9rem;">
+        🔳 回答画面QRを表示 / 非表示
+      </button>
       <a href="player.html" target="_blank" class="btn btn-secondary" style="font-size: 0.9rem;">
         📱 回答画面
       </a>
@@ -132,14 +138,24 @@
 
     </div>
 
-    <!-- 右側サイドバー: リアルタイムモニター -->
+    <!-- 右側サイドバー: 簡易回答状況とシミュレーション -->
     <aside class="admin-sidebar">
+
+      <section class="admin-card presentation-preview-card">
+        <div class="admin-card-header">
+          <div class="admin-card-title">
+            <span>📺</span>
+            <span>プレゼン画面プレビュー</span>
+          </div>
+        </div>
+        <iframe title="プレゼン画面プレビュー" id="presentationPreviewFrame" src="presentation.html"></iframe>
+      </section>
 
       <section class="admin-card monitor-card">
         <div class="admin-card-header">
           <div class="admin-card-title">
             <span>📊</span>
-            <span>回答状況モニター</span>
+            <span>簡易回答状況</span>
           </div>
         </div>
 
@@ -158,80 +174,36 @@
           </div>
         </div>
 
-        <!-- ソートコントロール＆凡例 -->
-        <div class="monitor-toolbar">
-          <div style="display: flex; align-items: center; gap: 4px;">
-            <label for="selectMonitorSort" style="font-weight: 700; color: #475569;">ソート:</label>
-            <select id="selectMonitorSort" class="form-input" style="padding: 4px 8px; font-size: 0.8rem; width: auto; font-weight: 700;">
-              <option value="id-asc">チームID 昇順</option>
-              <option value="id-desc">チームID 降順</option>
-              <option value="time-asc">回答時間 早い順</option>
-              <option value="time-desc">回答時間 遅い順</option>
-              <option value="score-desc">累計得点 高い順</option>
-              <option value="score-asc">累計得点 低い順</option>
-            </select>
-          </div>
-          <div class="monitor-legend">
-            <span style="color: #16a34a;">🟢 正答</span>
-            <span style="color: #dc2626;">🔴 誤答</span>
-            <span style="color: #64748b;">⚪ 未回答</span>
-          </div>
-        </div>
-
-        <!-- 参加チーム一覧テーブル -->
-        <div style="max-height: 480px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-          <table class="live-team-table">
-            <thead>
-              <tr>
-                <th class="sortable" id="thSortId" data-sort="id" title="クリックしてチームIDでソート">ID</th>
-                <th>チーム名</th>
-                <th style="text-align: center;">回答</th>
-                <th class="sortable" id="thSortTime" data-sort="time" title="クリックして回答時間でソート">時間</th>
-                <th class="sortable" id="thSortScore" data-sort="score" title="クリックして累計得点でソート" style="text-align: right;">累計得点</th>
-              </tr>
-            </thead>
-            <tbody id="teamMonitorBody">
-              <!-- 動的生成 -->
-            </tbody>
-          </table>
-        </div>
+        <a href="monitor.html" target="_blank" class="btn btn-secondary" style="display: block; text-align: center;">
+          回答状況モニターを開く
+        </a>
       </section>
 
-    </aside>
-
-    <!-- 画面下部: 動作テスト・シミュレーション -->
-    <div class="admin-full-bottom">
       <section class="simulation-panel">
         <div class="admin-card-header" style="margin-bottom: 12px; padding-bottom: 8px;">
           <div class="admin-card-title">
             <span>🧪</span>
             <span>動作テスト・シミュレーション</span>
           </div>
-          <div style="font-size: 0.85rem; color: #64748b;">
-            参加端末がなくても、指定チーム数でダミー登録・回答送信をシミュレートできます
-          </div>
         </div>
-
+        <p style="font-size: 0.85rem; color: #64748b;">
+          参加端末がなくても、ダミーチームの登録と回答送信をテストできます。
+        </p>
         <div class="simulation-controls-row">
           <div style="display: flex; align-items: center; gap: 8px;">
-            <label for="simTeamCount" class="form-label" style="margin: 0; white-space: nowrap;">シミュレーションチーム数:</label>
-            <input type="number" id="simTeamCount" class="form-input" value="10" min="2" max="200" style="width: 100px;">
+            <label for="simTeamCount" class="form-label" style="margin: 0; white-space: nowrap;">登録チーム数:</label>
+            <input type="number" id="simTeamCount" class="form-input" value="100" min="1" max="500" style="width: 100px;">
             <span style="font-size: 0.9rem; font-weight: 700; color: #334155;">組</span>
           </div>
-
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <button type="button" class="btn btn-secondary" id="btnGenerateDummyTeams">
-              👥 指定チーム数でダミー生成
-            </button>
-            <button type="button" class="btn btn-secondary" id="btnSimulateAnswers">
-              ⚡ 一括回答シミュレーション実行
-            </button>
-            <button type="button" class="btn btn-secondary" id="btnClearAnswersOnly" style="font-size: 0.85rem;">
-              🧹 現在問題の回答のみクリア
-            </button>
+            <button type="button" class="btn btn-secondary" id="btnGenerateDummyTeams">👥 ダミーチーム生成</button>
+            <button type="button" class="btn btn-secondary" id="btnSimulateAnswers">⚡ 回答シミュレーション</button>
+            <button type="button" class="btn btn-secondary" id="btnClearAnswersOnly" style="font-size: 0.85rem;">🧹 現在問題の回答をクリア</button>
+          </div>
         </div>
       </section>
-    </div>
+
+    </aside>
 
   </main>
 

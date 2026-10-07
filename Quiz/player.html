@@ -88,9 +88,16 @@
           問題文を読み込んでいます...
         </div>
 
-        <!-- 3. 選択肢 1〜6 -->
+        <!-- 選択式回答 -->
         <div class="options-list" id="playerOptionsList">
           <!-- JSで動的にボタン生成 -->
+        </div>
+
+        <!-- 記述式回答 -->
+        <div class="text-answer-entry" id="playerTextAnswerEntry" style="display: none;">
+          <label for="playerTextAnswer">回答を入力してください</label>
+          <textarea id="playerTextAnswer" class="form-textarea" rows="4" maxlength="1000"
+            placeholder="回答を入力"></textarea>
         </div>
 
         <!-- 4. ロックボタン -->

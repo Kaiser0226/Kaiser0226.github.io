@@ -1,0 +1,102 @@
+.monitor-main {
+  display: block;
+  max-width: 1500px;
+}
+
+.monitor-heading {
+  align-items: flex-start;
+  gap: 20px;
+}
+
+.monitor-stats {
+  display: flex;
+  margin: 0;
+}
+
+.monitor-stats .mini-stat {
+  min-width: 100px;
+}
+
+.monitor-note {
+  color: #475569;
+  font-weight: 700;
+  margin: 0 0 14px;
+}
+
+.monitor-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+.monitor-toolbar select {
+  width: auto;
+  padding: 5px 8px;
+}
+
+.monitor-legend {
+  display: flex;
+  gap: 12px;
+}
+
+.monitor-table-scroll {
+  max-height: calc(100vh - 270px);
+  min-height: 240px;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+.live-team-table td.answer-cell {
+  min-width: 260px;
+  max-width: 620px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.manual-grade-controls {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: 10px;
+  vertical-align: middle;
+}
+
+.manual-grade-controls .btn {
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.grade-pending {
+  color: #b45309;
+  font-weight: 800;
+}
+
+.grade-correct {
+  color: #15803d;
+  font-weight: 800;
+}
+
+.grade-incorrect {
+  color: #b91c1c;
+  font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .monitor-heading {
+    flex-direction: column;
+  }
+
+  .monitor-stats {
+    width: 100%;
+  }
+
+  .monitor-stats .mini-stat {
+    min-width: 0;
+    flex: 1;
+  }
+}

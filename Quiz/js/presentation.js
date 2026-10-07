@@ -11,6 +11,8 @@ let currentAnswers = {};
 let allTeams = {};
 let timerInterval = null;
 let rankingChannel = null;
+let subscribedAnswerQuestionId = null;
+let unsubscribeCurrentAnswers = null;
 
 // DOM要素
 const waterContainer = document.getElementById('waterContainer');
@@ -31,6 +33,7 @@ const presTimerContainer = document.getElementById('presTimerContainer');
 const presTimerFill = document.getElementById('presTimerFill');
 const presTimerSeconds = document.getElementById('presTimerSeconds');
 const presOptionsGrid = document.getElementById('presOptionsGrid');
+const presTextAnswerNotice = document.getElementById('presTextAnswerNotice');
 const presExplanationBox = document.getElementById('presExplanationBox');
 const presExplanationText = document.getElementById('presExplanationText');
 
@@ -47,6 +50,9 @@ const btnToggleFullRanking = document.getElementById('btnToggleFullRanking');
 const btnResetReveal = document.getElementById('btnResetReveal');
 const rankingCardsStack = document.getElementById('rankingCardsStack');
 const fullRankingView = document.getElementById('fullRankingView');
+const playerQrPanel = document.getElementById('playerQrPanel');
+const playerQrCode = document.getElementById('playerQrCode');
+const playerQrUrl = document.getElementById('playerQrUrl');
 
 // 順位発表管理用状態
 let sortedTeams = [];
@@ -58,6 +64,14 @@ let isShowingFullRanking = false;
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   rankingChannel = new BroadcastChannel('quiz-ranking');
+  const presentationChannel = new BroadcastChannel('quiz-presentation');
+  presentationChannel.addEventListener('message', event => {
+    if (event.data && event.data.type === 'togglePlayerQr') {
+      const visible = playerQrPanel.classList.toggle('is-visible');
+      playerQrPanel.setAttribute('aria-hidden', String(!visible));
+      if (visible) renderPlayerQr();
+    }
+  });
   rankingChannel.addEventListener('message', event => {
     const command = event.data && event.data.type;
     if (command === 'getRevealStatus') {
@@ -77,6 +91,7 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeQuestions(questions => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    subscribeToActiveQuestionAnswers();
     renderCurrentQuestion();
   });
 
@@ -84,6 +99,7 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeQuestionOrder(order => {
     currentQuestionOrder = order || [];
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    subscribeToActiveQuestionAnswers();
     renderCurrentQuestion();
   });
 
@@ -127,6 +143,19 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+function subscribeToActiveQuestionAnswers() {
+  const qIndex = currentState ? Number(currentState.currentQuestionIndex) || 0 : 0;
+  const question = currentQuestions[qIndex] || currentQuestions[0];
+  if (!question || question.id === subscribedAnswerQuestionId) return;
+  if (unsubscribeCurrentAnswers) unsubscribeCurrentAnswers();
+  subscribedAnswerQuestionId = question.id;
+  currentAnswers = {};
+  unsubscribeCurrentAnswers = quizStore.subscribeAnswers(question.id, answers => {
+    currentAnswers = answers || {};
+    updateWaterLevel();
+  });
+}
+
 function applyState() {
   if (!currentState) return;
 
@@ -135,13 +164,7 @@ function applyState() {
 
   targetCountEl.textContent = targetTeamCount || 100;
 
-  // 現在の問題に対する回答の購読
-  if (currentQ) {
-    quizStore.subscribeAnswers(currentQ.id, answers => {
-      currentAnswers = answers || {};
-      updateWaterLevel();
-    });
-  }
+  subscribeToActiveQuestionAnswers();
 
   // ステータスバッジ
   qNumberBadge.textContent = `Q ${currentQuestionIndex + 1}`;
@@ -223,7 +246,11 @@ function renderCurrentQuestion() {
 
   // 3. 選択肢 (2列グリッド: ◯◯ ◯◯ ◯◯)
   presOptionsGrid.innerHTML = '';
-  (q.options || []).forEach((opt, idx) => {
+  const isTextAnswer = q.answerType === 'text';
+  presOptionsGrid.style.display = isTextAnswer ? 'none' : '';
+  presTextAnswerNotice.textContent = '回答は参加者のスマートフォンから入力します';
+  presTextAnswerNotice.style.display = isTextAnswer ? 'block' : 'none';
+  (isTextAnswer ? [] : (q.options || [])).forEach((opt, idx) => {
     const card = document.createElement('div');
     card.className = 'pres-option-card';
     card.setAttribute('data-index', idx);
@@ -325,6 +352,13 @@ function updateWaterLevel() {
 
 // 正解のハイライト表示
 function highlightCorrectAnswer(q) {
+  if (q.answerType === 'text') {
+    presOptionsGrid.style.display = 'none';
+    presTextAnswerNotice.textContent = '記述式回答を手動採点しました。';
+    presTextAnswerNotice.style.display = 'block';
+    presExplanationBox.style.display = 'block';
+    return;
+  }
   const cards = presOptionsGrid.querySelectorAll('.pres-option-card');
   const correctIdx = Number(q.answer);
 
@@ -340,6 +374,23 @@ function highlightCorrectAnswer(q) {
   });
 
   presExplanationBox.style.display = 'block';
+}
+
+function renderPlayerQr() {
+  const playerUrl = new URL('player.html', window.location.href);
+  playerQrUrl.href = playerUrl.href;
+  playerQrUrl.textContent = playerUrl.href;
+  playerQrCode.replaceChildren();
+  if (typeof QRCode !== 'function') {
+    playerQrCode.textContent = 'QRコードを読み込めません。下のURLを開いてください。';
+    return;
+  }
+  new QRCode(playerQrCode, {
+    text: playerUrl.href,
+    width: 240,
+    height: 240,
+    correctLevel: QRCode.CorrectLevel.M
+  });
 }
 
 function removeAnswerHighlights() {

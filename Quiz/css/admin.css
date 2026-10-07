@@ -40,6 +40,20 @@
   display: flex;
   gap: 10px;
   align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+@media (max-width: 900px) {
+  .admin-nav {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .admin-nav-actions {
+    justify-content: flex-start;
+  }
 }
 
 .admin-main {
@@ -427,6 +441,32 @@
   gap: 16px;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+
+.presentation-preview-card {
+  padding: 16px;
+}
+
+.presentation-preview-card iframe {
+  display: block;
+  width: 100%;
+  height: 320px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+}
+
+.order-list-item {
+  cursor: grab;
+}
+
+.order-list-item.dragging {
+  opacity: 0.45;
+}
+
+.order-list-item.drag-over {
+  border-color: var(--primary) !important;
+  background: #eff6ff !important;
 }
 
 /* JSONエディタエリア */

@@ -63,6 +63,9 @@
       <div class="pres-options-grid" id="presOptionsGrid">
         <!-- JSで動的に2〜6個生成 -->
       </div>
+      <div class="pres-text-answer-notice" id="presTextAnswerNotice" style="display: none;">
+        回答は参加者のスマートフォンから入力します
+      </div>
 
       <!-- 5. 正解発表時の解説ボックス -->
       <div class="pres-explanation-box" id="presExplanationBox" style="display: none;">
@@ -113,12 +116,19 @@
 
   </div>
 
+  <aside class="player-qr-panel" id="playerQrPanel" aria-hidden="true">
+    <h2>スマートフォンで回答</h2>
+    <div id="playerQrCode"></div>
+    <a id="playerQrUrl" href="player.html">回答画面を開く</a>
+  </aside>
+
   <!-- スクリプト群 -->
   <script src="js/firebase-config.js"></script>
   <script src="js/questions-data.js"></script>
   <script src="js/questions-order.js"></script>
   <script src="js/score-engine.js"></script>
   <script src="js/quiz-store.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script src="js/presentation.js"></script>
 </body>
 </html>

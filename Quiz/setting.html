@@ -104,16 +104,21 @@
               </div>
             </div>
             <div class="form-group">
-              <label class="form-label">正解の選択肢</label>
-              <select id="editCorrectAnswer" class="form-input">
-                <option value="0">選択肢 1 (赤)</option>
-                <option value="1">選択肢 2 (青)</option>
-                <option value="2">選択肢 3 (黄)</option>
-                <option value="3">選択肢 4 (緑)</option>
-                <option value="4">選択肢 5 (水色)</option>
-                <option value="5">選択肢 6 (紫)</option>
+              <label class="form-label" for="editAnswerType">回答形式</label>
+              <select id="editAnswerType" class="form-input">
+                <option value="choice">選択式</option>
+                <option value="text">記述式（手動採点）</option>
               </select>
             </div>
+          </div>
+
+          <div class="form-group" id="editChoiceAnswerGroup">
+            <label class="form-label">正解の選択肢</label>
+            <select id="editCorrectAnswer" class="form-input"></select>
+          </div>
+          <div class="form-group" id="editTextAnswerGroup" style="display: none;">
+            <label class="form-label" for="editTextAnswer">模範解答（任意・管理用）</label>
+            <input type="text" id="editTextAnswer" class="form-input" placeholder="回答状況モニターで手動採点します">
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
@@ -124,7 +129,7 @@
           </div>
 
           <!-- 選択肢 2〜6択動的エディタ -->
-          <div class="form-group">
+          <div class="form-group" id="optionsEditorGroup">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <label class="form-label" style="margin: 0;">選択肢 (2〜6択)</label>
               <div style="display: flex; gap: 6px;">
@@ -260,7 +265,7 @@
         <button type="button" class="modal-close" id="btnCloseOrderModal">&times;</button>
       </div>
       <p style="font-size: 0.9rem; color: #64748b; margin-bottom: 14px;">
-        出題したい順番に並べ替えてください。「↑ 上へ」「↓ 下へ」で順序を変更できます。
+        出題したい順番に並べ替えてください。「↑ 上へ」「↓ 下へ」またはドラッグ＆ドロップで順序を変更できます。
       </p>
       <div id="orderListContainer" style="max-height: 380px; overflow-y: auto; margin-bottom: 16px;">
         <!-- JSで動的生成 -->
@@ -284,7 +289,6 @@
       </p>
       <textarea id="teamListTextArea" class="form-textarea" rows="12" placeholder="チーム 1\nチーム 2\nチーム 3..."></textarea>
       <div style="display: flex; justify-content: space-between; margin-top: 16px;">
-        <button type="button" class="btn btn-secondary" id="btnGenerate60TeamsText">1〜60チーム自動生成</button>
         <button type="button" class="btn btn-primary" id="btnSaveTeamList">チーム一覧を保存</button>
       </div>
     </div>

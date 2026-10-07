@@ -41,6 +41,8 @@ const playerImageContainer = document.getElementById('playerImageContainer');
 const playerQuestionImage = document.getElementById('playerQuestionImage');
 const playerQuestionText = document.getElementById('playerQuestionText');
 const playerOptionsList = document.getElementById('playerOptionsList');
+const playerTextAnswerEntry = document.getElementById('playerTextAnswerEntry');
+const playerTextAnswer = document.getElementById('playerTextAnswer');
 const btnLock = document.getElementById('btnLock');
 
 // 結果シーン要素
@@ -135,6 +137,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // チーム登録ボタン
   btnRegisterTeam.addEventListener('click', handleRegister);
   btnLock.addEventListener('click', handleLockAnswer);
+  playerTextAnswer.addEventListener('input', () => {
+    btnLock.disabled = playerTextAnswer.value.trim().length === 0 || isAnswerLocked;
+  });
   if (btnRetrySyncResult) {
     btnRetrySyncResult.addEventListener('click', () => {
       if (currentState && currentState.currentScene === 'result') {
@@ -270,6 +275,7 @@ function applyState() {
     sceneQuestion.style.display = 'flex';
     // 回答締め切り状態
     btnLock.disabled = true;
+    playerTextAnswer.disabled = true;
     if (!isAnswerLocked) {
       btnLock.textContent = "回答時間終了";
     }
@@ -323,6 +329,11 @@ function setupQuestionScene(q) {
   // 新しい問題になったらリセット
   const questionKey = `q_answered_${q.id}`;
   const alreadyAnswered = sessionStorage.getItem(questionKey);
+  const isTextAnswer = q.answerType === 'text';
+  playerOptionsList.style.display = isTextAnswer ? 'none' : '';
+  playerTextAnswerEntry.style.display = isTextAnswer ? 'block' : 'none';
+  playerTextAnswer.disabled = false;
+  playerTextAnswer.value = '';
 
   // 1. 問題画像
   if (q.image && q.image.trim() !== '') {
@@ -337,7 +348,7 @@ function setupQuestionScene(q) {
 
   // 3. 選択肢ボタン生成
   playerOptionsList.innerHTML = '';
-  q.options.forEach((opt, idx) => {
+  (isTextAnswer ? [] : (q.options || [])).forEach((opt, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'option-btn';
@@ -362,17 +373,26 @@ function setupQuestionScene(q) {
     playerOptionsList.appendChild(btn);
   });
 
-  if (alreadyAnswered) {
+  if (alreadyAnswered !== null) {
     // すでに回答済み
     isAnswerLocked = true;
-    selectedOptionIndex = Number(alreadyAnswered);
-    applyLockedState(selectedOptionIndex);
+    if (isTextAnswer) {
+      playerTextAnswer.value = alreadyAnswered;
+      playerTextAnswer.disabled = true;
+      btnLock.disabled = true;
+      btnLock.className = 'btn-lock locked';
+      btnLock.textContent = '✓ 回答済み';
+    } else {
+      selectedOptionIndex = Number(alreadyAnswered);
+      applyLockedState(selectedOptionIndex);
+    }
   } else {
     isAnswerLocked = false;
     selectedOptionIndex = null;
     btnLock.disabled = true;
     btnLock.className = 'btn-lock';
     btnLock.textContent = '🔒 ロックする';
+    if (isTextAnswer) btnLock.disabled = true;
     resetBodyLockedColor();
   }
 }
@@ -394,10 +414,13 @@ function selectOption(index) {
 
 // ロックボタン押下処理
 async function handleLockAnswer() {
-  if (isAnswerLocked || selectedOptionIndex === null || !currentState) return;
+  if (isAnswerLocked || !currentState) return;
 
   const currentQ = currentQuestions[currentState.currentQuestionIndex];
   if (!currentQ) return;
+  const isTextAnswer = currentQ.answerType === 'text';
+  const answerText = isTextAnswer ? playerTextAnswer.value.trim() : '';
+  if ((isTextAnswer && !answerText) || (!isTextAnswer && selectedOptionIndex === null)) return;
 
   isAnswerLocked = true;
 
@@ -410,15 +433,24 @@ async function handleLockAnswer() {
     currentQ.id,
     myTeam.teamId,
     myTeam.teamName,
-    selectedOptionIndex,
-    answerTimeMs
+    isTextAnswer ? answerText : selectedOptionIndex,
+    answerTimeMs,
+    currentQ.answerType
   );
 
-  sessionStorage.setItem(`q_answered_${currentQ.id}`, selectedOptionIndex.toString());
+  sessionStorage.setItem(`q_answered_${currentQ.id}`, isTextAnswer ? answerText : selectedOptionIndex.toString());
   sessionStorage.setItem(`q_time_${currentQ.id}`, answerTimeMs.toString());
 
   // 要件:「ロックボタンを押すと背景が選択肢の色に応じて変化する」
-  applyLockedState(selectedOptionIndex);
+  if (isTextAnswer) {
+    playerTextAnswer.value = answerText;
+    playerTextAnswer.disabled = true;
+    btnLock.disabled = true;
+    btnLock.className = 'btn-lock locked';
+    btnLock.textContent = '✓ 回答を送信しました';
+  } else {
+    applyLockedState(selectedOptionIndex);
+  }
 }
 
 function applyLockedState(index) {
@@ -507,6 +539,8 @@ function renderActualResultData(q, resultsData) {
   const savedAnswerIndex = sessionStorage.getItem(`q_answered_${q.id}`);
   const hasLocalAnswer = savedAnswerIndex !== null && savedAnswerIndex !== undefined;
 
+  const isPending = Boolean(teamResult && teamResult.pending)
+    || (q.answerType === 'text' && hasLocalAnswer && (!teamResult || typeof teamResult.isCorrect !== 'boolean'));
   let isCorrect = false;
   let points = 0;
 
@@ -529,7 +563,11 @@ function renderActualResultData(q, resultsData) {
   const isDouble = Boolean(q.isDoublePoints || (resultsData && resultsData.isDoublePoints));
   const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';
 
-  if (isCorrect) {
+  if (isPending) {
+    verdictBanner.className = 'verdict-banner pending';
+    verdictTitle.textContent = '回答を受け付けました';
+    verdictPoints.textContent = '運営者による採点をお待ちください';
+  } else if (isCorrect) {
     verdictBanner.className = 'verdict-banner correct';
     verdictTitle.textContent = "🎉 正解！";
     const tieLabel = teamResult && teamResult.rankTieCount > 1
@@ -557,6 +595,18 @@ function applyLocalResultFallback(q) {
   const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : "--";
 
   if (savedAnswerIndex !== null && savedAnswerIndex !== undefined) {
+    if (q.answerType === 'text') {
+      resultLoadingBox.style.display = 'none';
+      resultContentArea.style.display = 'flex';
+      verdictBanner.className = 'verdict-banner pending';
+      verdictTitle.textContent = '回答を受け付けました';
+      verdictPoints.textContent = '運営者による採点をお待ちください';
+      statAnswerTime.textContent = `${answerSeconds}秒`;
+      statCorrectRate.textContent = '集計中...';
+      playerExplanationText.textContent = q.explanation || "解説はありません。";
+      renderRankingsTable();
+      return;
+    }
     const isCorrect = (Number(savedAnswerIndex) === Number(q.answer));
     const isDouble = Boolean(q.isDoublePoints);
     const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';

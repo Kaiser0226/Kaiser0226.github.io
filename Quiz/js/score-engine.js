@@ -21,11 +21,16 @@ class ScoreEngine {
    */
   static calculateQuestionScores(answers, correctOption, config = DEFAULT_SCORE_CONFIG, isDoublePoints = false) {
     const results = {};
-    const totalAnswers = answers.length;
+    const totalAnswers = answers.filter(answer =>
+      answer.answerText === undefined || typeof answer.manualIsCorrect === 'boolean'
+    ).length;
 
     // 正解者の抽出
+    const isAnswerCorrect = answer => answer.manualIsCorrect !== undefined
+      ? Boolean(answer.manualIsCorrect)
+      : Number(answer.selectedOption) === Number(correctOption);
     const correctAnswers = answers
-      .filter(a => Number(a.selectedOption) === Number(correctOption))
+      .filter(isAnswerCorrect)
       .map(a => ({
         ...a,
         answerTimeMs: Number(a.answerTimeMs) || 9999999
@@ -40,8 +45,19 @@ class ScoreEngine {
 
     // 不正解チームの初期化
     answers.forEach(a => {
-      const isCorrect = Number(a.selectedOption) === Number(correctOption);
-      if (!isCorrect) {
+      const isPending = a.manualIsCorrect === undefined && a.answerText !== undefined;
+      const isCorrect = isAnswerCorrect(a);
+      if (isPending) {
+        results[a.teamId] = {
+          teamId: a.teamId,
+          teamName: a.teamName,
+          isCorrect: null,
+          pending: true,
+          pointsAwarded: 0,
+          answerTimeMs: a.answerTimeMs,
+          rankInCorrect: null
+        };
+      } else if (!isCorrect) {
         results[a.teamId] = {
           teamId: a.teamId,
           teamName: a.teamName,

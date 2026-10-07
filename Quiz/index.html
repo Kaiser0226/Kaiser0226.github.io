@@ -126,9 +126,18 @@
         <div class="portal-icon">👑</div>
         <div class="portal-card-title">クイズ進行パネル</div>
         <div class="portal-card-desc">
-          メインワンボタン進行、リアルタイム回答モニター、チーム数を指定したダミー生成＆一括回答シミュレーションを完備。
+          メインワンボタン進行、簡易回答状況、想定チーム数に合わせたダミー生成＆回答シミュレーションを完備。
         </div>
         <span class="btn btn-secondary" style="width: 100%;">進行パネルを開く</span>
+      </a>
+
+      <a href="monitor.html" target="_blank" class="portal-card">
+        <div class="portal-icon">📊</div>
+        <div class="portal-card-title">回答状況モニター</div>
+        <div class="portal-card-desc">
+          チームごとの回答を一覧表示。記述式問題は回答内容を確認して正誤を手動採点できます。
+        </div>
+        <span class="btn btn-secondary" style="width: 100%;">回答状況を見る</span>
       </a>
 
       <!-- 問題・大会設定 -->
@@ -136,7 +145,7 @@
         <div class="portal-icon">⚙️</div>
         <div class="portal-card-title">問題データ・大会設定</div>
         <div class="portal-card-desc">
-          問題文・選択肢・正解・画像のGUI編集・追加・削除、JSON一括読込/書出、出題順並べ替え、得点ボーナス設定。
+          問題文・回答形式（選択式／記述式）・画像のGUI編集、JSON一括読込/書出、出題順並べ替え、得点設定。
         </div>
         <span class="btn btn-secondary" style="width: 100%;">設定画面を開く</span>
       </a>
@@ -147,7 +156,7 @@
       <h3>💡 クイズ大会の準備・接続について</h3>
       <p>
         ・FirebaseのAPIキーは <a href="setting.html" style="color: #2563eb; font-weight: 700;">setting.html</a> または <a href="admin.html" style="color: #2563eb; font-weight: 700;">admin.html</a> の「⚙️ Firebase」からいつでも貼り付けて保存できます。<br>
-        ・Firebaseが未設定の状態でも、同一PCの複数タブ間で完全なリアルタイム同期テストが可能です（admin.html下部のダミーチーム生成＆回答シミュレーション機能をご利用ください）。<br>
+        ・Firebaseが未設定の状態でも、同一PCの複数タブ間で完全なリアルタイム同期テストが可能です（admin.htmlの動作テスト・シミュレーションをご利用ください）。<br>
         ・問題データは <a href="setting.html" style="color: #2563eb; font-weight: 700;">setting.html</a> からGUIで簡単に追加・編集できます。
       </p>
     </div>

@@ -231,6 +231,29 @@ body.locked-opt-5 { background-color: #faf5ff; }
   color: #0f172a;
 }
 
+.text-answer-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.text-answer-entry .form-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 14px;
+  border: 1.5px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font: inherit;
+  resize: vertical;
+}
+
+.text-answer-entry .form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
 /* 選択肢ボタンリスト */
 .options-list {
   display: flex;
@@ -470,6 +493,11 @@ body.locked-opt-5 { background-color: #faf5ff; }
 .verdict-banner.incorrect {
   background-color: #dc2626;
   border: 2px solid #b91c1c;
+}
+
+.verdict-banner.pending {
+  background-color: #b45309;
+  border: 2px solid #92400e;
 }
 
 .verdict-title {
