@@ -185,10 +185,9 @@ function setupEventListeners() {
   }
 
   btnTogglePlayerQr.addEventListener('click', () => {
-    const channel = new BroadcastChannel('quiz-presentation');
-    channel.postMessage({ type: 'showPlayerQr' });
-    channel.close();
-    window.open('presentation.html?showPlayerQr=1', 'quizPresentation');
+    const shouldShow = !Boolean(currentState && currentState.playerQrVisible);
+    if (shouldShow) window.open('presentation.html', 'quizPresentation');
+    quizStore.updateState({ playerQrVisible: shouldShow });
   });
 }
 
@@ -198,6 +197,10 @@ function applyStateToUI() {
 
   const { status, currentScene, currentQuestionIndex, targetTeamCount } = currentState;
   document.getElementById('finalRankingControls').style.display = currentScene === 'final' ? 'flex' : 'none';
+  btnTogglePlayerQr.textContent = currentState.playerQrVisible
+    ? '🔳 回答画面QRを非表示'
+    : '🔳 回答画面QRを表示';
+  btnTogglePlayerQr.setAttribute('aria-pressed', String(Boolean(currentState.playerQrVisible)));
 
   // ステータスバッジ
   lblGameStatus.textContent = status === 'running' ? "進行中" : "停止中";

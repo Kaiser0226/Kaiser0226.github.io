@@ -61,18 +61,9 @@ let finalRankingsInitialized = false;
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
   rankingChannel = new BroadcastChannel('quiz-ranking');
-  const presentationChannel = new BroadcastChannel('quiz-presentation');
-  presentationChannel.addEventListener('message', event => {
-    if (event.data && event.data.type === 'showPlayerQr') {
-      setPlayerQrVisible(true);
-    } else if (event.data && event.data.type === 'togglePlayerQr') {
-      setPlayerQrVisible(!playerQrPanel.classList.contains('is-visible'));
-    }
+  document.getElementById('btnClosePlayerQr').addEventListener('click', () => {
+    quizStore.updateState({ playerQrVisible: false });
   });
-  document.getElementById('btnClosePlayerQr').addEventListener('click', () => setPlayerQrVisible(false));
-  if (new URLSearchParams(window.location.search).get('showPlayerQr') === '1') {
-    setPlayerQrVisible(true);
-  }
   rankingChannel.addEventListener('message', event => {
     const command = event.data && event.data.type;
     if (command === 'getRevealStatus') {
@@ -161,6 +152,7 @@ function applyState() {
   if (!currentState) return;
 
   const { status, currentScene, currentQuestionIndex, targetTeamCount } = currentState;
+  setPlayerQrVisible(Boolean(currentState.playerQrVisible));
   const currentQ = currentQuestions[currentQuestionIndex] || currentQuestions[0];
   if (currentScene !== 'final') finalRankingsInitialized = false;
 
@@ -288,7 +280,10 @@ function updateWaterLevel() {
 function highlightCorrectAnswer(q) {
   if (q.answerType === 'text') {
     presOptionsGrid.style.display = 'none';
-    presTextAnswerNotice.textContent = '記述式回答を手動採点しました。';
+    const modelAnswer = Array.isArray(q.answer) ? q.answer[0] : q.answer;
+    presTextAnswerNotice.textContent = modelAnswer
+      ? `模範解答: ${modelAnswer}`
+      : '記述式回答を手動採点しました。';
     presTextAnswerNotice.style.display = 'block';
     presExplanationBox.style.display = 'block';
     return;

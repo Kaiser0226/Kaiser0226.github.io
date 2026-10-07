@@ -93,6 +93,7 @@ class QuizStore {
       currentScene: 'waiting', // 'waiting' | 'question' | 'closed' | 'result' | 'final'
       currentQuestionIndex: 0,
       questionStartTime: 0,
+      playerQrVisible: false,
       finalResultsRevealed: false,
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
