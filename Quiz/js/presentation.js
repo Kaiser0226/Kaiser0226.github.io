@@ -10,6 +10,7 @@ let currentState = null;
 let currentAnswers = {};
 let allTeams = {};
 let timerInterval = null;
+let rankingChannel = null;
 
 // DOM要素
 const waterContainer = document.getElementById('waterContainer');
@@ -56,6 +57,22 @@ let isShowingFullRanking = false;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  rankingChannel = new BroadcastChannel('quiz-ranking');
+  rankingChannel.addEventListener('message', event => {
+    const command = event.data && event.data.type;
+    if (command === 'getRevealStatus') {
+      publishRevealStatus();
+    } else if (command === 'revealNext') {
+      revealNextRank();
+    } else if (command === 'toggleAutoReveal') {
+      toggleAutoReveal();
+    } else if (command === 'toggleFullRanking') {
+      toggleFullRanking();
+    } else if (command === 'resetReveal') {
+      resetRevealSequence();
+    }
+  });
+
   // 問題データ購読
   quizStore.subscribeQuestions(questions => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
@@ -408,6 +425,7 @@ function updateRevealButtonText() {
       btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
     }
   }
+  publishRevealStatus();
 }
 
 function revealNextRank() {
@@ -417,6 +435,10 @@ function revealNextRank() {
   const targetCard = document.getElementById(`rankCard-${targetRank}`);
   if (targetCard) {
     targetCard.classList.add('revealed');
+  }
+  if (targetRank === 1 && currentState && !currentState.finalResultsRevealed) {
+    quizStore.updateState({ finalResultsRevealed: true });
+    currentState.finalResultsRevealed = true;
   }
 
   currentRevealIndex++;
@@ -429,6 +451,7 @@ function toggleAutoReveal() {
     clearInterval(autoRevealTimer);
     autoRevealTimer = null;
     btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
+    publishRevealStatus();
   } else {
     // 自動再生開始
     if (currentRevealIndex >= revealOrder.length) {
@@ -445,6 +468,7 @@ function toggleAutoReveal() {
         btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
       }
     }, 2800); // 2.8秒おきに次を発表
+    publishRevealStatus();
   }
 }
 
@@ -455,10 +479,26 @@ function resetRevealSequence() {
     btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
   }
   currentRevealIndex = 0;
+  if (currentState && currentState.finalResultsRevealed) {
+    quizStore.updateState({ finalResultsRevealed: false });
+    currentState.finalResultsRevealed = false;
+  }
   rankingCardsStack.querySelectorAll('.rank-card').forEach(c => {
     c.classList.remove('revealed');
   });
   updateRevealButtonText();
+}
+
+function publishRevealStatus() {
+  if (!rankingChannel) return;
+  const nextRank = revealOrder[currentRevealIndex];
+  rankingChannel.postMessage({
+    type: 'revealStatus',
+    complete: currentRevealIndex >= revealOrder.length,
+    nextLabel: nextRank ? ScoreEngine.getRankLabel(sortedTeams, nextRank - 1) : '',
+    autoPlaying: Boolean(autoRevealTimer),
+    isShowingFullRanking
+  });
 }
 
 function toggleFullRanking() {
@@ -472,6 +512,7 @@ function toggleFullRanking() {
     rankingCardsStack.style.display = 'flex';
     btnToggleFullRanking.textContent = "📋 全体ランキング表";
   }
+  publishRevealStatus();
 }
 
 function buildFullRankingTable() {

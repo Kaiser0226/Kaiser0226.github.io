@@ -27,6 +27,7 @@ const displayTeamName = document.getElementById('displayTeamName');
 const displayQBadge = document.getElementById('displayQBadge');
 const displayScore = document.getElementById('displayScore');
 const displayRank = document.getElementById('displayRank');
+const headerStatsRow = document.querySelector('.header-stats-row');
 
 // シーンコンテナ
 const sceneWaiting = document.getElementById('sceneWaiting');
@@ -59,6 +60,7 @@ const rankingScrollBox = document.getElementById('rankingScrollBox');
 const rankingTableBody = document.getElementById('rankingTableBody');
 
 // 最終結果シーン要素
+const finalRankingContainer = document.getElementById('finalRankingContainer');
 const finalMyRank = document.getElementById('finalMyRank');
 const finalMyScore = document.getElementById('finalMyScore');
 const finalTableBody = document.getElementById('finalTableBody');
@@ -284,6 +286,10 @@ function applyState() {
 // ヘッダーの得点・順位更新
 function updateHeaderStats() {
   if (!myTeam) return;
+  const hideFinalResults = currentState && currentState.currentScene === 'final' && !currentState.finalResultsRevealed;
+  if (headerStatsRow) headerStatsRow.style.display = hideFinalResults ? 'none' : '';
+  if (hideFinalResults) return;
+
   const teamData = allTeams[myTeam.teamId];
   const score = teamData ? (teamData.totalScore || 0) : 0;
   displayScore.textContent = score;
@@ -653,6 +659,14 @@ function renderRankingsTable() {
 // --- 最終結果シーン ---
 
 function renderFinalResults() {
+  if (!currentState || !currentState.finalResultsRevealed) {
+    finalRankingContainer.style.display = 'none';
+    finalMyRank.textContent = '結果発表をお待ちください';
+    finalMyScore.textContent = '';
+    return;
+  }
+
+  finalRankingContainer.style.display = '';
   const teamList = Object.values(allTeams);
   teamList.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
 

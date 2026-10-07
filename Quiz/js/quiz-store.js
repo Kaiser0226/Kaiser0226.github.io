@@ -80,6 +80,7 @@ class QuizStore {
       timerDuration: 15,
       isTimerRunning: false,
       remainingSeconds: 15,
+      finalResultsRevealed: false,
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
       resetToken: 0, // 全体初期化トークン

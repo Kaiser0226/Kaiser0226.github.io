@@ -9,6 +9,7 @@ let currentState = null;
 let allTeams = {};
 let currentAnswers = {};
 let selectedQIndex = 0;
+let rankingChannel = null;
 
 // DOM要素
 const lblGameStatus = document.getElementById('lblGameStatus');
@@ -80,9 +81,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 状態購読
   quizStore.subscribeState(state => {
+    const previousScene = currentState && currentState.currentScene;
     currentState = state;
     selectedQIndex = state.currentQuestionIndex || 0;
     applyStateToUI();
+    if (state.currentScene === 'final' && previousScene !== 'final' && rankingChannel) {
+      rankingChannel.postMessage({ type: 'getRevealStatus' });
+    }
 
     // 現在の問題の回答購読
     const currentQ = currentQuestions[selectedQIndex] || currentQuestions[0];
@@ -168,12 +173,18 @@ function setupEventListeners() {
   if (thSortScore) { thSortScore.addEventListener('click', () => toggleHeaderSort('score')); }
 
   // Admin ranking button listener (broadcast to presentation and player)
-  const rankingChannel = new BroadcastChannel('quiz-ranking');
-  const btnNextRankAdmin = document.getElementById('btnNextRankAdmin');
-  if (btnNextRankAdmin) {
-    btnNextRankAdmin.addEventListener('click', () => {
-      rankingChannel.postMessage({ type: 'nextRank' });
-    });
+  rankingChannel = new BroadcastChannel('quiz-ranking');
+  rankingChannel.addEventListener('message', event => {
+    if (event.data && event.data.type === 'revealStatus') {
+      updateFinalRankingControls(event.data);
+    }
+  });
+  document.getElementById('btnRevealNextRankAdmin').addEventListener('click', () => sendRankingCommand('revealNext'));
+  document.getElementById('btnAutoRevealRanksAdmin').addEventListener('click', () => sendRankingCommand('toggleAutoReveal'));
+  document.getElementById('btnToggleFullRankingAdmin').addEventListener('click', () => sendRankingCommand('toggleFullRanking'));
+  document.getElementById('btnResetRevealAdmin').addEventListener('click', () => sendRankingCommand('resetReveal'));
+  if (currentState && currentState.currentScene === 'final') {
+    rankingChannel.postMessage({ type: 'getRevealStatus' });
   }
 
   // Firebaseモーダル
@@ -201,6 +212,7 @@ function applyStateToUI() {
   if (!currentState) return;
 
   const { status, currentScene, currentQuestionIndex, targetTeamCount, isTimerRunning } = currentState;
+  document.getElementById('finalRankingControls').style.display = currentScene === 'final' ? 'flex' : 'none';
 
   // ステータスバッジ
   lblGameStatus.textContent = status === 'running' ? "進行中" : "停止中";
@@ -240,6 +252,24 @@ function applyStateToUI() {
 
   // メイン進行ボタンのラベル更新
   updateMainButtonText();
+}
+
+function sendRankingCommand(type) {
+  if (rankingChannel) rankingChannel.postMessage({ type });
+}
+
+function updateFinalRankingControls(status) {
+  const nextButton = document.getElementById('btnRevealNextRankAdmin');
+  nextButton.textContent = status.complete
+    ? '🎉 全順位発表完了！'
+    : `▶ ${status.nextLabel || '次の順位'}を発表する`;
+  nextButton.disabled = Boolean(status.complete);
+  document.getElementById('btnAutoRevealRanksAdmin').textContent = status.autoPlaying
+    ? '⏸️ 一時停止'
+    : '⏩ 1位まで自動再生';
+  document.getElementById('btnToggleFullRankingAdmin').textContent = status.isShowingFullRanking
+    ? '🏆 順位発表カードに戻る'
+    : '📋 全体ランキング表';
 }
 
 function updateMainButtonText() {
@@ -354,6 +384,10 @@ async function changeScene(scene) {
   }
 
   const updates = { currentScene: scene };
+
+  if (scene === 'final') {
+    updates.finalResultsRevealed = false;
+  }
 
   if (scene === 'question') {
     updates.questionStartTime = Date.now();
