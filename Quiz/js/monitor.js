@@ -75,7 +75,7 @@ function updateActiveQuestion() {
   currentAnswers = {};
   monitorQuestionLabel.textContent = `第${index + 1}問の回答`;
   monitorAnswerTypeNote.textContent = question.answerType === 'text'
-    ? `記述式問題です。回答欄の「正解」「不正解」を選んで手動採点してください。${question.answer ? ` 模範解答: ${question.answer}` : ''}`
+    ? `記述式問題です。回答欄の「正解」「不正解」を選んで手動採点してください。${question.answer ? ` 模範解答: ${Array.isArray(question.answer) ? question.answer.join(' / ') : question.answer}` : ''}`
     : '選択式問題の回答状況を表示しています。';
   unsubscribeAnswers = quizStore.subscribeAnswers(question.id, answers => {
     currentAnswers = answers || {};

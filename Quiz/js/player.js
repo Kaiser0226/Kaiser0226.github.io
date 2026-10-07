@@ -616,9 +616,9 @@ function renderActualResultData(q, resultsData) {
   statCorrectRate.textContent = `${correctRate}%`;
   statAnswerTime.textContent = answerSeconds === '-' ? '-' : `${answerSeconds}秒`;
   const correctAnswer = q.answerType === 'text'
-    ? q.answer
+    ? (Array.isArray(q.answer) ? q.answer.join(' / ') : q.answer)
     : q.options && q.options[Number(q.answer)] ? q.options[Number(q.answer)].text : '';
-  playerCorrectAnswer.textContent = !isUnanswered && !isPending && !isCorrect && correctAnswer
+  playerCorrectAnswer.textContent = (isUnanswered || (!isPending && !isCorrect)) && correctAnswer
     ? `正解: ${correctAnswer}`
     : '';
   playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
@@ -640,8 +640,7 @@ function applyLocalResultFallback(q) {
     if (q.answerType === 'text') {
       resultLoadingBox.style.display = 'none';
       resultContentArea.style.display = 'flex';
-      const isAutomaticallyCorrect = String(savedAnswerIndex) === String(q.answer || '')
-        && String(q.answer || '') !== '';
+      const isAutomaticallyCorrect = isTextAnswerCorrect(savedAnswerIndex, q.answer);
       verdictBanner.className = `verdict-banner ${isAutomaticallyCorrect ? 'correct' : 'pending'}`;
       verdictTitle.textContent = isAutomaticallyCorrect ? '🎉 正解！' : '回答を受け付けました';
       verdictPoints.textContent = isAutomaticallyCorrect ? '得点を同期中...' : '運営者による採点をお待ちください';
@@ -682,12 +681,15 @@ function applyLocalResultFallback(q) {
   statAnswerTime.textContent = `${answerSeconds}秒`;
   statCorrectRate.textContent = `集計中...`;
   playerExplanationText.textContent = q.explanation || "解説はありません。";
-  playerCorrectAnswer.textContent = '';
-  playerCorrectAnswer.style.display = 'none';
   if (savedAnswerIndex === null || savedAnswerIndex === undefined) {
     verdictBanner.className = 'verdict-banner pending';
     verdictTitle.textContent = '未回答';
     verdictPoints.textContent = 'この問題には回答していません';
+    const correctAnswer = q.answerType === 'text'
+      ? (Array.isArray(q.answer) ? q.answer.join(' / ') : q.answer)
+      : q.options && q.options[Number(q.answer)] ? q.options[Number(q.answer)].text : '';
+    playerCorrectAnswer.textContent = correctAnswer ? `正解: ${correctAnswer}` : '';
+    playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
     statAnswerTime.textContent = '-';
   }
   renderRankingsTable();

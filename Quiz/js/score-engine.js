@@ -16,6 +16,13 @@ function getPointMultiplier(question) {
   return question && question.isDoublePoints ? 2 : 1;
 }
 
+function isTextAnswerCorrect(answerText, correctAnswers) {
+  const acceptedAnswers = Array.isArray(correctAnswers) ? correctAnswers : [correctAnswers];
+  return acceptedAnswers.some(answer =>
+    typeof answer === 'string' && answer.length > 0 && answerText === answer
+  );
+}
+
 class ScoreEngine {
   /**
    * 1問ごとの回答結果から獲得ポイントを計算
@@ -39,8 +46,8 @@ class ScoreEngine {
     const isDoublePoints = multiplier === 2;
     const isAnswerCorrect = answer => answer.manualIsCorrect !== undefined
       ? Boolean(answer.manualIsCorrect)
-      : typeof correctAnswer === 'string'
-        ? answer.answerText === correctAnswer
+      : answer.answerText !== undefined
+        ? isTextAnswerCorrect(answer.answerText, correctAnswer)
         : Number(answer.selectedOption) === Number(correctAnswer);
     const correctAnswers = answers
       .filter(isAnswerCorrect)
@@ -166,5 +173,5 @@ class ScoreEngine {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ScoreEngine, DEFAULT_SCORE_CONFIG, getPointMultiplier };
+  module.exports = { ScoreEngine, DEFAULT_SCORE_CONFIG, getPointMultiplier, isTextAnswerCorrect };
 }

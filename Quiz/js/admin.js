@@ -454,7 +454,7 @@ function updateMonitor() {
     const activeQuestion = currentQuestions[selectedQIndex];
     statManuallyGradedTeams.textContent = activeQuestion && activeQuestion.answerType === 'text'
       ? Object.values(currentAnswers)
-        .filter(answer => typeof answer.manualIsCorrect === 'boolean' && answer.gradeSource !== 'automatic').length
+        .filter(answer => typeof answer.manualIsCorrect === 'boolean').length
       : 0;
   }
 }
@@ -501,10 +501,14 @@ async function handleSimulateAnswers() {
   }
 
   const numOptions = (currentQ.options || []).length;
+  const acceptedTextAnswers = (Array.isArray(currentQ.answer) ? currentQ.answer : [currentQ.answer])
+    .filter(answer => typeof answer === 'string' && answer.length > 0);
 
   for (const t of teamsList) {
     const randomOption = currentQ.answerType === 'text'
-      ? (Math.random() < 0.5 && String(currentQ.answer || '').length > 0 ? currentQ.answer : '誤答')
+      ? (Math.random() < 0.5 && acceptedTextAnswers.length > 0
+        ? acceptedTextAnswers[Math.floor(Math.random() * acceptedTextAnswers.length)]
+        : '誤答')
       : Math.floor(Math.random() * numOptions);
     const randomTime = Math.floor(Math.random() * 12000) + 1500; // 1.5s〜13.5s
     await quizStore.submitAnswer(currentQ.id, t.teamId, t.teamName, randomOption, randomTime, currentQ.answerType);

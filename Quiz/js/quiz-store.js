@@ -475,8 +475,8 @@ class QuizStore {
     if (answerType === 'text') {
       answerData.answerText = String(answer);
       const question = await this.getQuestionById(questionId);
-      if (question && question.answerType === 'text' && String(question.answer || '') !== ''
-        && answerData.answerText === String(question.answer)) {
+      if (question && question.answerType === 'text'
+        && isTextAnswerCorrect(answerData.answerText, question.answer)) {
         answerData.manualIsCorrect = true;
         answerData.gradeSource = 'automatic';
         answerData.gradedAt = Date.now();

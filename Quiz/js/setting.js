@@ -236,7 +236,7 @@ function loadQuestionToEditor(index) {
   editQuestionText.value = q.question || '';
   editQuestionImage.value = q.image || '';
   editAnswerType.value = q.answerType === 'text' ? 'text' : 'choice';
-  editTextAnswer.value = typeof q.answer === 'string' ? q.answer : '';
+  editTextAnswer.value = Array.isArray(q.answer) ? q.answer.join('\n') : typeof q.answer === 'string' ? q.answer : '';
   updateAnswerTypeFields();
   editPointMultiplier.value = getPointMultiplier(q);
   editExplanation.value = q.explanation || '';
@@ -335,7 +335,9 @@ async function handleSaveQuestionEdit(e) {
   q.question = editQuestionText.value.trim();
   q.image = editQuestionImage.value.trim();
   q.answerType = isTextAnswer ? 'text' : 'choice';
-  q.answer = isTextAnswer ? editTextAnswer.value.trim() : parseInt(editCorrectAnswer.value, 10);
+  q.answer = isTextAnswer
+    ? editTextAnswer.value.split(/\r?\n/).map(answer => answer.trim()).filter(Boolean)
+    : parseInt(editCorrectAnswer.value, 10);
   q.pointMultiplier = pointMultiplier;
   delete q.isDoublePoints;
   q.options = newOptions;

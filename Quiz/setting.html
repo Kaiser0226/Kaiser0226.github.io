@@ -107,8 +107,9 @@
             <select id="editCorrectAnswer" class="form-input"></select>
           </div>
           <div class="form-group" id="editTextAnswerGroup" style="display: none;">
-            <label class="form-label" for="editTextAnswer">模範解答（任意・管理用）</label>
-            <input type="text" id="editTextAnswer" class="form-input" placeholder="完全一致は自動正解、それ以外は回答状況モニターで採点します">
+            <label class="form-label" for="editTextAnswer">模範解答（1行につき1つ）</label>
+            <textarea id="editTextAnswer" class="form-textarea" rows="3" placeholder="例：&#10;東京&#10;とうきょう"></textarea>
+            <small>入力したいずれかの回答と完全一致した場合に自動正解となり、それ以外は回答状況モニターで採点します。</small>
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
