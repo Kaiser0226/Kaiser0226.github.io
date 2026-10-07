@@ -457,6 +457,15 @@ class QuizStore {
   }
 
   async submitAnswer(questionId, teamId, teamName, answer, answerTimeMs, answerType = 'choice') {
+    let state = JSON.parse(localStorage.getItem('quiz_local_state') || 'null');
+    if (this.isFirebaseReady && this.database) {
+      const stateSnapshot = await this.database.ref('quiz/state').once('value');
+      state = stateSnapshot.val();
+    }
+    if (!state || state.status !== 'running' || state.currentScene !== 'question') {
+      throw new Error('回答受付は終了しました。');
+    }
+
     const answerData = {
       teamId,
       teamName,

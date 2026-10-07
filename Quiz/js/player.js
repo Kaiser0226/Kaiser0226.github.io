@@ -277,6 +277,9 @@ function applyState() {
     // 回答締め切り状態
     btnLock.disabled = true;
     playerTextAnswer.disabled = true;
+    playerOptionsList.querySelectorAll('.option-btn').forEach(button => {
+      button.disabled = true;
+    });
     if (!isAnswerLocked) {
       btnLock.textContent = "回答受付終了";
     }
@@ -401,6 +404,8 @@ function setupQuestionScene(q) {
 }
 
 function selectOption(index) {
+  if (!currentState || currentState.status !== 'running' || currentState.currentScene !== 'question') return;
+
   selectedOptionIndex = index;
   const buttons = playerOptionsList.querySelectorAll('.option-btn');
   buttons.forEach(b => {
@@ -417,7 +422,9 @@ function selectOption(index) {
 
 // ロックボタン押下処理
 async function handleLockAnswer() {
-  if (isAnswerLocked || !currentState) return;
+  if (isAnswerLocked || !currentState
+    || currentState.currentScene !== 'question'
+    || currentState.status !== 'running') return;
 
   const currentQ = currentQuestions[currentState.currentQuestionIndex];
   if (!currentQ) return;
@@ -432,14 +439,21 @@ async function handleLockAnswer() {
   const answerTimeMs = Math.max(10, Date.now() - startTime);
 
   // 送信
-  await quizStore.submitAnswer(
-    currentQ.id,
-    myTeam.teamId,
-    myTeam.teamName,
-    isTextAnswer ? answerText : selectedOptionIndex,
-    answerTimeMs,
-    currentQ.answerType
-  );
+  try {
+    await quizStore.submitAnswer(
+      currentQ.id,
+      myTeam.teamId,
+      myTeam.teamName,
+      isTextAnswer ? answerText : selectedOptionIndex,
+      answerTimeMs,
+      currentQ.answerType
+    );
+  } catch (error) {
+    isAnswerLocked = false;
+    console.error('回答の送信に失敗しました:', error);
+    alert(error.message || '回答を送信できませんでした。');
+    return;
+  }
 
   sessionStorage.setItem(`q_answered_${currentQ.id}`, isTextAnswer ? answerText : selectedOptionIndex.toString());
   sessionStorage.setItem(`q_time_${currentQ.id}`, answerTimeMs.toString());
@@ -511,11 +525,18 @@ function showResultScene(q) {
   // 2. ネットワーク遅延時（2.5秒経過しても未受信の場合）の表示切替
   resultSyncTimeoutId = setTimeout(() => {
     if (!isDataReceived) {
-      console.warn("Quiz: Firebase result reception delayed, applying local fallback evaluation");
-      loadingDelayedNotice.style.display = 'flex';
+      const hasSubmittedAnswer = sessionStorage.getItem(`q_answered_${q.id}`) !== null;
+      if (hasSubmittedAnswer) {
+        console.warn("Quiz: Firebase result reception delayed, applying local fallback evaluation");
+        loadingDelayedNotice.style.display = 'flex';
+      }
       applyLocalResultFallback(q);
     }
   }, 2500);
+
+  if (sessionStorage.getItem(`q_answered_${q.id}`) === null) {
+    applyLocalResultFallback(q);
+  }
 
   // 3. リアルタイム購読（Firebaseからデータが届いたら自動的に即時反映・再読込不要化）
   unsubscribeCurrentResults = quizStore.subscribeQuestionResults(q.id, (resultsData) => {
@@ -544,6 +565,7 @@ function renderActualResultData(q, resultsData) {
 
   const isPending = Boolean(teamResult && teamResult.pending)
     || (q.answerType === 'text' && hasLocalAnswer && (!teamResult || typeof teamResult.isCorrect !== 'boolean'));
+  const isUnanswered = !teamResult && !hasLocalAnswer;
   let isCorrect = false;
   let points = 0;
 
@@ -560,13 +582,21 @@ function renderActualResultData(q, resultsData) {
 
   // 保存されていた回答時間
   const savedTime = sessionStorage.getItem(`q_time_${q.id}`);
-  const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : (teamResult && teamResult.answerTimeMs ? (teamResult.answerTimeMs / 1000).toFixed(2) : "--");
+  const answerSeconds = isUnanswered
+    ? '-'
+    : savedTime
+      ? (Number(savedTime) / 1000).toFixed(2)
+      : (teamResult && teamResult.answerTimeMs ? (teamResult.answerTimeMs / 1000).toFixed(2) : "--");
 
   // 正解・不正解バナー
   const multiplier = Number((resultsData && resultsData.pointMultiplier) || getPointMultiplier(q));
   const doubleTag = multiplier > 1 ? ` (🌟${ScoreEngine.getMultiplierLabel(multiplier)}!)` : '';
 
-  if (isPending) {
+  if (isUnanswered) {
+    verdictBanner.className = 'verdict-banner pending';
+    verdictTitle.textContent = '未回答';
+    verdictPoints.textContent = 'この問題には回答していません';
+  } else if (isPending) {
     verdictBanner.className = 'verdict-banner pending';
     verdictTitle.textContent = '回答を受け付けました';
     verdictPoints.textContent = '運営者による採点をお待ちください';
@@ -584,11 +614,11 @@ function renderActualResultData(q, resultsData) {
   }
 
   statCorrectRate.textContent = `${correctRate}%`;
-  statAnswerTime.textContent = `${answerSeconds}秒`;
+  statAnswerTime.textContent = answerSeconds === '-' ? '-' : `${answerSeconds}秒`;
   const correctAnswer = q.answerType === 'text'
     ? q.answer
     : q.options && q.options[Number(q.answer)] ? q.options[Number(q.answer)].text : '';
-  playerCorrectAnswer.textContent = !isPending && !isCorrect && correctAnswer
+  playerCorrectAnswer.textContent = !isUnanswered && !isPending && !isCorrect && correctAnswer
     ? `正解: ${correctAnswer}`
     : '';
   playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
@@ -604,6 +634,8 @@ function applyLocalResultFallback(q) {
   const savedTime = sessionStorage.getItem(`q_time_${q.id}`);
   const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : "--";
 
+  resultLoadingBox.style.display = 'none';
+  resultContentArea.style.display = 'flex';
   if (savedAnswerIndex !== null && savedAnswerIndex !== undefined) {
     if (q.answerType === 'text') {
       resultLoadingBox.style.display = 'none';
@@ -650,6 +682,14 @@ function applyLocalResultFallback(q) {
   statAnswerTime.textContent = `${answerSeconds}秒`;
   statCorrectRate.textContent = `集計中...`;
   playerExplanationText.textContent = q.explanation || "解説はありません。";
+  playerCorrectAnswer.textContent = '';
+  playerCorrectAnswer.style.display = 'none';
+  if (savedAnswerIndex === null || savedAnswerIndex === undefined) {
+    verdictBanner.className = 'verdict-banner pending';
+    verdictTitle.textContent = '未回答';
+    verdictPoints.textContent = 'この問題には回答していません';
+    statAnswerTime.textContent = '-';
+  }
   renderRankingsTable();
 }
 

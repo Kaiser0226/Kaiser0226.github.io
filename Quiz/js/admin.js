@@ -186,8 +186,9 @@ function setupEventListeners() {
 
   btnTogglePlayerQr.addEventListener('click', () => {
     const channel = new BroadcastChannel('quiz-presentation');
-    channel.postMessage({ type: 'togglePlayerQr' });
+    channel.postMessage({ type: 'showPlayerQr' });
     channel.close();
+    window.open('presentation.html?showPlayerQr=1', 'quizPresentation');
   });
 }
 

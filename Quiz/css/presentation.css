@@ -110,12 +110,12 @@ body.presentation-body {
   width: 100vw;
   height: 100vh;
   box-sizing: border-box;
-  padding: 3vh 3vw;
+  padding: 0;
   background: #ffffff;
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  gap: 2vh;
+  gap: 0;
   text-align: center;
 }
 
@@ -124,18 +124,16 @@ body.presentation-body {
 }
 
 .player-qr-panel h1 {
-  margin: 0;
-  color: #0f172a;
-  font-size: clamp(2rem, 5vh, 4rem);
+  display: none;
 }
 
 #playerQrCode {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: min(84vmin, 900px);
-  height: min(84vmin, 900px);
-  flex: 0 1 auto;
+  width: 98vmin;
+  height: 98vmin;
+  flex: 0 0 auto;
   color: #b91c1c;
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -144,32 +142,26 @@ body.presentation-body {
 #playerQrCode img,
 #playerQrCode canvas {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
 
 #playerQrUrl {
-  display: block;
-  color: #0369a1;
-  font-size: clamp(1rem, 2.5vh, 1.8rem);
-  font-weight: 700;
-  overflow-wrap: anywhere;
+  display: none;
 }
 
 .player-qr-close {
   position: absolute;
-  top: 16px;
-  right: 22px;
-  width: 52px;
-  height: 52px;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
   border: 0;
   border-radius: 50%;
-  background: #e2e8f0;
+  background: rgba(226, 232, 240, 0.7);
   color: #0f172a;
-  font-size: 2.5rem;
+  font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
 }
