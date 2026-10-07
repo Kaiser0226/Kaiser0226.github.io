@@ -98,7 +98,9 @@ function renderMonitor() {
     const answerB = currentAnswers[b.teamId];
     let comparison = 0;
     if (monitorSortKey === 'id') {
-      comparison = (a.teamId || '').localeCompare(b.teamId || '', undefined, { numeric: true, sensitivity: 'base' });
+      comparison = splitTeamDisplayName(a.teamName).id.localeCompare(
+        splitTeamDisplayName(b.teamName).id, undefined, { numeric: true, sensitivity: 'base' }
+      );
     } else if (monitorSortKey === 'time') {
       const timeA = answerA && Number.isFinite(Number(answerA.answerTimeMs)) ? Number(answerA.answerTimeMs) : null;
       const timeB = answerB && Number.isFinite(Number(answerB.answerTimeMs)) ? Number(answerB.answerTimeMs) : null;
@@ -117,10 +119,11 @@ function renderMonitor() {
 
     const idCell = document.createElement('td');
     idCell.className = 'monitor-id';
-    idCell.textContent = team.teamId || '';
+    const displayName = splitTeamDisplayName(team.teamName);
+    idCell.textContent = displayName.id;
     const nameCell = document.createElement('td');
     nameCell.className = 'monitor-team-name';
-    nameCell.textContent = team.teamName || '';
+    nameCell.textContent = displayName.name;
     const answerCell = document.createElement('td');
     answerCell.className = 'answer-cell';
     const timeCell = document.createElement('td');
@@ -138,7 +141,14 @@ function renderMonitor() {
       const text = document.createElement('span');
       text.textContent = answer.answerText || '';
       answerCell.appendChild(text);
-      appendManualGradeControls(answerCell, team.teamId, answer);
+      if (answer.gradeSource === 'automatic' && answer.manualIsCorrect === true) {
+        const autoGrade = document.createElement('span');
+        autoGrade.className = 'grade-correct';
+        autoGrade.textContent = '（自動正解）';
+        answerCell.appendChild(autoGrade);
+      } else {
+        appendManualGradeControls(answerCell, team.teamId, answer);
+      }
       row.className = answer.manualIsCorrect === true
         ? 'row-correct'
         : answer.manualIsCorrect === false

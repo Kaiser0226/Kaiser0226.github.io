@@ -24,18 +24,16 @@ const btnResetScores = document.getElementById('btnResetScores');
 const btnMainAdvance = document.getElementById('btnMainAdvance');
 const btnMainRollback = document.getElementById('btnMainRollback');
 
-// 問題ナビゲーション・タイマー
+// 問題ナビゲーション
 const selectCurrentQuestion = document.getElementById('selectCurrentQuestion');
 const btnPrevQuestion = document.getElementById('btnPrevQuestion');
 const btnNextQuestion = document.getElementById('btnNextQuestion');
-const btnToggleTimerMode = document.getElementById('btnToggleTimerMode');
-const btnForceCloseAnswers = document.getElementById('btnForceCloseAnswers');
-const timerDetailText = document.getElementById('timerDetailText');
 
 // モニター要素
 const statConnectedTeams = document.getElementById('statConnectedTeams');
 const statAnsweredTeams = document.getElementById('statAnsweredTeams');
 const statUnansweredTeams = document.getElementById('statUnansweredTeams');
+const statManuallyGradedTeams = document.getElementById('statManuallyGradedTeams');
 
 
 // シミュレーション
@@ -145,10 +143,6 @@ function setupEventListeners() {
     }
   });
 
-  // タイマー切替・即時締切
-  btnToggleTimerMode.addEventListener('click', toggleTimerMode);
-  btnForceCloseAnswers.addEventListener('click', () => changeScene('closed'));
-
   // テスト・シミュレーション支援
   btnGenerateDummyTeams.addEventListener('click', handleGenerateDummyTeams);
   btnSimulateAnswers.addEventListener('click', handleSimulateAnswers);
@@ -201,7 +195,7 @@ function setupEventListeners() {
 function applyStateToUI() {
   if (!currentState) return;
 
-  const { status, currentScene, currentQuestionIndex, targetTeamCount, isTimerRunning } = currentState;
+  const { status, currentScene, currentQuestionIndex, targetTeamCount } = currentState;
   document.getElementById('finalRankingControls').style.display = currentScene === 'final' ? 'flex' : 'none';
 
   // ステータスバッジ
@@ -235,15 +229,6 @@ function applyStateToUI() {
   if (selectCurrentQuestion.value !== String(currentQuestionIndex)) {
     selectCurrentQuestion.value = currentQuestionIndex;
   }
-
-  // タイマー詳細テキスト
-  const q = currentQuestions[currentQuestionIndex] || currentQuestions[0];
-  const sec = (q && q.timeLimitSeconds) ? q.timeLimitSeconds : 15;
-  const timerOn = (q && q.hasTimeLimit !== false) && (isTimerRunning !== false);
-  timerDetailText.textContent = timerOn
-    ? `制限時間: ${sec}秒 (タイマー稼働中)`
-    : `タイマー停止 (手動進行モード)`;
-  btnToggleTimerMode.textContent = timerOn ? "手動進行へ切替" : "タイマー稼働へ切替";
 
   // メイン進行ボタンのラベル更新
   updateMainButtonText();
@@ -413,18 +398,12 @@ async function handleResetScores() {
   }
 }
 
-// リアルタイムタイマー切替
-async function toggleTimerMode() {
-  const newMode = !(currentState && currentState.isTimerRunning);
-  await quizStore.updateState({ isTimerRunning: newMode });
-}
-
 // 得点計算と保存
 async function calculateAndApplyScores(q) {
   const answersList = Object.values(currentAnswers);
   const scoreConfig = (currentState && currentState.scoreConfig) ? currentState.scoreConfig : DEFAULT_SCORE_CONFIG;
 
-  const scoreResult = ScoreEngine.calculateQuestionScores(answersList, q.answer, scoreConfig, q.isDoublePoints);
+  const scoreResult = ScoreEngine.calculateQuestionScores(answersList, q.answer, scoreConfig, getPointMultiplier(q));
   const previousResults = await quizStore.getQuestionResults(q.id);
 
   // 再集計時は以前のこの問題の得点との差分だけを反映する
@@ -453,8 +432,9 @@ function populateQuestionDropdown() {
   currentQuestions.forEach((q, idx) => {
     const opt = document.createElement('option');
     opt.value = idx;
-    const doubleBadge = q.isDoublePoints ? ' [🌟x2]' : '';
-    opt.textContent = `Q${idx + 1}${doubleBadge}: ${q.question.substring(0, 22)}...`;
+    const multiplier = getPointMultiplier(q);
+    const badge = multiplier > 1 ? ` [${ScoreEngine.getMultiplierLabel(multiplier)}]` : '';
+    opt.textContent = `Q${idx + 1}${badge}: ${q.question.substring(0, 22)}...`;
     selectCurrentQuestion.appendChild(opt);
   });
   selectCurrentQuestion.value = selectedQIndex;
@@ -469,6 +449,13 @@ function updateMonitor() {
   if (statConnectedTeams) statConnectedTeams.textContent = totalTeams;
   if (statAnsweredTeams) statAnsweredTeams.textContent = answeredTotal;
   if (statUnansweredTeams) statUnansweredTeams.textContent = Math.max(0, totalTeams - answeredTotal);
+  if (statManuallyGradedTeams) {
+    const activeQuestion = currentQuestions[selectedQIndex];
+    statManuallyGradedTeams.textContent = activeQuestion && activeQuestion.answerType === 'text'
+      ? Object.values(currentAnswers)
+        .filter(answer => typeof answer.manualIsCorrect === 'boolean' && answer.gradeSource !== 'automatic').length
+      : 0;
+  }
 }
 
 function subscribeToSelectedQuestionAnswers() {
@@ -495,7 +482,7 @@ async function handleGenerateDummyTeams() {
   if (confirm(`動作テスト用に ${count} チームを一括登録しますか？`)) {
     for (let i = 1; i <= count; i++) {
       const id = `dummy_team_${i}`;
-      const name = `チーム ${i}`;
+      const name = `${i} チーム ${i}`;
       await quizStore.registerTeam(id, name);
     }
     alert(`${count} チームの登録が完了しました！`);
@@ -516,7 +503,7 @@ async function handleSimulateAnswers() {
 
   for (const t of teamsList) {
     const randomOption = currentQ.answerType === 'text'
-      ? `テスト回答 ${Math.floor(Math.random() * 100) + 1}`
+      ? (Math.random() < 0.5 && String(currentQ.answer || '').length > 0 ? currentQ.answer : '誤答')
       : Math.floor(Math.random() * numOptions);
     const randomTime = Math.floor(Math.random() * 12000) + 1500; // 1.5s〜13.5s
     await quizStore.submitAnswer(currentQ.id, t.teamId, t.teamName, randomOption, randomTime, currentQ.answerType);

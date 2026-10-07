@@ -5,7 +5,7 @@
  * スマートフォン回答画面の起動時に、このリストから自分のチームを選択します。
  */
 
-const DEFAULT_TEAM_LIST = Array.from({ length: 60 }, (_, i) => `チーム ${i + 1}`);
+const DEFAULT_TEAM_LIST = Array.from({ length: 60 }, (_, i) => `${i + 1} チーム ${i + 1}`);
 
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = { DEFAULT_TEAM_LIST };

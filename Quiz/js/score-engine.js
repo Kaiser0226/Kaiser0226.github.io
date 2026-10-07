@@ -1,7 +1,7 @@
 /**
  * 得点計算エンジン (Score Engine)
  * 
- * 回答順に応じた段階減点とダブルポイントに対応
+ * 回答順に応じた段階減点とポイント倍率に対応
  */
 
 const DEFAULT_SCORE_CONFIG = {
@@ -10,25 +10,38 @@ const DEFAULT_SCORE_CONFIG = {
   minPoint: 10
 };
 
+function getPointMultiplier(question) {
+  const multiplier = Number(question && question.pointMultiplier);
+  if (Number.isFinite(multiplier) && multiplier > 0) return multiplier;
+  return question && question.isDoublePoints ? 2 : 1;
+}
+
 class ScoreEngine {
   /**
    * 1問ごとの回答結果から獲得ポイントを計算
    * @param {Array} answers [{ teamId, teamName, selectedOption, answerTimeMs }]
-   * @param {number} correctOption 正解の選択肢インデックス
+   * @param {number|string} correctAnswer 正解の選択肢インデックスまたは模範解答
    * @param {Object} config 得点設定オブジェクト
-   * @param {boolean} isDoublePoints ダブルポイント(得点2倍)フラグ
+   * @param {number|boolean} pointMultiplier 獲得ポイント倍率（booleanは既存データ互換用）
    * @returns {Object} { results: { [teamId]: { isCorrect, pointsAwarded, breakdown, rankInCorrect } }, correctCount, totalAnswers, correctRate }
    */
-  static calculateQuestionScores(answers, correctOption, config = DEFAULT_SCORE_CONFIG, isDoublePoints = false) {
+  static calculateQuestionScores(answers, correctAnswer, config = DEFAULT_SCORE_CONFIG, pointMultiplier = 1) {
     const results = {};
     const totalAnswers = answers.filter(answer =>
       answer.answerText === undefined || typeof answer.manualIsCorrect === 'boolean'
     ).length;
 
     // 正解者の抽出
+    const requestedMultiplier = pointMultiplier === true ? 2 : Number(pointMultiplier);
+    const multiplier = Number.isFinite(requestedMultiplier) && requestedMultiplier > 0
+      ? requestedMultiplier
+      : 1;
+    const isDoublePoints = multiplier === 2;
     const isAnswerCorrect = answer => answer.manualIsCorrect !== undefined
       ? Boolean(answer.manualIsCorrect)
-      : Number(answer.selectedOption) === Number(correctOption);
+      : typeof correctAnswer === 'string'
+        ? answer.answerText === correctAnswer
+        : Number(answer.selectedOption) === Number(correctAnswer);
     const correctAnswers = answers
       .filter(isAnswerCorrect)
       .map(a => ({
@@ -41,7 +54,6 @@ class ScoreEngine {
 
     const correctCount = correctAnswers.length;
     const correctRate = totalAnswers > 0 ? Math.round((correctCount / totalAnswers) * 100) : 0;
-    const multiplier = isDoublePoints ? 2 : 1;
 
     // 不正解チームの初期化
     answers.forEach(a => {
@@ -76,7 +88,7 @@ class ScoreEngine {
     });
 
     if (correctCount === 0) {
-      return { results, correctCount, totalAnswers, correctRate, isDoublePoints: Boolean(isDoublePoints) };
+      return { results, correctCount, totalAnswers, correctRate, isDoublePoints, pointMultiplier: multiplier };
     }
 
     const legacyMax = Number(config.rankPoints?.[1] ?? config.rank1 ?? 100);
@@ -100,7 +112,7 @@ class ScoreEngine {
 
       const baseEarned = Math.max(minPoint, maxPoint - (currentRank - 1) * decrement);
 
-      // ダブルポイント適用
+      // ポイント倍率を適用
       const totalEarned = baseEarned * multiplier;
 
       results[ans.teamId] = {
@@ -125,8 +137,21 @@ class ScoreEngine {
       correctCount,
       totalAnswers,
       correctRate,
-      isDoublePoints: Boolean(isDoublePoints)
+      isDoublePoints,
+      pointMultiplier: multiplier
     };
+  }
+
+  static getMultiplierLabel(multiplier) {
+    const value = Number(multiplier);
+    if (value === 2) return 'ダブルポイント';
+    if (value === 3) return 'トリプルポイント';
+    return `ポイント${value}倍`;
+  }
+
+  static getMultiplierBadge(multiplier) {
+    const value = Number(multiplier);
+    return value > 1 ? `🌟 ${this.getMultiplierLabel(value)} (${value}倍)` : '';
   }
 
   static getRankLabel(sortedTeams, index) {
@@ -141,5 +166,5 @@ class ScoreEngine {
 }
 
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { ScoreEngine, DEFAULT_SCORE_CONFIG };
+  module.exports = { ScoreEngine, DEFAULT_SCORE_CONFIG, getPointMultiplier };
 }

@@ -94,20 +94,10 @@
 
           <div class="form-row-2">
             <div class="form-group">
-              <label class="form-label">時間制限の設定</label>
-              <div style="display: flex; gap: 12px; align-items: center; margin-top: 6px;">
-                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; font-weight: 600;">
-                  <input type="checkbox" id="editHasTimeLimit" checked> 時間制限を有効にする
-                </label>
-                <input type="number" id="editTimeLimitSeconds" class="form-input" style="width: 90px;" value="15"
-                  min="5" max="120"> 秒
-              </div>
-            </div>
-            <div class="form-group">
               <label class="form-label" for="editAnswerType">回答形式</label>
               <select id="editAnswerType" class="form-input">
                 <option value="choice">選択式</option>
-                <option value="text">記述式（手動採点）</option>
+                <option value="text">記述式（自動一致・手動採点）</option>
               </select>
             </div>
           </div>
@@ -118,14 +108,13 @@
           </div>
           <div class="form-group" id="editTextAnswerGroup" style="display: none;">
             <label class="form-label" for="editTextAnswer">模範解答（任意・管理用）</label>
-            <input type="text" id="editTextAnswer" class="form-input" placeholder="回答状況モニターで手動採点します">
+            <input type="text" id="editTextAnswer" class="form-input" placeholder="完全一致は自動正解、それ以外は回答状況モニターで採点します">
           </div>
 
           <div class="form-group" style="margin-bottom: 16px;">
-            <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; color: #b45309; background: #fffbeb; padding: 10px 16px; border-radius: 8px; border: 1.5px solid #fde68a;">
-              <input type="checkbox" id="editIsDoublePoints" style="width: 18px; height: 18px; accent-color: #d97706;">
-              <span>🌟 この問題を「ダブルポイント（獲得得点2倍）」に設定する</span>
-            </label>
+            <label class="form-label" for="editPointMultiplier">獲得ポイント倍率</label>
+            <input type="number" id="editPointMultiplier" class="form-input" min="0.01" step="0.1" value="1" style="max-width: 180px;">
+            <small>2倍はダブルポイント、3倍はトリプルポイント、それ以外は倍率で表示します。</small>
           </div>
 
           <!-- 選択肢 2〜6択動的エディタ -->

@@ -117,23 +117,6 @@
           <button type="button" class="btn btn-secondary" id="btnNextQuestion">次の問題 ▶</button>
         </div>
 
-        <!-- タイマー切替パネル -->
-        <div class="timer-control-box">
-          <div>
-            <div style="font-weight: 700; color: #0f172a;">⏱️ タイマー制御</div>
-            <div id="timerDetailText" style="font-size: 0.85rem; color: #64748b;">
-              制限時間: 15秒 (タイマー稼働中)
-            </div>
-          </div>
-          <div style="display: flex; gap: 8px;">
-            <button type="button" class="btn btn-secondary" id="btnToggleTimerMode" style="font-size: 0.85rem;">
-              手動進行へ切替
-            </button>
-            <button type="button" class="btn btn-danger" id="btnForceCloseAnswers" style="font-size: 0.85rem;">
-              即時締切
-            </button>
-          </div>
-        </div>
       </section>
 
     </div>
@@ -173,6 +156,10 @@
           <div class="mini-stat">
             <div class="mini-stat-num" id="statUnansweredTeams" style="color: #dc2626;">0</div>
             <div class="mini-stat-label">未回答</div>
+          </div>
+          <div class="mini-stat">
+            <div class="mini-stat-num" id="statManuallyGradedTeams">0</div>
+            <div class="mini-stat-label">記述式採点済み</div>
           </div>
         </div>
 

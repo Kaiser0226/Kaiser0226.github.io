@@ -56,6 +56,7 @@ const verdictPoints = document.getElementById('verdictPoints');
 const statCorrectRate = document.getElementById('statCorrectRate');
 const statAnswerTime = document.getElementById('statAnswerTime');
 const playerExplanationText = document.getElementById('playerExplanationText');
+const playerCorrectAnswer = document.getElementById('playerCorrectAnswer');
 const playerRankingSection = document.getElementById('playerRankingSection');
 const rankNotice = document.getElementById('rankNotice');
 const rankingScrollBox = document.getElementById('rankingScrollBox');
@@ -181,7 +182,7 @@ function initTeam() {
   if (saved) {
     try {
       myTeam = JSON.parse(saved);
-      displayTeamName.textContent = myTeam.teamName;
+      displayTeamName.textContent = splitTeamDisplayName(myTeam.teamName).name;
       registerView.style.display = 'none';
       gameView.style.display = 'flex';
       quizStore.registerTeam(myTeam.teamId, myTeam.teamName);
@@ -213,7 +214,7 @@ async function handleRegister() {
   myTeam = { teamId, teamName: selectedName };
 
   localStorage.setItem('quiz_player_team', JSON.stringify(myTeam));
-  displayTeamName.textContent = selectedName;
+  displayTeamName.textContent = splitTeamDisplayName(selectedName).name;
 
   await quizStore.registerTeam(teamId, selectedName);
 
@@ -277,7 +278,7 @@ function applyState() {
     btnLock.disabled = true;
     playerTextAnswer.disabled = true;
     if (!isAnswerLocked) {
-      btnLock.textContent = "回答時間終了";
+      btnLock.textContent = "回答受付終了";
     }
   } else if (currentScene === 'result') {
     sceneResult.style.display = 'flex';
@@ -321,9 +322,11 @@ function updateHeaderStats() {
 function setupQuestionScene(q) {
   if (!q) return;
 
-  // ダブルポイントバッジ表示
+  // ポイント倍率バッジ表示
   if (playerDoubleBadge) {
-    playerDoubleBadge.style.display = q.isDoublePoints ? 'block' : 'none';
+    const multiplier = getPointMultiplier(q);
+    playerDoubleBadge.textContent = ScoreEngine.getMultiplierBadge(multiplier);
+    playerDoubleBadge.style.display = multiplier > 1 ? 'block' : 'none';
   }
 
   // 新しい問題になったらリセット
@@ -419,8 +422,8 @@ async function handleLockAnswer() {
   const currentQ = currentQuestions[currentState.currentQuestionIndex];
   if (!currentQ) return;
   const isTextAnswer = currentQ.answerType === 'text';
-  const answerText = isTextAnswer ? playerTextAnswer.value.trim() : '';
-  if ((isTextAnswer && !answerText) || (!isTextAnswer && selectedOptionIndex === null)) return;
+  const answerText = isTextAnswer ? playerTextAnswer.value : '';
+  if ((isTextAnswer && !answerText.trim()) || (!isTextAnswer && selectedOptionIndex === null)) return;
 
   isAnswerLocked = true;
 
@@ -505,7 +508,7 @@ function showResultScene(q) {
 
   let isDataReceived = false;
 
-  // 2. ネットワーク遅延時（2.5秒経過しても未受信の場合）のフォールバックタイマー
+  // 2. ネットワーク遅延時（2.5秒経過しても未受信の場合）の表示切替
   resultSyncTimeoutId = setTimeout(() => {
     if (!isDataReceived) {
       console.warn("Quiz: Firebase result reception delayed, applying local fallback evaluation");
@@ -560,8 +563,8 @@ function renderActualResultData(q, resultsData) {
   const answerSeconds = savedTime ? (Number(savedTime) / 1000).toFixed(2) : (teamResult && teamResult.answerTimeMs ? (teamResult.answerTimeMs / 1000).toFixed(2) : "--");
 
   // 正解・不正解バナー
-  const isDouble = Boolean(q.isDoublePoints || (resultsData && resultsData.isDoublePoints));
-  const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';
+  const multiplier = Number((resultsData && resultsData.pointMultiplier) || getPointMultiplier(q));
+  const doubleTag = multiplier > 1 ? ` (🌟${ScoreEngine.getMultiplierLabel(multiplier)}!)` : '';
 
   if (isPending) {
     verdictBanner.className = 'verdict-banner pending';
@@ -582,6 +585,13 @@ function renderActualResultData(q, resultsData) {
 
   statCorrectRate.textContent = `${correctRate}%`;
   statAnswerTime.textContent = `${answerSeconds}秒`;
+  const correctAnswer = q.answerType === 'text'
+    ? q.answer
+    : q.options && q.options[Number(q.answer)] ? q.options[Number(q.answer)].text : '';
+  playerCorrectAnswer.textContent = !isPending && !isCorrect && correctAnswer
+    ? `正解: ${correctAnswer}`
+    : '';
+  playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
   playerExplanationText.textContent = q.explanation || "解説はありません。";
 
   // 順位一覧テーブルの描画
@@ -598,18 +608,27 @@ function applyLocalResultFallback(q) {
     if (q.answerType === 'text') {
       resultLoadingBox.style.display = 'none';
       resultContentArea.style.display = 'flex';
-      verdictBanner.className = 'verdict-banner pending';
-      verdictTitle.textContent = '回答を受け付けました';
-      verdictPoints.textContent = '運営者による採点をお待ちください';
+      const isAutomaticallyCorrect = String(savedAnswerIndex) === String(q.answer || '')
+        && String(q.answer || '') !== '';
+      verdictBanner.className = `verdict-banner ${isAutomaticallyCorrect ? 'correct' : 'pending'}`;
+      verdictTitle.textContent = isAutomaticallyCorrect ? '🎉 正解！' : '回答を受け付けました';
+      verdictPoints.textContent = isAutomaticallyCorrect ? '得点を同期中...' : '運営者による採点をお待ちください';
+      playerCorrectAnswer.textContent = '';
+      playerCorrectAnswer.style.display = 'none';
+      if (isAutomaticallyCorrect) {
+        playerExplanationText.textContent = q.explanation || "解説はありません。";
+        const multiplier = getPointMultiplier(q);
+        const multiplierLabel = multiplier > 1 ? ` (🌟${ScoreEngine.getMultiplierLabel(multiplier)}!)` : '';
+        verdictPoints.textContent += multiplierLabel;
+      }
       statAnswerTime.textContent = `${answerSeconds}秒`;
       statCorrectRate.textContent = '集計中...';
-      playerExplanationText.textContent = q.explanation || "解説はありません。";
       renderRankingsTable();
       return;
     }
     const isCorrect = (Number(savedAnswerIndex) === Number(q.answer));
-    const isDouble = Boolean(q.isDoublePoints);
-    const doubleTag = isDouble ? ' (🌟得点2倍!)' : '';
+    const multiplier = getPointMultiplier(q);
+    const doubleTag = multiplier > 1 ? ` (🌟${ScoreEngine.getMultiplierLabel(multiplier)}!)` : '';
 
     resultLoadingBox.style.display = 'none';
     resultContentArea.style.display = 'flex';
@@ -622,6 +641,9 @@ function applyLocalResultFallback(q) {
       verdictBanner.className = 'verdict-banner incorrect';
       verdictTitle.textContent = "✕ 不正解...";
       verdictPoints.textContent = `+0 点`;
+      const correctAnswer = q.options && q.options[Number(q.answer)] ? q.options[Number(q.answer)].text : '';
+      playerCorrectAnswer.textContent = correctAnswer ? `正解: ${correctAnswer}` : '';
+      playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
     }
   }
 
@@ -683,7 +705,7 @@ function renderRankingsTable() {
 
     tr.innerHTML = `
       <td>${rankLabel}</td>
-      <td>${escapeHtml(t.teamName)}${isMe ? ' (あなた)' : ''}</td>
+      <td>${escapeHtml(splitTeamDisplayName(t.teamName).name)}${isMe ? ' (あなた)' : ''}</td>
       <td style="text-align: right; font-weight: 700;">${t.totalScore || 0}点</td>
     `;
     rankingTableBody.appendChild(tr);
@@ -740,7 +762,7 @@ function renderFinalResults() {
 
     tr.innerHTML = `
       <td>${rankLabel}</td>
-      <td>${escapeHtml(t.teamName)}${isMe ? ' (あなた)' : ''}</td>
+      <td>${escapeHtml(splitTeamDisplayName(t.teamName).name)}${isMe ? ' (あなた)' : ''}</td>
       <td style="text-align: right; font-weight: 700;">${t.totalScore || 0}点</td>
     `;
     finalTableBody.appendChild(tr);

@@ -9,7 +9,6 @@ let currentQuestions = DEFAULT_QUESTIONS;
 let currentState = null;
 let currentAnswers = {};
 let allTeams = {};
-let timerInterval = null;
 let rankingChannel = null;
 let subscribedAnswerQuestionId = null;
 let unsubscribeCurrentAnswers = null;
@@ -29,9 +28,6 @@ const presMain = document.getElementById('presMain');
 const presImageWrapper = document.getElementById('presImageWrapper');
 const presQuestionImage = document.getElementById('presQuestionImage');
 const presQuestionText = document.getElementById('presQuestionText');
-const presTimerContainer = document.getElementById('presTimerContainer');
-const presTimerFill = document.getElementById('presTimerFill');
-const presTimerSeconds = document.getElementById('presTimerSeconds');
 const presOptionsGrid = document.getElementById('presOptionsGrid');
 const presTextAnswerNotice = document.getElementById('presTextAnswerNotice');
 const presExplanationBox = document.getElementById('presExplanationBox');
@@ -60,6 +56,7 @@ let revealOrder = []; // 発表する順序 [5, 4, 3, 2, 1]
 let currentRevealIndex = 0; // 現在どこまで発表したか
 let autoRevealTimer = null;
 let isShowingFullRanking = false;
+let finalRankingsInitialized = false;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -107,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
     allTeams = teams || {};
     updateWaterLevel();
     if (currentState && currentState.currentScene === 'final') {
-      setupFinalRankings();
+      setupFinalRankings(false);
     }
   });
 
@@ -160,6 +157,7 @@ function applyState() {
 
   const { status, currentScene, currentQuestionIndex, targetTeamCount } = currentState;
   const currentQ = currentQuestions[currentQuestionIndex] || currentQuestions[0];
+  if (currentScene !== 'final') finalRankingsInitialized = false;
 
   targetCountEl.textContent = targetTeamCount || 100;
 
@@ -170,7 +168,6 @@ function applyState() {
 
   // シーンごとの表示制御
   if (status === 'stopped' || currentScene === 'waiting') {
-    stopLocalTimer();
     showSpecialView("まもなく開始します", "各チームのスマートフォンを準備してお待ちください。");
     sceneStatusBadge.textContent = "待機中";
     waterContainer.style.height = "0%";
@@ -179,14 +176,13 @@ function applyState() {
   }
 
   if (currentScene === 'final') {
-    stopLocalTimer();
     sceneStatusBadge.textContent = "最終結果発表";
     answerBadge.style.display = "none";
     showSpecialView("🎉 最終結果発表 🎉", "クイズ大会の成績上位チームを発表します！");
-    setupFinalRankings();
+    setupFinalRankings(!finalRankingsInitialized);
+    finalRankingsInitialized = true;
     return;
   }
-
   // 出題・回答・正解表示シーン
   specialView.style.display = 'none';
   presMain.style.display = 'flex';
@@ -198,17 +194,12 @@ function applyState() {
     sceneStatusBadge.textContent = "回答受付中";
     presExplanationBox.style.display = 'none';
     removeAnswerHighlights();
-    setupTimer();
   } else if (currentScene === 'closed') {
-    stopLocalTimer();
     sceneStatusBadge.textContent = "回答受付終了";
     presExplanationBox.style.display = 'none';
     removeAnswerHighlights();
   } else if (currentScene === 'result') {
-    stopLocalTimer();
     sceneStatusBadge.textContent = "正解発表";
-    // 正解発表時はタイマーを非表示にして解説の表示スペースを最大確保
-    presTimerContainer.style.display = 'none';
     highlightCorrectAnswer(currentQ);
   }
 }
@@ -219,7 +210,6 @@ function showSpecialView(title, subtitle) {
   specialTitle.textContent = title;
   specialSubtitle.textContent = subtitle;
   rankingRevealContainer.style.display = 'none';
-  document.body.classList.remove('timer-warning-active');
 }
 
 function renderCurrentQuestion() {
@@ -238,9 +228,11 @@ function renderCurrentQuestion() {
   // 2. 問題文
   presQuestionText.textContent = q.question;
 
-  // ダブルポイントバッジ表示制御
+  // ポイント倍率バッジ表示制御
   if (presDoubleBadge) {
-    presDoubleBadge.style.display = q.isDoublePoints ? 'inline-block' : 'none';
+    const multiplier = getPointMultiplier(q);
+    presDoubleBadge.textContent = ScoreEngine.getMultiplierBadge(multiplier);
+    presDoubleBadge.style.display = multiplier > 1 ? 'inline-block' : 'none';
   }
 
   // 3. 選択肢 (2列グリッド: ◯◯ ◯◯ ◯◯)
@@ -269,68 +261,6 @@ function renderCurrentQuestion() {
 
   // 4. 解説文
   presExplanationText.textContent = q.explanation || "解説はありません。";
-}
-
-function setupTimer() {
-  stopLocalTimer();
-  const qIndex = currentState.currentQuestionIndex || 0;
-  const q = currentQuestions[qIndex];
-  if (!q) return;
-
-  const hasLimit = (q.hasTimeLimit !== false) && (currentState.isTimerRunning !== false);
-
-  if (!hasLimit) {
-    presTimerContainer.style.display = 'none';
-    document.body.classList.remove('timer-warning-active');
-    return;
-  }
-
-  presTimerContainer.style.display = 'flex';
-  const totalDuration = q.timeLimitSeconds || 15;
-  let startTime = currentState.questionStartTime;
-  if (!startTime) {
-    startTime = Date.now();
-    quizStore.updateState({ questionStartTime: startTime });
-  }
-
-  async function tick() {
-    const elapsed = (Date.now() - startTime) / 1000;
-    const remaining = Math.max(0, totalDuration - elapsed);
-    const percent = Math.max(0, (remaining / totalDuration) * 100);
-
-    presTimerFill.style.width = `${percent}%`;
-    presTimerSeconds.textContent = `${Math.ceil(remaining)}s`;
-
-    if (remaining <= 5 && remaining > 0) {
-      presTimerContainer.classList.add('warning');
-      document.body.classList.add('timer-warning-active');
-    } else {
-      presTimerContainer.classList.remove('warning');
-      document.body.classList.remove('timer-warning-active');
-    }
-
-    if (remaining <= 0) {
-      stopLocalTimer();
-      presTimerSeconds.textContent = "0s";
-      presTimerFill.style.width = "0%";
-      document.body.classList.remove('timer-warning-active');
-      await quizStore.updateState({ currentScene: 'result' });
-    }
-  }
-
-  tick();
-  timerInterval = setInterval(tick, 100);
-}
-
-function stopLocalTimer() {
-  if (timerInterval) {
-    clearInterval(timerInterval);
-    timerInterval = null;
-  }
-  document.body.classList.remove('timer-warning-active');
-  if (presTimerContainer) {
-    presTimerContainer.classList.remove('warning');
-  }
 }
 
 // 水位上昇アニメーションの更新
@@ -410,8 +340,10 @@ function removeAnswerHighlights() {
 // 最終結果ランキング発表 (5位から1位への順位発表アニメーション)
 // =========================================================
 
-function setupFinalRankings() {
+function setupFinalRankings(resetSequence = false) {
   rankingRevealContainer.style.display = 'flex';
+  const previouslyRevealedRanks = resetSequence ? [] : revealOrder.slice(0, currentRevealIndex);
+  const wasShowingFullRanking = !resetSequence && isShowingFullRanking;
   const teamList = Object.values(allTeams);
 
   // 得点降順ソート
@@ -427,10 +359,12 @@ function setupFinalRankings() {
   }
 
   currentRevealIndex = 0;
-  isShowingFullRanking = false;
-  fullRankingView.style.display = 'none';
-  rankingCardsStack.style.display = 'flex';
-  btnToggleFullRanking.textContent = "📋 全体ランキング表";
+  isShowingFullRanking = wasShowingFullRanking;
+  fullRankingView.style.display = wasShowingFullRanking ? 'block' : 'none';
+  rankingCardsStack.style.display = wasShowingFullRanking ? 'none' : 'flex';
+  btnToggleFullRanking.textContent = wasShowingFullRanking
+    ? "🏆 順位発表カードに戻る"
+    : "📋 全体ランキング表";
 
   // カードスタックの初期DOM構築 (すべて非表示状態で配置)
   rankingCardsStack.innerHTML = '';
@@ -452,12 +386,14 @@ function setupFinalRankings() {
 
     card.innerHTML = `
       <div class="rank-badge-text">${badgeIcon}</div>
-      <div class="rank-team-text">${escapeHtml(t ? t.teamName : `チーム ${rank}`)}</div>
+      <div class="rank-team-text">${escapeHtml(t ? splitTeamDisplayName(t.teamName).name : `チーム ${rank}`)}</div>
       <div class="rank-score-text">${t ? t.totalScore || 0 : 0} 点</div>
     `;
 
+    if (previouslyRevealedRanks.includes(rank)) card.classList.add('revealed');
     rankingCardsStack.appendChild(card);
   }
+  currentRevealIndex = revealOrder.filter(rank => previouslyRevealedRanks.includes(rank)).length;
 
   // 全体ランキングHTMLも裏で生成
   buildFullRankingTable();
@@ -599,7 +535,7 @@ function buildFullRankingTable() {
         <td style="font-weight: 800; color: ${rank === 1 ? '#d97706' : rank === 2 ? '#64748b' : rank === 3 ? '#c2410c' : '#0f172a'};">
           ${rankBadge}
         </td>
-        <td style="font-weight: 700; color: #0f172a;">${escapeHtml(t.teamName)}</td>
+        <td style="font-weight: 700; color: #0f172a;">${escapeHtml(splitTeamDisplayName(t.teamName).name)}</td>
         <td style="text-align: right; font-weight: 900; color: #2563eb;">${t.totalScore || 0} 点</td>
       </tr>
     `;

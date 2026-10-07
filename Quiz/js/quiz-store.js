@@ -3,6 +3,14 @@
  * Firebase Realtime Database と ローカル通信 (BroadcastChannel / LocalStorage) の両対応
  */
 
+function splitTeamDisplayName(teamName) {
+  const fullName = String(teamName || '').trim();
+  const separator = fullName.indexOf(' ');
+  return separator < 0
+    ? { id: fullName, name: fullName }
+    : { id: fullName.slice(0, separator), name: fullName.slice(separator + 1).trim() };
+}
+
 class QuizStore {
   constructor() {
     this.firebaseApp = null;
@@ -85,9 +93,6 @@ class QuizStore {
       currentScene: 'waiting', // 'waiting' | 'question' | 'closed' | 'result' | 'final'
       currentQuestionIndex: 0,
       questionStartTime: 0,
-      timerDuration: 15,
-      isTimerRunning: false,
-      remainingSeconds: 15,
       finalResultsRevealed: false,
       targetTeamCount: 100, // ユーザー要望：人数のデフォルトは100組
       rankDisplayLimit: 999, // 順位を表示する問題数上限（例: 5問目まで表示など）
@@ -368,7 +373,6 @@ class QuizStore {
     const localState = JSON.parse(localStorage.getItem('quiz_local_state') || '{}');
     const defaultState = this.getDefaultState();
     defaultState.scoreConfig = scoreConfig || localState.scoreConfig || defaultState.scoreConfig;
-    defaultState.isTimerRunning = false;
     defaultState.resetToken = Date.now(); // 端末強制ログアウトリセット用トークン
 
     if (this.isFirebaseReady && this.database) {
@@ -461,6 +465,13 @@ class QuizStore {
     };
     if (answerType === 'text') {
       answerData.answerText = String(answer);
+      const question = await this.getQuestionById(questionId);
+      if (question && question.answerType === 'text' && String(question.answer || '') !== ''
+        && answerData.answerText === String(question.answer)) {
+        answerData.manualIsCorrect = true;
+        answerData.gradeSource = 'automatic';
+        answerData.gradedAt = Date.now();
+      }
     } else {
       answerData.selectedOption = Number(answer);
     }
@@ -475,6 +486,16 @@ class QuizStore {
     } else {
       this.publishAnswers(allAnswers[questionId], questionId);
     }
+  }
+
+  async getQuestionById(questionId) {
+    if (this.isFirebaseReady && this.database) {
+      const snapshot = await this.database.ref('quiz/questions').once('value');
+      const questions = Object.values(snapshot.val() || DEFAULT_QUESTIONS);
+      return questions.find(question => String(question.id) === String(questionId)) || null;
+    }
+    const questions = JSON.parse(localStorage.getItem('quiz_local_questions') || 'null') || DEFAULT_QUESTIONS;
+    return questions.find(question => String(question.id) === String(questionId)) || null;
   }
 
   publishAnswers(answers, questionId) {
@@ -497,6 +518,7 @@ class QuizStore {
       throw new Error('採点対象の回答が見つかりません。');
     }
     answer.manualIsCorrect = Boolean(isCorrect);
+    answer.gradeSource = 'manual';
     answer.gradedAt = Date.now();
 
     const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
@@ -505,6 +527,7 @@ class QuizStore {
     if (this.isFirebaseReady && this.database) {
       await this.database.ref(`quiz/answers/${question.id}/${teamId}`).update({
         manualIsCorrect: answer.manualIsCorrect,
+        gradeSource: answer.gradeSource,
         gradedAt: answer.gradedAt
       });
     } else {
@@ -530,7 +553,7 @@ class QuizStore {
       Object.values(allAnswers[question.id]),
       question.answer,
       scoreConfig,
-      question.isDoublePoints
+      getPointMultiplier(question)
     );
     const updatedTeams = { ...teams };
     Object.keys(scoreResult.results).forEach(id => {

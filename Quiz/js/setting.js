@@ -18,14 +18,12 @@ const btnNextQuestion = document.getElementById('btnNextQuestion');
 const questionEditForm = document.getElementById('questionEditForm');
 const editQuestionText = document.getElementById('editQuestionText');
 const editQuestionImage = document.getElementById('editQuestionImage');
-const editHasTimeLimit = document.getElementById('editHasTimeLimit');
-const editTimeLimitSeconds = document.getElementById('editTimeLimitSeconds');
 const editAnswerType = document.getElementById('editAnswerType');
 const editCorrectAnswer = document.getElementById('editCorrectAnswer');
 const editTextAnswer = document.getElementById('editTextAnswer');
 const editChoiceAnswerGroup = document.getElementById('editChoiceAnswerGroup');
 const editTextAnswerGroup = document.getElementById('editTextAnswerGroup');
-const editIsDoublePoints = document.getElementById('editIsDoublePoints');
+const editPointMultiplier = document.getElementById('editPointMultiplier');
 const editExplanation = document.getElementById('editExplanation');
 const optionsEditorContainer = document.getElementById('optionsEditorContainer');
 const optionsEditorGroup = document.getElementById('optionsEditorGroup');
@@ -220,8 +218,9 @@ function populateQuestionDropdown() {
   currentQuestions.forEach((q, idx) => {
     const opt = document.createElement('option');
     opt.value = idx;
-    const doubleBadge = q.isDoublePoints ? ' [🌟x2]' : '';
-    opt.textContent = `Q${idx + 1}${doubleBadge}: ${q.question.substring(0, 22)}...`;
+    const multiplier = getPointMultiplier(q);
+    const badge = multiplier > 1 ? ` [${ScoreEngine.getMultiplierLabel(multiplier)}]` : '';
+    opt.textContent = `Q${idx + 1}${badge}: ${q.question.substring(0, 22)}...`;
     selectCurrentQuestion.appendChild(opt);
   });
   if (selectedQIndex >= currentQuestions.length) {
@@ -236,14 +235,10 @@ function loadQuestionToEditor(index) {
 
   editQuestionText.value = q.question || '';
   editQuestionImage.value = q.image || '';
-  editHasTimeLimit.checked = q.hasTimeLimit !== false;
-  editTimeLimitSeconds.value = q.timeLimitSeconds || 15;
   editAnswerType.value = q.answerType === 'text' ? 'text' : 'choice';
   editTextAnswer.value = typeof q.answer === 'string' ? q.answer : '';
   updateAnswerTypeFields();
-  if (editIsDoublePoints) {
-    editIsDoublePoints.checked = Boolean(q.isDoublePoints);
-  }
+  editPointMultiplier.value = getPointMultiplier(q);
   editExplanation.value = q.explanation || '';
 
   renderOptionInputs(q.options || []);
@@ -331,14 +326,18 @@ async function handleSaveQuestionEdit(e) {
     alert("選択肢は最低2個必要です。");
     return;
   }
+  const pointMultiplier = Number(editPointMultiplier.value);
+  if (!Number.isFinite(pointMultiplier) || pointMultiplier <= 0) {
+    alert('ポイント倍率は0より大きい数値を入力してください。');
+    return;
+  }
 
   q.question = editQuestionText.value.trim();
   q.image = editQuestionImage.value.trim();
-  q.hasTimeLimit = editHasTimeLimit.checked;
-  q.timeLimitSeconds = parseInt(editTimeLimitSeconds.value, 10) || 15;
   q.answerType = isTextAnswer ? 'text' : 'choice';
   q.answer = isTextAnswer ? editTextAnswer.value.trim() : parseInt(editCorrectAnswer.value, 10);
-  q.isDoublePoints = editIsDoublePoints ? editIsDoublePoints.checked : false;
+  q.pointMultiplier = pointMultiplier;
+  delete q.isDoublePoints;
   q.options = newOptions;
   q.explanation = editExplanation.value.trim();
 
@@ -350,6 +349,10 @@ async function handleSaveQuestionEdit(e) {
     rawQuestions.push({ ...q });
   }
 
+  rawQuestions = rawQuestions.map(question => {
+    const { hasTimeLimit, timeLimitSeconds, isDoublePoints, ...cleanQuestion } = question;
+    return { ...cleanQuestion, pointMultiplier: getPointMultiplier(question) };
+  });
   await quizStore.saveQuestions(rawQuestions);
   alert("問題データを保存・同期しました！");
 }
@@ -360,10 +363,8 @@ async function addNewQuestion() {
     id: maxId + 1,
     question: `新しい問題 ${maxId + 1}`,
     image: "",
-    hasTimeLimit: true,
-    timeLimitSeconds: 15,
     answerType: 'choice',
-    isDoublePoints: false,
+    pointMultiplier: 1,
     options: [
       { text: "選択肢 1", image: "" },
       { text: "選択肢 2", image: "" },
@@ -443,7 +444,8 @@ function renderOrderListEditor() {
   tempOrder.forEach((qid, idx) => {
     const q = rawQuestions.find(rq => rq.id === qid);
     const qText = q ? q.question : `(ID: ${qid} - 削除済み)`;
-    const doubleBadge = q && q.isDoublePoints ? ' <span style="display:inline-block; font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:800; margin-left:4px;">🌟2倍</span>' : '';
+    const multiplier = getPointMultiplier(q);
+    const doubleBadge = multiplier > 1 ? ` <span style="display:inline-block; font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:800; margin-left:4px;">${escapeHtml(ScoreEngine.getMultiplierLabel(multiplier))}</span>` : '';
 
     const item = document.createElement('div');
     item.draggable = true;

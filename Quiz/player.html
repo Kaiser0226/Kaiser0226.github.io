@@ -73,10 +73,8 @@
       <!-- シーン2: 回答画面 -->
       <section class="scene-question" id="sceneQuestion" style="display: none;">
         
-        <!-- ダブルポイントバッジ (該当問題のみ表示) -->
-        <div class="player-double-badge" id="playerDoubleBadge" style="display: none;">
-          🌟 得点2倍！ DOUBLE POINTS
-        </div>
+        <!-- ポイント倍率バッジ -->
+        <div class="player-double-badge" id="playerDoubleBadge" style="display: none;"></div>
 
         <!-- 1. 問題画像 (あれば表示) -->
         <div class="q-image-container" id="playerImageContainer" style="display: none;">
@@ -146,6 +144,7 @@
           <!-- 解答解説 -->
           <div class="explanation-card" id="playerExplanationCard">
             <div style="font-weight: 800; color: #38bdf8; margin-bottom: 4px;">💡 解答解説</div>
+            <p id="playerCorrectAnswer" style="font-weight: 800; color: #fbbf24; display: none;"></p>
             <p id="playerExplanationText">解説テキスト</p>
           </div>
 

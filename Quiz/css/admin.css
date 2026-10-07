@@ -205,19 +205,6 @@
   box-shadow: 0 2px 6px rgba(37, 99, 235, 0.35);
 }
 
-/* タイマー切替エリア */
-.timer-control-box {
-  background: #f8fafc;
-  border: 1px solid var(--border-color);
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 14px;
-}
-
 /* 問題選択・ナビゲーション */
 .question-nav-row {
   display: flex;
@@ -286,7 +273,7 @@
 
 .answer-live-stats {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 10px;
   text-align: center;
   margin-bottom: 16px;
