@@ -355,8 +355,10 @@ class QuizStore {
   /**
    * 【完全初期化】チームデータ・得点・回答履歴をすべて完全にリセットする
    */
-  async resetAllData() {
+  async resetAllData(scoreConfig) {
+    const localState = JSON.parse(localStorage.getItem('quiz_local_state') || '{}');
     const defaultState = this.getDefaultState();
+    defaultState.scoreConfig = scoreConfig || localState.scoreConfig || defaultState.scoreConfig;
     defaultState.isTimerRunning = false;
     defaultState.resetToken = Date.now(); // 端末強制ログアウトリセット用トークン
 

@@ -369,10 +369,13 @@ function setupFinalRankings() {
     card.className = `rank-card rank-${rank}`;
     card.id = `rankCard-${rank}`;
 
-    let badgeIcon = `${rank}位`;
-    if (rank === 1) badgeIcon = `🥇 1位`;
-    else if (rank === 2) badgeIcon = `🥈 2位`;
-    else if (rank === 3) badgeIcon = `🥉 3位`;
+    const rankLabel = ScoreEngine.getRankLabel(sortedTeams, rank - 1);
+    let badgeIcon = rankLabel;
+    if (!rankLabel.startsWith('同率')) {
+      if (rank === 1) badgeIcon = `🥇 ${rankLabel}`;
+      else if (rank === 2) badgeIcon = `🥈 ${rankLabel}`;
+      else if (rank === 3) badgeIcon = `🥉 ${rankLabel}`;
+    }
 
     card.innerHTML = `
       <div class="rank-badge-text">${badgeIcon}</div>
@@ -392,9 +395,9 @@ function setupFinalRankings() {
 function updateRevealButtonText() {
   if (currentRevealIndex < revealOrder.length) {
     const nextRank = revealOrder[currentRevealIndex];
-    let nextText = `${nextRank}位`;
-    if (nextRank === 1) nextText = "🥇 1位";
-    btnRevealNextRank.textContent = `▶ 第 ${nextText} を発表する`;
+    let nextText = ScoreEngine.getRankLabel(sortedTeams, nextRank - 1);
+    if (nextRank === 1 && !nextText.startsWith('同率')) nextText = `🥇 ${nextText}`;
+    btnRevealNextRank.textContent = `▶ ${nextText}を発表する`;
     btnRevealNextRank.disabled = false;
   } else {
     btnRevealNextRank.textContent = `🎉 全順位発表完了！`;
@@ -486,10 +489,13 @@ function buildFullRankingTable() {
 
   sortedTeams.forEach((t, i) => {
     const rank = i + 1;
-    let rankBadge = `${rank}位`;
-    if (rank === 1) rankBadge = `🥇 1位`;
-    else if (rank === 2) rankBadge = `🥈 2位`;
-    else if (rank === 3) rankBadge = `🥉 3位`;
+    const rankLabel = ScoreEngine.getRankLabel(sortedTeams, i);
+    let rankBadge = rankLabel;
+    if (!rankLabel.startsWith('同率')) {
+      if (rank === 1) rankBadge = `🥇 ${rankLabel}`;
+      else if (rank === 2) rankBadge = `🥈 ${rankLabel}`;
+      else if (rank === 3) rankBadge = `🥉 ${rankLabel}`;
+    }
 
     html += `
       <tr>

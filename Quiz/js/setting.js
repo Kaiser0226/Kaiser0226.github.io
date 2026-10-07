@@ -32,12 +32,9 @@ const btnDeleteCurrentQuestion = document.getElementById('btnDeleteCurrentQuesti
 // 設定フォーム
 const cfgTargetTeams = document.getElementById('cfgTargetTeams');
 const cfgRankLimit = document.getElementById('cfgRankLimit');
-const cfgRank1 = document.getElementById('cfgRank1');
-const cfgRank2 = document.getElementById('cfgRank2');
-const cfgRank3 = document.getElementById('cfgRank3');
-const cfgRank4 = document.getElementById('cfgRank4');
-const cfgRank5 = document.getElementById('cfgRank5');
-const cfgRankDefault = document.getElementById('cfgRankDefault');
+const cfgMaxPoint = document.getElementById('cfgMaxPoint');
+const cfgDecrement = document.getElementById('cfgDecrement');
+const cfgMinPoint = document.getElementById('cfgMinPoint');
 const btnSaveConfig = document.getElementById('btnSaveConfig');
 
 // モーダル関連
@@ -107,12 +104,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (state.scoreConfig) {
         const sc = state.scoreConfig;
         const rp = sc.rankPoints || {};
-        cfgRank1.value = rp[1] ?? (sc.basePoint ? sc.basePoint + (sc.top1SpeedBonus || 0) : 100);
-        cfgRank2.value = rp[2] ?? (sc.basePoint ? sc.basePoint + (sc.top2SpeedBonus || 0) : 70);
-        cfgRank3.value = rp[3] ?? (sc.basePoint ? sc.basePoint + (sc.top3SpeedBonus || 0) : 50);
-        cfgRank4.value = rp[4] ?? 40;
-        cfgRank5.value = rp[5] ?? 30;
-        cfgRankDefault.value = sc.defaultPoint ?? (sc.basePoint ?? 10);
+        const legacyMax = rp[1] ?? sc.rank1 ?? (sc.basePoint ? sc.basePoint + (sc.top1SpeedBonus || 0) : 100);
+        const legacySecond = rp[2] ?? sc.rank2 ?? (sc.basePoint ? sc.basePoint + (sc.top2SpeedBonus || 0) : legacyMax - 10);
+        cfgMaxPoint.value = sc.maxPoint ?? legacyMax;
+        cfgDecrement.value = sc.decrement ?? Math.max(0, legacyMax - legacySecond);
+        cfgMinPoint.value = sc.minPoint ?? sc.defaultPoint ?? sc.bottomHalf ?? 10;
       }
     }
   });
@@ -403,23 +399,22 @@ async function deleteCurrentQuestion() {
 // --- 大会設定保存 ---
 
 async function handleSaveConfig() {
+  const maxPoint = Number(cfgMaxPoint.value);
+  const decrement = Number(cfgDecrement.value);
+  const minPoint = Number(cfgMinPoint.value);
+  if (![maxPoint, decrement, minPoint].every(Number.isFinite) || maxPoint < 0 || decrement < 0 || minPoint < 0 || minPoint > maxPoint) {
+    alert("得点は0以上で設定し、最低点は最高点以下にしてください。");
+    return;
+  }
+
   const updates = {
     targetTeamCount: parseInt(cfgTargetTeams.value, 10) || 100,
     rankDisplayLimit: parseInt(cfgRankLimit.value, 10) || 999,
-    scoreConfig: {
-      rankPoints: {
-        1: parseInt(cfgRank1.value, 10) || 0,
-        2: parseInt(cfgRank2.value, 10) || 0,
-        3: parseInt(cfgRank3.value, 10) || 0,
-        4: parseInt(cfgRank4.value, 10) || 0,
-        5: parseInt(cfgRank5.value, 10) || 0
-      },
-      defaultPoint: parseInt(cfgRankDefault.value, 10) || 0
-    }
+    scoreConfig: { maxPoint, decrement, minPoint }
   };
 
   await quizStore.updateState(updates);
-  alert("大会設定（人数・順位別得点）を保存・反映しました！");
+  alert("大会設定（人数・得点）を保存・反映しました！");
 }
 
 // --- 出題順 (Question Order) エディタ ---

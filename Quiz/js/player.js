@@ -197,6 +197,10 @@ async function handleRegister() {
     return;
   }
 
+  if (!confirm(`このチームで間違いないですか？\n\nチーム名: ${selectedName}`)) {
+    return;
+  }
+
   // チーム名は選択制で固定のため、名前から一意のteamIdを生成
   const teamId = 'team_' + btoa(encodeURIComponent(selectedName)).replace(/=/g, '');
   myTeam = { teamId, teamName: selectedName };
@@ -296,7 +300,7 @@ function updateHeaderStats() {
   if (qNum > limit && currentState && currentState.currentScene !== 'final') {
     displayRank.textContent = `非公開`;
   } else {
-    displayRank.textContent = myRank > 0 ? `${myRank} 位` : `- 位`;
+    displayRank.textContent = myRank > 0 ? ScoreEngine.getRankLabel(list, myRank - 1) : `- 位`;
   }
 }
 
@@ -522,7 +526,10 @@ function renderActualResultData(q, resultsData) {
   if (isCorrect) {
     verdictBanner.className = 'verdict-banner correct';
     verdictTitle.textContent = "🎉 正解！";
-    verdictPoints.textContent = `+${points} 点 獲得！${doubleTag}`;
+    const tieLabel = teamResult && teamResult.rankTieCount > 1
+      ? `（同率${teamResult.rankInCorrect}位）`
+      : '';
+    verdictPoints.textContent = `+${points} 点 獲得！${tieLabel}${doubleTag}`;
   } else {
     verdictBanner.className = 'verdict-banner incorrect';
     verdictTitle.textContent = "✕ 不正解...";
@@ -609,7 +616,7 @@ function renderRankingsTable() {
   let targetRowElement = null;
 
   teamList.forEach((t, idx) => {
-    const rank = idx + 1;
+    const rankLabel = ScoreEngine.getRankLabel(teamList, idx);
     const isMe = t.teamId === myTeam.teamId;
 
     const tr = document.createElement('tr');
@@ -619,7 +626,7 @@ function renderRankingsTable() {
     }
 
     tr.innerHTML = `
-      <td>${rank}位</td>
+      <td>${rankLabel}</td>
       <td>${escapeHtml(t.teamName)}${isMe ? ' (あなた)' : ''}</td>
       <td style="text-align: right; font-weight: 700;">${t.totalScore || 0}点</td>
     `;
@@ -653,19 +660,22 @@ function renderFinalResults() {
   const myData = allTeams[myTeam.teamId];
   const score = myData ? (myData.totalScore || 0) : 0;
 
-  finalMyRank.textContent = myRank > 0 ? `第 ${myRank} 位` : `- 位`;
+  const myRankLabel = myRank > 0 ? ScoreEngine.getRankLabel(teamList, myRank - 1) : '';
+  finalMyRank.textContent = myRank > 0
+    ? (myRankLabel.startsWith('同率') ? myRankLabel : `第 ${myRankLabel}`)
+    : `- 位`;
   finalMyScore.textContent = `総獲得得点: ${score} 点`;
 
   finalTableBody.innerHTML = '';
   teamList.forEach((t, idx) => {
-    const rank = idx + 1;
+    const rankLabel = ScoreEngine.getRankLabel(teamList, idx);
     const isMe = t.teamId === myTeam.teamId;
 
     const tr = document.createElement('tr');
     if (isMe) tr.className = 'my-team-row';
 
     tr.innerHTML = `
-      <td>${rank}位</td>
+      <td>${rankLabel}</td>
       <td>${escapeHtml(t.teamName)}${isMe ? ' (あなた)' : ''}</td>
       <td style="text-align: right; font-weight: 700;">${t.totalScore || 0}点</td>
     `;

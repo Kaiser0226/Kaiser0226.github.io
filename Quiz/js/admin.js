@@ -370,7 +370,7 @@ async function handleResetScores() {
   const msg = "⚠️ 【警告: 全データ完全初期化】\n\n登録チーム、回答ログ、獲得得点をすべて消去し、ゲーム進行を初期状態にリセットします。\n参加者のスマートフォン画面も初期チーム選択画面に戻ります。\n\n本当に実行しますか？";
   if (confirm(msg)) {
     try {
-      await quizStore.resetAllData();
+      await quizStore.resetAllData(currentState && currentState.scoreConfig);
       selectedQIndex = 0;
       if (selectCurrentQuestion) selectCurrentQuestion.value = 0;
       allTeams = {};

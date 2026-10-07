@@ -160,7 +160,7 @@
         <div class="admin-card-header">
           <div class="admin-card-title">
             <span>⚙️</span>
-            <span>大会設定 (参加人数・順位別得点・順位非表示)</span>
+            <span>大会設定 (参加人数・回答順得点・順位非表示)</span>
           </div>
           <button type="button" class="btn btn-primary" id="btnSaveConfig">設定を保存</button>
         </div>
@@ -182,36 +182,23 @@
           </div>
         </div>
 
-        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">順位・割合別得点設定 (正解者の回答速度順)</div>
+        <div class="form-label" style="margin-top: 14px; margin-bottom: 8px;">正解時の得点設定 (回答速度順)</div>
         <div class="form-row-3">
           <div class="form-group">
-            <label class="form-label">🥇 1位の得点</label>
-            <input type="number" id="cfgRank1" class="form-input" value="100" min="0">
+            <label class="form-label">最高点</label>
+            <input type="number" id="cfgMaxPoint" class="form-input" value="100" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">🥈 2位の得点</label>
-            <input type="number" id="cfgRank2" class="form-input" value="70" min="0">
+            <label class="form-label">回答順ごとの減少幅</label>
+            <input type="number" id="cfgDecrement" class="form-input" value="10" min="0">
           </div>
           <div class="form-group">
-            <label class="form-label">🥉 3位の得点</label>
-            <input type="number" id="cfgRank3" class="form-input" value="50" min="0">
+            <label class="form-label">最低点</label>
+            <input type="number" id="cfgMinPoint" class="form-input" value="10" min="0">
           </div>
         </div>
-        <div class="form-row-2">
-          <div class="form-group">
-            <label class="form-label">🎖️ 正解者の上位50%の得点 (4位〜)</label>
-            <input type="number" id="cfgTopHalf" class="form-input" value="30" min="0">
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-              4位以降の正解者のうち、回答速度が上位半数に入るチームの得点です。
-            </div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">🎗️ 正解者の下位50%の得点</label>
-            <input type="number" id="cfgBottomHalf" class="form-input" value="10" min="0">
-            <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
-              正解者のうち、回答速度が下位半数のチームの得点です。
-            </div>
-          </div>
+        <div style="font-size: 0.75rem; color: #64748b; margin-top: 4px;">
+          正解したチームに回答順で最高点から減少幅ずつ加点し、最低点を下回る場合は最低点を加点します。同じ回答時間は同率・同点です。
         </div>
       </section>
 

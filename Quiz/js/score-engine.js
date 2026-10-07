@@ -1,18 +1,13 @@
 /**
  * 得点計算エンジン (Score Engine)
  * 
- * 正解順位ごとの得点指定 + ダブルポイント対応:
- * - 1位、2位、3位の直接得点指定
- * - 上位50%、下位50%の得点指定 (4位以降の正解者)
- * - ダブルポイント（問題ごとの得点2倍設定）
+ * 回答順に応じた段階減点とダブルポイントに対応
  */
 
 const DEFAULT_SCORE_CONFIG = {
-  rank1: 100,      // 1位の得点
-  rank2: 70,       // 2位の得点
-  rank3: 50,       // 3位の得点
-  topHalf: 30,     // 上位50%の得点
-  bottomHalf: 10   // 下位50%の得点
+  maxPoint: 100,
+  decrement: 10,
+  minPoint: 10
 };
 
 class ScoreEngine {
@@ -68,41 +63,26 @@ class ScoreEngine {
       return { results, correctCount, totalAnswers, correctRate, isDoublePoints: Boolean(isDoublePoints) };
     }
 
-    // 正解者の中で上位50%の境界値 (端数はCeilで計算)
-    const topHalfCutoff = Math.ceil(correctCount / 2);
+    const legacyMax = Number(config.rankPoints?.[1] ?? config.rank1 ?? 100);
+    const legacySecond = Number(config.rankPoints?.[2] ?? config.rank2 ?? legacyMax - 10);
+    const maxPoint = Math.max(0, Number(config.maxPoint ?? legacyMax));
+    const decrement = Math.max(0, Number(config.decrement ?? legacyMax - legacySecond));
+    const minPoint = Math.max(0, Number(config.minPoint ?? config.defaultPoint ?? 10));
 
-    // 設定値の取得 (下位互換性フォールバック付き)
-    const pRank1 = Number(config.rank1 ?? (config.rankPoints ? config.rankPoints[1] : (config.basePoint ? config.basePoint + (config.top1SpeedBonus || 0) : 100)));
-    const pRank2 = Number(config.rank2 ?? (config.rankPoints ? config.rankPoints[2] : (config.basePoint ? config.basePoint + (config.top2SpeedBonus || 0) : 70)));
-    const pRank3 = Number(config.rank3 ?? (config.rankPoints ? config.rankPoints[3] : (config.basePoint ? config.basePoint + (config.top3SpeedBonus || 0) : 50)));
-    const pTopHalf = Number(config.topHalf ?? (config.rankPoints ? config.rankPoints[4] : (config.topHalfBonus ?? 30)));
-    const pBottomHalf = Number(config.bottomHalf ?? (config.defaultPoint ?? (config.bottomHalfBonus ?? 10)));
-
-    // 各正解者の得点を順位・パーセンタイル別に算出
+    // 同じ回答時間のチームは同順位・同得点にする
+    const answerTimeCounts = new Map();
+    correctAnswers.forEach(answer => {
+      answerTimeCounts.set(answer.answerTimeMs, (answerTimeCounts.get(answer.answerTimeMs) || 0) + 1);
+    });
+    let previousAnswerTime = null;
+    let currentRank = 0;
     correctAnswers.forEach((ans, index) => {
-      const rank = index + 1; // 1-indexed (1位, 2位, ...)
-      let baseEarned = pBottomHalf;
-      let tier = 'bottomHalf';
-
-      if (rank === 1) {
-        baseEarned = pRank1;
-        tier = 'rank1';
-      } else if (rank === 2) {
-        baseEarned = pRank2;
-        tier = 'rank2';
-      } else if (rank === 3) {
-        baseEarned = pRank3;
-        tier = 'rank3';
-      } else {
-        // 4位以降: 上位50%か下位50%か
-        if (rank <= topHalfCutoff) {
-          baseEarned = pTopHalf;
-          tier = 'topHalf';
-        } else {
-          baseEarned = pBottomHalf;
-          tier = 'bottomHalf';
-        }
+      if (previousAnswerTime === null || ans.answerTimeMs !== previousAnswerTime) {
+        currentRank = index + 1;
       }
+      previousAnswerTime = ans.answerTimeMs;
+
+      const baseEarned = Math.max(minPoint, maxPoint - (currentRank - 1) * decrement);
 
       // ダブルポイント適用
       const totalEarned = baseEarned * multiplier;
@@ -114,12 +94,13 @@ class ScoreEngine {
         pointsAwarded: totalEarned,
         breakdown: {
           rankPoint: baseEarned,
-          tier,
+          tier: currentRank === 1 ? 'rank1' : 'ranked',
           isDoublePoints: Boolean(isDoublePoints),
           multiplier
         },
         answerTimeMs: ans.answerTimeMs,
-        rankInCorrect: rank
+        rankInCorrect: currentRank,
+        rankTieCount: answerTimeCounts.get(ans.answerTimeMs)
       };
     });
 
@@ -130,6 +111,16 @@ class ScoreEngine {
       correctRate,
       isDoublePoints: Boolean(isDoublePoints)
     };
+  }
+
+  static getRankLabel(sortedTeams, index) {
+    const score = Number(sortedTeams[index]?.totalScore) || 0;
+    let rank = index + 1;
+    while (rank > 1 && (Number(sortedTeams[rank - 2].totalScore) || 0) === score) {
+      rank--;
+    }
+    const tieCount = sortedTeams.filter(team => (Number(team.totalScore) || 0) === score).length;
+    return `${tieCount > 1 ? '同率' : ''}${rank}位`;
   }
 }
 
