@@ -52,9 +52,13 @@ const firebaseConfigInput = document.getElementById('firebaseConfigInput');
 const btnSaveFirebaseConfig = document.getElementById('btnSaveFirebaseConfig');
 const btnResetFirebaseConfig = document.getElementById('btnResetFirebaseConfig');
 const btnTogglePlayerQr = document.getElementById('btnTogglePlayerQr');
+const presentationPreviewFrameContainer = document.getElementById('presentationPreviewFrameContainer');
+const presentationPreviewFrame = document.getElementById('presentationPreviewFrame');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  setupPresentationPreviewScaling();
+
   // 問題購読
   quizStore.subscribeQuestions(questions => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
@@ -92,6 +96,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   setupEventListeners();
 });
+
+function setupPresentationPreviewScaling() {
+  const scalePreview = () => {
+    const scale = presentationPreviewFrameContainer.clientWidth / 1920;
+    presentationPreviewFrame.style.transform = `scale(${scale})`;
+  };
+
+  scalePreview();
+  new ResizeObserver(scalePreview).observe(presentationPreviewFrameContainer);
+}
 
 function setupEventListeners() {
   // ★ ワンボタン進行

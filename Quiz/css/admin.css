@@ -448,9 +448,21 @@
 }
 
 .presentation-preview-card iframe {
-  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1920px;
+  height: 1080px;
+  border: 0;
+  background: #ffffff;
+  transform-origin: top left;
+}
+
+.presentation-preview-frame {
+  position: relative;
   width: 100%;
-  height: 320px;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   background: #ffffff;
