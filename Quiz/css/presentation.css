@@ -104,34 +104,38 @@ body.presentation-body {
 
 .player-qr-panel {
   position: fixed;
-  z-index: 30;
-  left: 28px;
-  bottom: 28px;
+  z-index: 100;
   display: none;
-  width: 290px;
-  padding: 18px;
-  border: 3px solid #0284c7;
-  border-radius: 18px;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  padding: 3vh 3vw;
   background: #ffffff;
-  box-shadow: 0 8px 30px rgba(15, 23, 42, 0.2);
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 2vh;
   text-align: center;
 }
 
 .player-qr-panel.is-visible {
-  display: block;
+  display: flex;
 }
 
-.player-qr-panel h2 {
-  margin: 0 0 12px;
+.player-qr-panel h1 {
+  margin: 0;
   color: #0f172a;
-  font-size: 1.15rem;
+  font-size: clamp(2rem, 5vh, 4rem);
 }
 
 #playerQrCode {
   display: flex;
   justify-content: center;
-  min-height: 240px;
-  margin-bottom: 10px;
+  align-items: center;
+  width: min(84vmin, 900px);
+  height: min(84vmin, 900px);
+  flex: 0 1 auto;
   color: #b91c1c;
   font-weight: 700;
   overflow-wrap: anywhere;
@@ -139,14 +143,35 @@ body.presentation-body {
 
 #playerQrCode img,
 #playerQrCode canvas {
+  display: block;
   max-width: 100%;
+  max-height: 100%;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 
 #playerQrUrl {
   display: block;
   color: #0369a1;
-  font-size: 0.75rem;
+  font-size: clamp(1rem, 2.5vh, 1.8rem);
+  font-weight: 700;
   overflow-wrap: anywhere;
+}
+
+.player-qr-close {
+  position: absolute;
+  top: 16px;
+  right: 22px;
+  width: 52px;
+  height: 52px;
+  border: 0;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #0f172a;
+  font-size: 2.5rem;
+  line-height: 1;
+  cursor: pointer;
 }
 
 @keyframes floatBubble {

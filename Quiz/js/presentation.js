@@ -67,11 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
   const presentationChannel = new BroadcastChannel('quiz-presentation');
   presentationChannel.addEventListener('message', event => {
     if (event.data && event.data.type === 'togglePlayerQr') {
-      const visible = playerQrPanel.classList.toggle('is-visible');
-      playerQrPanel.setAttribute('aria-hidden', String(!visible));
-      if (visible) renderPlayerQr();
+      setPlayerQrVisible(!playerQrPanel.classList.contains('is-visible'));
     }
   });
+  document.getElementById('btnClosePlayerQr').addEventListener('click', () => setPlayerQrVisible(false));
   rankingChannel.addEventListener('message', event => {
     const command = event.data && event.data.type;
     if (command === 'getRevealStatus') {
@@ -377,20 +376,26 @@ function highlightCorrectAnswer(q) {
 }
 
 function renderPlayerQr() {
-  const playerUrl = new URL('player.html', window.location.href);
-  playerQrUrl.href = playerUrl.href;
-  playerQrUrl.textContent = playerUrl.href;
+  const playerUrl = 'https://kaiser0226.github.io/Quiz/player.html';
+  playerQrUrl.href = playerUrl;
+  playerQrUrl.textContent = playerUrl;
   playerQrCode.replaceChildren();
   if (typeof QRCode !== 'function') {
     playerQrCode.textContent = 'QRコードを読み込めません。下のURLを開いてください。';
     return;
   }
   new QRCode(playerQrCode, {
-    text: playerUrl.href,
-    width: 240,
-    height: 240,
+    text: playerUrl,
+    width: 900,
+    height: 900,
     correctLevel: QRCode.CorrectLevel.M
   });
+}
+
+function setPlayerQrVisible(visible) {
+  playerQrPanel.classList.toggle('is-visible', visible);
+  playerQrPanel.setAttribute('aria-hidden', String(!visible));
+  if (visible) renderPlayerQr();
 }
 
 function removeAnswerHighlights() {
