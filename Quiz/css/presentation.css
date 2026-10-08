@@ -131,8 +131,10 @@ body.presentation-body {
   display: flex;
   justify-content: center;
   align-items: center;
-  width: 98vmin;
-  height: 98vmin;
+  width: 90vmin;
+  height: 90vmin;
+  padding: 5vmin;
+  box-sizing: border-box;
   flex: 0 0 auto;
   color: #b91c1c;
   font-weight: 700;
@@ -423,14 +425,41 @@ body.presentation-body {
   color: #0f172a;
 }
 
+.pres-special-subtitle {
+  font-size: 1.4rem;
+  color: #64748b;
+  text-align: center;
+  max-width: 800px;
+}
+
+.pres-special-view.final-results-view {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: clamp(12px, 2vh, 24px);
+}
+
+.final-results-view .pres-special-title {
+  font-size: clamp(1.75rem, 4vh, 3rem);
+  margin-bottom: 4px;
+}
+
+.final-results-view .pres-special-subtitle {
+  font-size: clamp(0.9rem, 1.8vh, 1.25rem);
+}
+
 /* 最終結果: 5位〜1位順位発表アニメーションコンテナ (ワイド大迫力) */
 .ranking-reveal-container {
   width: 95%;
   max-width: 1400px;
-  margin-top: 16px;
+  margin-top: 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
+}
+
+.final-results-view .ranking-reveal-container {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .ranking-control-bar {
@@ -438,7 +467,7 @@ body.presentation-body {
   align-items: center;
   justify-content: center;
   gap: 14px;
-  margin-bottom: 22px;
+  margin-bottom: 10px;
   flex-wrap: wrap;
 }
 
@@ -446,7 +475,12 @@ body.presentation-body {
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: clamp(4px, 0.8vh, 10px);
+}
+
+.final-results-view .ranking-cards-stack {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /* 個別順位カード (ワイド・大文字) */
@@ -463,6 +497,12 @@ body.presentation-body {
   opacity: 0;
   transform: translateY(20px) scale(0.95);
   transition: all 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.final-results-view .rank-card {
+  min-height: 0;
+  flex: 1 1 0;
+  padding: clamp(6px, 1vh, 12px) clamp(12px, 2vw, 32px);
 }
 
 .rank-card.revealed {
@@ -501,6 +541,7 @@ body.presentation-body {
   box-shadow: 0 10px 30px rgba(217, 119, 6, 0.28);
   transform: scale(1.04);
 }
+.rank-card.rank-1.revealed { transform: translateY(0) scale(1); }
 .rank-card.rank-1 .rank-badge-text { color: #d97706; font-size: clamp(1.9rem, 2.8vw, 2.8rem); }
 .rank-card.rank-1 .rank-team-text { font-size: clamp(1.75rem, 2.5vw, 2.6rem); color: #78350f; }
 .rank-card.rank-1 .rank-score-text { font-size: clamp(2.1rem, 3.2vw, 3.3rem); color: #d97706; }

@@ -204,6 +204,7 @@ function applyState() {
 function showSpecialView(title, subtitle) {
   presMain.style.display = 'none';
   specialView.style.display = 'flex';
+  specialView.classList.toggle('final-results-view', currentState && currentState.currentScene === 'final');
   specialTitle.textContent = title;
   specialSubtitle.textContent = subtitle;
   rankingRevealContainer.style.display = 'none';
@@ -317,8 +318,8 @@ function renderPlayerQr() {
   try {
     new QRCode(playerQrCode, {
       text: playerUrl,
-      width: 1600,
-      height: 1600,
+      width: 1024,
+      height: 1024,
       correctLevel: QRCode.CorrectLevel.M
     });
   } catch (error) {
