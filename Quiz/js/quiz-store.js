@@ -13,6 +13,7 @@ function splitTeamDisplayName(teamName) {
 
 class QuizStore {
   constructor() {
+    this.activeQuizId = localStorage.getItem('quiz_active_id') || 'default';
     this.firebaseApp = null;
     this.database = null;
     this.isFirebaseReady = false;
@@ -46,6 +47,155 @@ class QuizStore {
     this.init();
   }
 
+  getQuizPath(path) {
+    const normalizedPath = path.replace(/^quiz\/?/, '');
+    return this.activeQuizId === 'default'
+      ? `quiz/${normalizedPath}`
+      : `quizLibrary/${this.activeQuizId}/${normalizedPath}`;
+  }
+
+  getLocalKey(key) {
+    return this.activeQuizId === 'default' ? key : `${key}_${this.activeQuizId}`;
+  }
+
+  quizRef(path) {
+    return this.database.ref(this.getQuizPath(path));
+  }
+
+  getQuizList() {
+    try {
+      const list = JSON.parse(localStorage.getItem('quiz_library') || 'null');
+      return Array.isArray(list) && list.length ? list : [{ id: 'default', name: '既定のクイズ' }];
+    } catch {
+      return [{ id: 'default', name: '既定のクイズ' }];
+    }
+  }
+
+  async subscribeQuizList(callback) {
+    const publish = list => {
+      const safeList = Array.isArray(list) && list.length ? list : [{ id: 'default', name: '既定のクイズ' }];
+      localStorage.setItem('quiz_library', JSON.stringify(safeList));
+      callback(safeList);
+    };
+    publish(this.getQuizList());
+    if (this.isFirebaseReady && this.database) {
+      const listRef = this.database.ref('quiz/quizLibrary');
+      listRef.on('value', snapshot => {
+        const list = snapshot.val();
+        if (!Array.isArray(list) || !list.length) {
+          const initialList = this.getQuizList();
+          listRef.set(initialList);
+          publish(initialList);
+        } else {
+          publish(list);
+        }
+      });
+    }
+  }
+
+  async saveQuizList(list) {
+    localStorage.setItem('quiz_library', JSON.stringify(list));
+    if (this.isFirebaseReady && this.database) {
+      await this.database.ref('quiz/quizLibrary').set(list);
+    }
+  }
+
+  async selectQuiz(quizId) {
+    if (!this.getQuizList().some(quiz => quiz.id === quizId)) return false;
+    localStorage.setItem('quiz_active_id', quizId);
+    if (this.isFirebaseReady && this.database) {
+      await this.database.ref('quiz/activeQuizId').set(quizId);
+    }
+    this.activeQuizId = quizId;
+    if (this.channel) this.channel.postMessage({ type: 'activeQuiz', data: quizId });
+    location.reload();
+    return true;
+  }
+
+  async createQuiz(name) {
+    const quizName = String(name || '').trim();
+    if (!quizName) return false;
+    const list = this.getQuizList();
+    const id = `quiz-${Date.now().toString(36)}`;
+    const quiz = { id, name: quizName };
+    list.push(quiz);
+    await this.saveQuizList(list);
+
+    const sourceId = this.activeQuizId;
+    this.activeQuizId = id;
+    const sourceKey = key => sourceId === 'default' ? key : `${key}_${sourceId}`;
+    const copyValue = (key, fallback) => localStorage.getItem(sourceKey(key)) || JSON.stringify(fallback);
+    localStorage.setItem(this.getLocalKey('quiz_local_questions'), copyValue('quiz_local_questions', DEFAULT_QUESTIONS));
+    localStorage.setItem(this.getLocalKey('quiz_local_question_order'), copyValue('quiz_local_question_order', typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : []));
+    localStorage.setItem(this.getLocalKey('quiz_local_team_list'), copyValue('quiz_local_team_list', typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : []));
+    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(this.getDefaultState()));
+    if (this.isFirebaseReady && this.database) {
+      const sourcePath = sourceId === 'default' ? 'quiz' : `quizLibrary/${sourceId}`;
+      const targetPath = `quizLibrary/${id}`;
+      const [questions, order, teams] = await Promise.all([
+        this.database.ref(`${sourcePath}/questions`).once('value'),
+        this.database.ref(`${sourcePath}/questionOrder`).once('value'),
+        this.database.ref(`${sourcePath}/teamList`).once('value')
+      ]);
+      const copy = {
+        [`${targetPath}/questions`]: questions.val() || DEFAULT_QUESTIONS,
+        [`${targetPath}/questionOrder`]: order.val() || (typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : []),
+        [`${targetPath}/teamList`]: teams.val() || (typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : []),
+        [`${targetPath}/state`]: this.getDefaultState()
+      };
+      await this.database.ref().update(copy);
+    }
+    return this.selectQuiz(id);
+  }
+
+  async deleteActiveQuiz() {
+    if (this.activeQuizId === 'default') return false;
+    const removedId = this.activeQuizId;
+    const list = this.getQuizList().filter(quiz => quiz.id !== removedId);
+    await this.saveQuizList(list);
+    if (this.isFirebaseReady && this.database) {
+      await this.database.ref(`quizLibrary/${removedId}`).remove();
+    }
+    localStorage.setItem('quiz_active_id', 'default');
+    return this.selectQuiz('default');
+  }
+
+  setupQuizListControls() {
+    const selector = document.getElementById('activeQuizSelector');
+    const addButton = document.getElementById('btnAddQuiz');
+    const deleteButton = document.getElementById('btnDeleteQuiz');
+    if (!selector || !addButton || !deleteButton) return;
+
+    this.subscribeQuizList(list => {
+      selector.innerHTML = '';
+      list.forEach(quiz => {
+        const option = document.createElement('option');
+        option.value = quiz.id;
+        option.textContent = quiz.name;
+        selector.appendChild(option);
+      });
+      selector.value = this.activeQuizId;
+      deleteButton.disabled = this.activeQuizId === 'default';
+    });
+    selector.addEventListener('change', () => this.selectQuiz(selector.value));
+    addButton.addEventListener('click', async () => {
+      const name = prompt('新しいクイズ名を入力してください');
+      if (name === null) return;
+      if (!name.trim()) {
+        alert('クイズ名を入力してください。');
+        return;
+      }
+      await this.createQuiz(name);
+    });
+    deleteButton.addEventListener('click', async () => {
+      const activeQuiz = this.getQuizList().find(quiz => quiz.id === this.activeQuizId);
+      if (!activeQuiz || this.activeQuizId === 'default') return;
+      if (confirm(`「${activeQuiz.name}」を一覧と保存データから削除しますか？`)) {
+        await this.deleteActiveQuiz();
+      }
+    });
+  }
+
   init() {
     const isConfigured = FirebaseManager.isConfigured();
     if (isConfigured && typeof firebase !== 'undefined') {
@@ -59,6 +209,15 @@ class QuizStore {
         this.database = firebase.database();
         this.isFirebaseReady = true;
         this.isConnectedToFirebase = false;
+
+        this.database.ref('quiz/activeQuizId').on('value', snapshot => {
+          const quizId = snapshot.val() || 'default';
+          if (quizId !== this.activeQuizId) {
+            this.activeQuizId = quizId;
+            localStorage.setItem('quiz_active_id', quizId);
+            location.reload();
+          }
+        });
 
         // Firebase公式の接続状態監視
         this.database.ref('.info/connected').on('value', snap => {
@@ -77,6 +236,17 @@ class QuizStore {
     } else {
       console.log("QuizStore: Running in Local Fallback mode (BroadcastChannel & LocalStorage)");
       this.isFirebaseReady = false;
+    }
+
+    window.addEventListener('storage', event => {
+      if (event.key === 'quiz_active_id' && event.newValue && event.newValue !== this.activeQuizId) {
+        location.reload();
+      }
+    });
+    if (this.channel) {
+      this.channel.addEventListener('message', event => {
+        if (event.data?.type === 'activeQuiz' && event.data.data !== this.activeQuizId) location.reload();
+      });
     }
   }
 
@@ -109,13 +279,13 @@ class QuizStore {
     this.listeners.state.push(callback);
 
     // 1. まずローカルの最新状態またはデフォルト値を即座に同期返却（画面の初期化を即座に完了させる）
-    const local = localStorage.getItem('quiz_local_state');
+    const local = localStorage.getItem(this.getLocalKey('quiz_local_state'));
     const initialState = local ? JSON.parse(local) : this.getDefaultState();
     callback(initialState);
 
     // 2. Firebaseが有効な場合はリスナーを登録
     if (this.isFirebaseReady && this.database) {
-      const stateRef = this.database.ref('quiz/state');
+      const stateRef = this.quizRef('state');
       stateRef.on('value', snapshot => {
         if (!snapshot.exists()) {
           // Firebase側が空の場合はデフォルト状態を自動投入
@@ -132,9 +302,9 @@ class QuizStore {
   }
 
   async updateState(partialState) {
-    const current = JSON.parse(localStorage.getItem('quiz_local_state') || JSON.stringify(this.getDefaultState()));
+    const current = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || JSON.stringify(this.getDefaultState()));
     const updated = { ...current, ...partialState, updatedAt: Date.now() };
-    localStorage.setItem('quiz_local_state', JSON.stringify(updated));
+    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(updated));
 
     if (this.channel) {
       this.channel.postMessage({ type: 'state', data: updated });
@@ -143,7 +313,7 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.database.ref('quiz/state').update({
+        await this.quizRef('state').update({
           ...partialState,
           updatedAt: Date.now()
         });
@@ -159,13 +329,13 @@ class QuizStore {
     this.listeners.questions.push(callback);
 
     // 1. まず即座にデフォルト問題またはローカル保存問題を返却（描画ブロックを防止）
-    const local = localStorage.getItem('quiz_local_questions');
+    const local = localStorage.getItem(this.getLocalKey('quiz_local_questions'));
     const initialQuestions = local ? JSON.parse(local) : DEFAULT_QUESTIONS;
     callback(initialQuestions);
 
     // 2. Firebaseが有効な場合はリスナー登録
     if (this.isFirebaseReady && this.database) {
-      const qRef = this.database.ref('quiz/questions');
+      const qRef = this.quizRef('questions');
       qRef.on('value', snapshot => {
         if (!snapshot.exists()) {
           // Firebase側にまだ問題データがない場合はデフォルト問題を自動シード
@@ -183,7 +353,7 @@ class QuizStore {
   }
 
   async saveQuestions(questions) {
-    localStorage.setItem('quiz_local_questions', JSON.stringify(questions));
+    localStorage.setItem(this.getLocalKey('quiz_local_questions'), JSON.stringify(questions));
     if (this.channel) {
       this.channel.postMessage({ type: 'questions', data: questions });
     }
@@ -191,7 +361,7 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.database.ref('quiz/questions').set(questions);
+        await this.quizRef('questions').set(questions);
       } catch (err) {
         console.warn("QuizStore: Firebase saveQuestions failed:", err);
       }
@@ -203,12 +373,12 @@ class QuizStore {
   subscribeTeams(callback) {
     this.listeners.teams.push(callback);
 
-    const local = localStorage.getItem('quiz_local_teams');
+    const local = localStorage.getItem(this.getLocalKey('quiz_local_teams'));
     const initialTeams = local ? JSON.parse(local) : {};
     callback(initialTeams);
 
     if (this.isFirebaseReady && this.database) {
-      this.database.ref('quiz/teams').on('value', snapshot => {
+      this.quizRef('teams').on('value', snapshot => {
         const val = snapshot.val() || {};
         callback(val);
       }, err => {
@@ -219,7 +389,7 @@ class QuizStore {
 
   async registerTeam(teamId, teamName) {
     if (this.isFirebaseReady && this.database) {
-      const teamRef = this.database.ref(`quiz/teams/${teamId}`);
+      const teamRef = this.quizRef(`teams/${teamId}`);
       const snapshot = await teamRef.once('value');
       if (!snapshot.exists()) {
         await teamRef.set({
@@ -232,7 +402,7 @@ class QuizStore {
         await teamRef.update({ teamName, lastActive: Date.now() });
       }
     } else {
-      const teams = JSON.parse(localStorage.getItem('quiz_local_teams') || '{}');
+      const teams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
       if (!teams[teamId]) {
         teams[teamId] = {
           teamId,
@@ -244,7 +414,7 @@ class QuizStore {
         teams[teamId].teamName = teamName;
         teams[teamId].lastActive = Date.now();
       }
-      localStorage.setItem('quiz_local_teams', JSON.stringify(teams));
+      localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
       if (this.channel) {
         this.channel.postMessage({ type: 'teams', data: teams });
       }
@@ -258,12 +428,12 @@ class QuizStore {
     if (!this.listeners.questionOrder) this.listeners.questionOrder = [];
     this.listeners.questionOrder.push(callback);
 
-    const local = localStorage.getItem('quiz_local_question_order');
+    const local = localStorage.getItem(this.getLocalKey('quiz_local_question_order'));
     const initialOrder = local ? JSON.parse(local) : (typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5]);
     callback(initialOrder);
 
     if (this.isFirebaseReady && this.database) {
-      const orderRef = this.database.ref('quiz/questionOrder');
+      const orderRef = this.quizRef('questionOrder');
       orderRef.on('value', snapshot => {
         if (!snapshot.exists()) {
           orderRef.set(initialOrder);
@@ -279,7 +449,7 @@ class QuizStore {
   }
 
   async saveQuestionOrder(order) {
-    localStorage.setItem('quiz_local_question_order', JSON.stringify(order));
+    localStorage.setItem(this.getLocalKey('quiz_local_question_order'), JSON.stringify(order));
     if (this.channel) {
       this.channel.postMessage({ type: 'questionOrder', data: order });
     }
@@ -289,7 +459,7 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.database.ref('quiz/questionOrder').set(order);
+        await this.quizRef('questionOrder').set(order);
       } catch (err) {
         console.warn("QuizStore: Firebase saveQuestionOrder failed:", err);
       }
@@ -302,12 +472,12 @@ class QuizStore {
     if (!this.listeners.teamList) this.listeners.teamList = [];
     this.listeners.teamList.push(callback);
 
-    const local = localStorage.getItem('quiz_local_team_list');
+    const local = localStorage.getItem(this.getLocalKey('quiz_local_team_list'));
     const initialList = local ? JSON.parse(local) : (typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : []);
     callback(initialList);
 
     if (this.isFirebaseReady && this.database) {
-      const listRef = this.database.ref('quiz/teamList');
+      const listRef = this.quizRef('teamList');
       listRef.on('value', snapshot => {
         if (!snapshot.exists()) {
           listRef.set(initialList);
@@ -323,7 +493,7 @@ class QuizStore {
   }
 
   async saveTeamList(list) {
-    localStorage.setItem('quiz_local_team_list', JSON.stringify(list));
+    localStorage.setItem(this.getLocalKey('quiz_local_team_list'), JSON.stringify(list));
     if (this.channel) {
       this.channel.postMessage({ type: 'teamList', data: list });
     }
@@ -333,7 +503,7 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.database.ref('quiz/teamList').set(list);
+        await this.quizRef('teamList').set(list);
       } catch (err) {
         console.warn("QuizStore: Firebase saveTeamList failed:", err);
       }
@@ -371,27 +541,27 @@ class QuizStore {
    * 【完全初期化】チームデータ・得点・回答履歴をすべて完全にリセットする
    */
   async resetAllData(scoreConfig) {
-    const localState = JSON.parse(localStorage.getItem('quiz_local_state') || '{}');
+    const localState = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || '{}');
     const defaultState = this.getDefaultState();
     defaultState.scoreConfig = scoreConfig || localState.scoreConfig || defaultState.scoreConfig;
     defaultState.resetToken = Date.now(); // 端末強制ログアウトリセット用トークン
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.database.ref('quiz/teams').remove();
-        await this.database.ref('quiz/answers').remove();
-        await this.database.ref('quiz/results').remove();
-        await this.database.ref('quiz/state').set(defaultState);
+        await this.quizRef('teams').remove();
+        await this.quizRef('answers').remove();
+        await this.quizRef('results').remove();
+        await this.quizRef('state').set(defaultState);
       } catch (err) {
         console.error("QuizStore: Firebase resetAllData failed:", err);
       }
     }
 
     // ローカルキャッシュクリア
-    localStorage.removeItem('quiz_local_teams');
-    localStorage.removeItem('quiz_local_answers');
-    localStorage.removeItem('quiz_local_results');
-    localStorage.setItem('quiz_local_state', JSON.stringify(defaultState));
+    localStorage.removeItem(this.getLocalKey('quiz_local_teams'));
+    localStorage.removeItem(this.getLocalKey('quiz_local_answers'));
+    localStorage.removeItem(this.getLocalKey('quiz_local_results'));
+    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(defaultState));
 
     if (this.channel) {
       this.channel.postMessage({ type: 'state', data: defaultState });
@@ -414,13 +584,13 @@ class QuizStore {
    */
   async clearAllTeams() {
     if (this.isFirebaseReady && this.database) {
-      await this.database.ref('quiz/teams').remove();
-      await this.database.ref('quiz/answers').remove();
-      await this.database.ref('quiz/results').remove();
+      await this.quizRef('teams').remove();
+      await this.quizRef('answers').remove();
+      await this.quizRef('results').remove();
     } else {
-      localStorage.setItem('quiz_local_teams', '{}');
-      localStorage.removeItem('quiz_local_answers');
-      localStorage.removeItem('quiz_local_results');
+      localStorage.setItem(this.getLocalKey('quiz_local_teams'), '{}');
+      localStorage.removeItem(this.getLocalKey('quiz_local_answers'));
+      localStorage.removeItem(this.getLocalKey('quiz_local_results'));
       if (this.channel) {
         this.channel.postMessage({ type: 'teams', data: {} });
         this.channel.postMessage({ type: 'answers', data: {} });
@@ -439,14 +609,14 @@ class QuizStore {
     let firebaseRef = null;
     let firebaseCallback = null;
     if (this.isFirebaseReady && this.database) {
-      firebaseRef = this.database.ref(`quiz/answers/${questionId}`);
+      firebaseRef = this.quizRef(`answers/${questionId}`);
       firebaseCallback = snapshot => {
         const val = snapshot.val() || {};
         callback(val);
       };
       firebaseRef.on('value', firebaseCallback);
     } else {
-      const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+      const allAnswers = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_answers')) || '{}');
       const qAnswers = allAnswers[questionId] || {};
       callback(qAnswers);
     }
@@ -458,9 +628,9 @@ class QuizStore {
   }
 
   async submitAnswer(questionId, teamId, teamName, answer, answerTimeMs, answerType = 'choice') {
-    let state = JSON.parse(localStorage.getItem('quiz_local_state') || 'null');
+    let state = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || 'null');
     if (this.isFirebaseReady && this.database) {
-      const stateSnapshot = await this.database.ref('quiz/state').once('value');
+      const stateSnapshot = await this.quizRef('state').once('value');
       state = stateSnapshot.val();
     }
     if (!state || state.status !== 'running' || state.currentScene !== 'question') {
@@ -486,13 +656,13 @@ class QuizStore {
       answerData.selectedOption = Number(answer);
     }
 
-    const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+    const allAnswers = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_answers')) || '{}');
     if (!allAnswers[questionId]) allAnswers[questionId] = {};
     allAnswers[questionId][teamId] = answerData;
-    localStorage.setItem('quiz_local_answers', JSON.stringify(allAnswers));
+    localStorage.setItem(this.getLocalKey('quiz_local_answers'), JSON.stringify(allAnswers));
 
     if (this.isFirebaseReady && this.database) {
-      await this.database.ref(`quiz/answers/${questionId}/${teamId}`).set(answerData);
+      await this.quizRef(`answers/${questionId}/${teamId}`).set(answerData);
     } else {
       this.publishAnswers(allAnswers[questionId], questionId);
     }
@@ -500,11 +670,11 @@ class QuizStore {
 
   async getQuestionById(questionId) {
     if (this.isFirebaseReady && this.database) {
-      const snapshot = await this.database.ref('quiz/questions').once('value');
+      const snapshot = await this.quizRef('questions').once('value');
       const questions = Object.values(snapshot.val() || DEFAULT_QUESTIONS);
       return questions.find(question => String(question.id) === String(questionId)) || null;
     }
-    const questions = JSON.parse(localStorage.getItem('quiz_local_questions') || 'null') || DEFAULT_QUESTIONS;
+    const questions = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_questions')) || 'null') || DEFAULT_QUESTIONS;
     return questions.find(question => String(question.id) === String(questionId)) || null;
   }
 
@@ -531,11 +701,11 @@ class QuizStore {
     answer.gradeSource = 'manual';
     answer.gradedAt = Date.now();
 
-    const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+    const allAnswers = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_answers')) || '{}');
     allAnswers[question.id] = answers;
-    localStorage.setItem('quiz_local_answers', JSON.stringify(allAnswers));
+    localStorage.setItem(this.getLocalKey('quiz_local_answers'), JSON.stringify(allAnswers));
     if (this.isFirebaseReady && this.database) {
-      await this.database.ref(`quiz/answers/${question.id}/${teamId}`).update({
+      await this.quizRef(`answers/${question.id}/${teamId}`).update({
         manualIsCorrect: answer.manualIsCorrect,
         gradeSource: answer.gradeSource,
         gradedAt: answer.gradedAt
@@ -547,12 +717,12 @@ class QuizStore {
     const previousResults = await this.getQuestionResults(question.id);
     if (!previousResults || !previousResults.results) return;
 
-    let teams = JSON.parse(localStorage.getItem('quiz_local_teams') || '{}');
-    let state = JSON.parse(localStorage.getItem('quiz_local_state') || JSON.stringify(this.getDefaultState()));
+    let teams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
+    let state = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || JSON.stringify(this.getDefaultState()));
     if (this.isFirebaseReady && this.database) {
       const [teamsSnapshot, stateSnapshot] = await Promise.all([
-        this.database.ref('quiz/teams').once('value'),
-        this.database.ref('quiz/state').once('value')
+        this.quizRef('teams').once('value'),
+        this.quizRef('state').once('value')
       ]);
       teams = teamsSnapshot.val() || {};
       state = stateSnapshot.val() || state;
@@ -580,10 +750,10 @@ class QuizStore {
 
   async getAnswersForQuestion(questionId) {
     if (this.isFirebaseReady && this.database) {
-      const snap = await this.database.ref(`quiz/answers/${questionId}`).once('value');
+      const snap = await this.quizRef(`answers/${questionId}`).once('value');
       return snap.val() || {};
     } else {
-      const allAnswers = JSON.parse(localStorage.getItem('quiz_local_answers') || '{}');
+      const allAnswers = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_answers')) || '{}');
       return allAnswers[questionId] || {};
     }
   }
@@ -592,10 +762,10 @@ class QuizStore {
 
   async saveQuestionResults(questionId, calculationResults, updatedTeams) {
     // ローカルキャッシュも即座に更新
-    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    const allResults = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_results')) || '{}');
     allResults[questionId] = calculationResults;
-    localStorage.setItem('quiz_local_results', JSON.stringify(allResults));
-    localStorage.setItem('quiz_local_teams', JSON.stringify(updatedTeams));
+    localStorage.setItem(this.getLocalKey('quiz_local_results'), JSON.stringify(allResults));
+    localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(updatedTeams));
 
     if (this.channel) {
       this.channel.postMessage({ type: 'results', questionId, data: calculationResults });
@@ -605,9 +775,9 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       const updates = {};
-      updates[`quiz/results/${questionId}`] = calculationResults;
+      updates[this.getQuizPath(`results/${questionId}`)] = calculationResults;
       Object.keys(updatedTeams).forEach(id => {
-        updates[`quiz/teams/${id}/totalScore`] = updatedTeams[id].totalScore;
+        updates[this.getQuizPath(`teams/${id}/totalScore`)] = updatedTeams[id].totalScore;
       });
       await this.database.ref().update(updates);
     }
@@ -616,14 +786,14 @@ class QuizStore {
   async getQuestionResults(questionId) {
     if (this.isFirebaseReady && this.database) {
       try {
-        const snap = await this.database.ref(`quiz/results/${questionId}`).once('value');
+        const snap = await this.quizRef(`results/${questionId}`).once('value');
         const val = snap.val();
         if (val) return val;
       } catch (err) {
         console.warn(`QuizStore: getQuestionResults failed for ${questionId}, falling back to cache:`, err);
       }
     }
-    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    const allResults = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_results')) || '{}');
     return allResults[questionId] || null;
   }
 
@@ -635,7 +805,7 @@ class QuizStore {
    */
   subscribeQuestionResults(questionId, callback) {
     // 1. ローカルキャッシュに既にあれば即時コールバック
-    const allResults = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+    const allResults = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_results')) || '{}');
     if (allResults[questionId]) {
       callback(allResults[questionId]);
     }
@@ -645,14 +815,14 @@ class QuizStore {
     let firebaseCallback = null;
 
     if (this.isFirebaseReady && this.database) {
-      firebaseRef = this.database.ref(`quiz/results/${questionId}`);
+      firebaseRef = this.quizRef(`results/${questionId}`);
       firebaseCallback = snapshot => {
         const val = snapshot.val();
         if (val) {
           // ローカルキャッシュも同期
-          const currentLocal = JSON.parse(localStorage.getItem('quiz_local_results') || '{}');
+          const currentLocal = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_results')) || '{}');
           currentLocal[questionId] = val;
-          localStorage.setItem('quiz_local_results', JSON.stringify(currentLocal));
+          localStorage.setItem(this.getLocalKey('quiz_local_results'), JSON.stringify(currentLocal));
           callback(val);
         }
       };

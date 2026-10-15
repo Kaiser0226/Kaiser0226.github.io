@@ -44,6 +44,21 @@
   justify-content: flex-end;
 }
 
+.quiz-selector-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.quiz-selector {
+  width: auto;
+  min-width: 150px;
+  max-width: 220px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
+}
+
 @media (max-width: 900px) {
   .admin-nav {
     align-items: flex-start;

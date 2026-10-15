@@ -76,6 +76,8 @@ const btnSaveTeamList = document.getElementById('btnSaveTeamList');
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  quizStore.setupQuizListControls();
+
   // 問題購読
   quizStore.subscribeQuestions(questions => {
     rawQuestions = questions || DEFAULT_QUESTIONS;

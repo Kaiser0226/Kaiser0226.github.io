@@ -22,6 +22,10 @@
       <span>クイズ大会 <span class="logo-highlight">進行管理パネル</span></span>
     </div>
     <div class="admin-nav-actions">
+      <label for="activeQuizSelector" class="quiz-selector-label">使用中クイズ</label>
+      <select id="activeQuizSelector" class="quiz-selector"></select>
+      <button type="button" class="btn btn-secondary" id="btnAddQuiz" style="font-size: 0.9rem;">＋ クイズ追加</button>
+      <button type="button" class="btn btn-danger" id="btnDeleteQuiz" style="font-size: 0.9rem;">削除</button>
       <a href="setting.html" class="btn btn-secondary" style="font-size: 0.9rem;">
         ⚙️ 問題データ・大会設定
       </a>

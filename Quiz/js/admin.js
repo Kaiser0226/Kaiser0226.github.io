@@ -55,6 +55,7 @@ const presentationPreviewFrame = document.getElementById('presentationPreviewFra
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
+  quizStore.setupQuizListControls();
   setupPresentationPreviewScaling();
 
   // 問題購読
