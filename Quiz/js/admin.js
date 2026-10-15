@@ -23,6 +23,7 @@ const btnResetScores = document.getElementById('btnResetScores');
 // ★ ワンボタン進行
 const btnMainAdvance = document.getElementById('btnMainAdvance');
 const btnMainRollback = document.getElementById('btnMainRollback');
+const btnSkipQuestion = document.getElementById('btnSkipQuestion');
 
 // 問題ナビゲーション
 const selectCurrentQuestion = document.getElementById('selectCurrentQuestion');
@@ -110,6 +111,7 @@ function setupEventListeners() {
   // ★ ワンボタン進行
   btnMainAdvance.addEventListener('click', handleMainAdvance);
   btnMainRollback.addEventListener('click', handleMainRollback);
+  btnSkipQuestion.addEventListener('click', handleSkipQuestion);
 
   // 完全初期化
   btnResetScores.addEventListener('click', handleResetScores);
@@ -262,6 +264,7 @@ function updateMainButtonText() {
   const { currentScene, currentQuestionIndex } = currentState;
   const totalQ = currentQuestions.length;
   const qNum = currentQuestionIndex + 1;
+  btnSkipQuestion.disabled = !['waiting', 'question', 'closed'].includes(currentScene) || totalQ === 0;
 
   let label = "▶ クイズ開始 (第1問へ)";
   let colorClass = "btn-main-advance";
@@ -329,6 +332,24 @@ async function handleMainAdvance() {
       alert("全問題が終了しました！お疲れ様でした。");
       break;
   }
+}
+
+async function handleSkipQuestion() {
+  if (!currentState || !['waiting', 'question', 'closed'].includes(currentState.currentScene)) return;
+  const nextIndex = currentState.currentQuestionIndex + 1;
+  if (nextIndex >= currentQuestions.length) {
+    await changeScene('final');
+    return;
+  }
+
+  selectedQIndex = nextIndex;
+  selectCurrentQuestion.value = nextIndex;
+  await quizStore.updateState({
+    currentQuestionIndex: nextIndex,
+    currentScene: 'question',
+    status: 'running',
+    questionStartTime: Date.now()
+  });
 }
 
 // ★ 1つ戻すボタン

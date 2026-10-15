@@ -439,6 +439,12 @@ async function handleSaveConfig() {
 let tempOrder = [];
 
 function renderOrderListEditor() {
+  const validQuestionIds = new Set(rawQuestions.map(question => String(question.id)));
+  const cleanedOrder = currentQuestionOrder.filter(id => validQuestionIds.has(String(id)));
+  if (cleanedOrder.length !== currentQuestionOrder.length) {
+    currentQuestionOrder = cleanedOrder;
+    quizStore.saveQuestionOrder(cleanedOrder);
+  }
   tempOrder = [...currentQuestionOrder];
   if (tempOrder.length === 0) {
     tempOrder = rawQuestions.map(q => q.id);
@@ -528,7 +534,10 @@ function refreshOrderEditor() {
 }
 
 async function handleSaveOrder() {
-  await quizStore.saveQuestionOrder(tempOrder);
+  const validQuestionIds = new Set(rawQuestions.map(question => String(question.id)));
+  tempOrder = tempOrder.filter(id => validQuestionIds.has(String(id)));
+  currentQuestionOrder = [...tempOrder];
+  await quizStore.saveQuestionOrder(currentQuestionOrder);
   closeModal(orderModal);
   alert("出題順を保存・反映しました！");
 }

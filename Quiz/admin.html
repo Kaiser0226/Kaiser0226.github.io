@@ -72,9 +72,12 @@
           <div class="main-advance-label">
             ▼ メイン進行ボタン (このボタンを順に押すだけでクイズ大会の全進行が可能です)
           </div>
-          <div style="display: flex; gap: 12px; justify-content: center; align-items: stretch;">
+          <div style="display: flex; gap: 12px; justify-content: center; align-items: stretch; flex-wrap: wrap;">
             <button type="button" id="btnMainAdvance" class="btn btn-main-advance">
               ▶ クイズ開始 (第1問へ)
+            </button>
+            <button type="button" id="btnSkipQuestion" class="btn btn-secondary" style="padding: 14px 18px; font-size: 1rem;" title="採点せずに次の問題へ進みます。最終問題では結果発表へ進みます。">
+              ⏭ 問題をスキップ
             </button>
             <button type="button" id="btnMainRollback" class="btn btn-secondary" style="padding: 14px 18px; font-size: 1rem; border-radius: var(--radius-md);" title="1つ前の進行ステップに戻す">
               ⏮ 1つ戻す
