@@ -21,6 +21,8 @@ body.locked-opt-2 { background-color: #fffbeb; }
 body.locked-opt-3 { background-color: #f0fdf4; }
 body.locked-opt-4 { background-color: #f0f9ff; }
 body.locked-opt-5 { background-color: #faf5ff; }
+body.locked-opt-6 { background-color: var(--opt-7-bg); }
+body.locked-opt-7 { background-color: var(--opt-8-bg); }
 
 /* すべての画面共通: 上部固定ヘッダー */
 .player-header {
@@ -317,6 +319,12 @@ body.locked-opt-5 { background-color: #faf5ff; }
 .option-btn[data-index="5"] { border-color: var(--opt-6-border); }
 .option-btn[data-index="5"] .opt-circle-num { background-color: var(--opt-6); }
 
+.option-btn[data-index="6"] { border-color: var(--opt-7-border); }
+.option-btn[data-index="6"] .opt-circle-num { background-color: var(--opt-7); }
+
+.option-btn[data-index="7"] { border-color: var(--opt-8-border); }
+.option-btn[data-index="7"] .opt-circle-num { background-color: var(--opt-8); }
+
 /* 選択状態 (ソリッドハイライト) */
 .option-btn.selected {
   transform: scale(1.02);
@@ -330,6 +338,8 @@ body.locked-opt-5 { background-color: #faf5ff; }
 .option-btn[data-index="3"].selected { background-color: #f0fdf4; border-color: var(--opt-4); }
 .option-btn[data-index="4"].selected { background-color: #f0f9ff; border-color: var(--opt-5); }
 .option-btn[data-index="5"].selected { background-color: #faf5ff; border-color: var(--opt-6); }
+.option-btn[data-index="6"].selected { background-color: var(--opt-7-bg); border-color: var(--opt-7); }
+.option-btn[data-index="7"].selected { background-color: var(--opt-8-bg); border-color: var(--opt-8); }
 
 .opt-mobile-thumb {
   width: 44px;

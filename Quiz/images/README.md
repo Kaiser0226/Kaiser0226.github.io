@@ -12,5 +12,7 @@
   - 選択肢4: `q_1_opt_4.png`
   - 選択肢5: `q_1_opt_5.png`
   - 選択肢6: `q_1_opt_6.png`
+  - 選択肢7: `q_1_opt_7.png`
+  - 選択肢8: `q_1_opt_8.png`
 
 ※問題管理画面（`admin.html`）のGUIエディタまたはJSONデータ内で、独自の画像ファイルパス（例: `images/sample.jpg` や 外部URL `https://...`）を直接指定することも可能です。

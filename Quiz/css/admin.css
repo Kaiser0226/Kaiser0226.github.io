@@ -277,6 +277,8 @@
 .option-editor-item[data-idx="3"] { border-left-color: var(--opt-4); }
 .option-editor-item[data-idx="4"] { border-left-color: var(--opt-5); }
 .option-editor-item[data-idx="5"] { border-left-color: var(--opt-6); }
+.option-editor-item[data-idx="6"] { border-left-color: var(--opt-7); }
+.option-editor-item[data-idx="7"] { border-left-color: var(--opt-8); }
 
 /* モニター＆集計サイドバー */
 .monitor-card {

@@ -346,6 +346,12 @@ body.presentation-body {
 .pres-option-card[data-index="5"] { border-color: var(--opt-6); }
 .pres-option-card[data-index="5"] .opt-num-badge { background-color: var(--opt-6); }
 
+.pres-option-card[data-index="6"] { border-color: var(--opt-7); }
+.pres-option-card[data-index="6"] .opt-num-badge { background-color: var(--opt-7); }
+
+.pres-option-card[data-index="7"] { border-color: var(--opt-8); }
+.pres-option-card[data-index="7"] .opt-num-badge { background-color: var(--opt-8); }
+
 /* 選択肢内画像 (大型化) */
 .opt-thumb-image {
   width: clamp(54px, 7vh, 80px);

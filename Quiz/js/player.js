@@ -491,7 +491,7 @@ function applyLockedState(index) {
 }
 
 function resetBodyLockedColor() {
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     playerBody.classList.remove(`locked-opt-${i}`);
   }
 }

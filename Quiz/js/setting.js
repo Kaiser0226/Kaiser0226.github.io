@@ -271,7 +271,7 @@ function renderOptionInputs(options) {
 
   // 正解セレクトの選択肢更新
   editCorrectAnswer.innerHTML = '';
-  const colors = ["赤", "青", "黄", "緑", "水色", "紫"];
+  const colors = ["赤", "青", "黄", "緑", "水色", "紫", "桃", "灰"];
   options.forEach((_, idx) => {
     const o = document.createElement('option');
     o.value = idx;
@@ -282,8 +282,8 @@ function renderOptionInputs(options) {
 
 function addOptionField() {
   const currentCount = optionsEditorContainer.querySelectorAll('.option-editor-item').length;
-  if (currentCount >= 6) {
-    alert("選択肢は最大6個までです。");
+  if (currentCount >= 8) {
+    alert("選択肢は最大8個までです。");
     return;
   }
   const q = currentQuestions[selectedQIndex];
@@ -326,6 +326,10 @@ async function handleSaveQuestionEdit(e) {
   const isTextAnswer = editAnswerType.value === 'text';
   if (!isTextAnswer && newOptions.length < 2) {
     alert("選択肢は最低2個必要です。");
+    return;
+  }
+  if (!isTextAnswer && newOptions.length > 8) {
+    alert("選択肢は最大8個までです。");
     return;
   }
   const pointMultiplier = Number(editPointMultiplier.value);
@@ -591,6 +595,11 @@ async function handleApplyJson() {
     const parsed = JSON.parse(jsonEditorArea.value);
     if (!Array.isArray(parsed) || parsed.length === 0) {
       alert("問題の配列JSONを指定してください。");
+      return;
+    }
+    if (parsed.some(question => question && question.answerType !== 'text'
+      && Array.isArray(question.options) && question.options.length > 8)) {
+      alert("選択式問題の選択肢は最大8個までです。");
       return;
     }
     rawQuestions = parsed;
