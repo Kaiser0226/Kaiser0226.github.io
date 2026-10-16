@@ -354,15 +354,17 @@ function setupQuestionScene(q) {
 
   // 3. 選択肢ボタン生成
   playerOptionsList.innerHTML = '';
-  (isTextAnswer ? [] : (q.options || [])).forEach((opt, idx) => {
+  const options = isTextAnswer ? [] : (q.options || []);
+  const hasImageOptions = options.some(option => Boolean(option.image && option.image.trim() !== ''));
+  playerOptionsList.classList.toggle('has-image-options', hasImageOptions);
+  options.forEach((opt, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
-    btn.className = 'option-btn';
+    btn.className = hasImageOptions ? 'option-btn option-btn-image-card' : 'option-btn';
     btn.setAttribute('data-index', idx);
 
     const hasImage = Boolean(opt.image && opt.image.trim() !== '');
     const hasText = Boolean(String(opt.text || '').trim());
-    btn.classList.toggle('option-btn-image-only', hasImage && !hasText);
 
     let imgHtml = '';
     if (hasImage) {
@@ -372,7 +374,7 @@ function setupQuestionScene(q) {
     btn.innerHTML = `
       <div class="opt-circle-num">${idx + 1}</div>
       ${imgHtml}
-      ${hasText ? `<div style="flex: 1;">${opt.text}</div>` : ''}
+      ${hasText ? `<div class="option-text-label">${opt.text}</div>` : ''}
     `;
 
     btn.addEventListener('click', () => {
