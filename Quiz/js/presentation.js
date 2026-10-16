@@ -183,6 +183,7 @@ function applyState() {
   // 出題・回答・正解表示シーン
   specialView.style.display = 'none';
   presMain.style.display = 'flex';
+  presMain.classList.toggle('has-explanation', currentScene === 'result');
   answerBadge.style.display = 'flex';
 
   renderCurrentQuestion();
@@ -214,9 +215,12 @@ function renderCurrentQuestion() {
   const qIndex = (currentState && currentState.currentQuestionIndex !== undefined) ? currentState.currentQuestionIndex : 0;
   const q = currentQuestions[qIndex] || currentQuestions[0];
   if (!q) return;
+  presMain.classList.toggle('has-many-options', q.answerType !== 'text' && (q.options || []).length > 4);
 
   // 1. 問題画像 (あれば表示)
-  if (q.image && q.image.trim() !== '') {
+  const hasImage = Boolean(q.image && q.image.trim() !== '');
+  presMain.classList.toggle('has-image', hasImage);
+  if (hasImage) {
     presQuestionImage.src = q.image;
     presImageWrapper.style.display = 'flex';
   } else {
