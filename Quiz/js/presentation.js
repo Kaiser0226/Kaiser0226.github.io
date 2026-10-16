@@ -244,6 +244,7 @@ function renderCurrentQuestion() {
   const options = isTextAnswer ? [] : (q.options || []);
   const hasImageOptions = options.some(option => Boolean(option.image && option.image.trim() !== ''));
   presOptionsGrid.classList.toggle('has-image-options', hasImageOptions);
+  presOptionsGrid.style.setProperty('--option-count', options.length);
   presTextAnswerNotice.textContent = '回答は参加者のスマートフォンから入力します';
   presTextAnswerNotice.style.display = isTextAnswer ? 'block' : 'none';
   options.forEach((opt, idx) => {

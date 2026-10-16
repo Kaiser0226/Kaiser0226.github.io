@@ -383,8 +383,8 @@ body.presentation-body {
 }
 
 .pres-options-grid.has-image-options {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(8px, 1vh, 14px) clamp(10px, 1vw, 18px);
+  grid-template-columns: repeat(var(--option-count), minmax(0, 1fr));
+  gap: clamp(4px, 0.7vw, 10px);
 }
 
 .pres-option-card.image-option-card {
@@ -393,20 +393,23 @@ body.presentation-body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  gap: clamp(4px, 0.7vh, 8px);
-  padding: clamp(6px, 1vh, 12px);
+  gap: clamp(3px, 0.5vh, 6px);
+  padding: clamp(4px, 0.6vh, 8px);
 }
 
 .pres-option-card.image-option-card .opt-num-badge {
   position: absolute;
-  top: 8px;
-  left: 8px;
+  top: 4px;
+  left: 4px;
   z-index: 1;
+  width: clamp(24px, 3.5vh, 38px);
+  height: clamp(24px, 3.5vh, 38px);
+  font-size: clamp(0.75rem, 1.5vh, 1rem);
 }
 
 .pres-option-card.image-option-card .opt-thumb-image {
   width: 100%;
-  height: clamp(90px, 20vh, 220px);
+  height: clamp(60px, 17vh, 180px);
   object-fit: contain;
   border: 0;
 }
@@ -419,16 +422,33 @@ body.presentation-body {
 }
 
 .pres-main.has-many-options .image-option-card .opt-thumb-image {
-  height: clamp(60px, 13vh, 140px);
+  height: clamp(44px, 12vh, 120px);
+}
+
+.pres-main.has-many-options .image-option-card {
+  font-size: clamp(0.75rem, 1.2vw, 1rem);
 }
 
 @media (max-aspect-ratio: 4/3) {
   .pres-option-card.image-option-card .opt-thumb-image {
-    height: clamp(70px, 15vh, 170px);
+    height: clamp(48px, 12vh, 130px);
   }
 
   .pres-main.has-many-options .image-option-card .opt-thumb-image {
-    height: clamp(48px, 10vh, 110px);
+    height: clamp(36px, 9vh, 96px);
+  }
+
+  .pres-options-grid.has-image-options {
+    gap: 4px;
+  }
+
+  .pres-option-card.image-option-card {
+    border-width: 2px;
+    padding: 3px;
+  }
+
+  .pres-option-card.image-option-card .opt-text-label {
+    font-size: clamp(0.65rem, 1.8vw, 0.95rem);
   }
 }
 
