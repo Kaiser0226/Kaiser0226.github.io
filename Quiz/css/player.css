@@ -350,6 +350,28 @@ body.locked-opt-7 { background-color: var(--opt-8-bg); }
   flex-shrink: 0;
 }
 
+.option-btn-image-only {
+  position: relative;
+  justify-content: center;
+  min-height: clamp(160px, 28vh, 260px);
+  padding: 16px;
+}
+
+.option-btn-image-only .opt-circle-num {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+}
+
+.option-btn-image-only .opt-mobile-thumb {
+  width: 100%;
+  height: clamp(130px, 25vh, 230px);
+  object-fit: contain;
+  border: 0;
+  border-radius: var(--radius-sm);
+}
+
 /* ロックボタン (ソリッドアンバー / ソリッドグリーン) */
 .lock-button-wrapper {
   margin-top: 10px;

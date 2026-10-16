@@ -360,15 +360,19 @@ function setupQuestionScene(q) {
     btn.className = 'option-btn';
     btn.setAttribute('data-index', idx);
 
+    const hasImage = Boolean(opt.image && opt.image.trim() !== '');
+    const hasText = Boolean(String(opt.text || '').trim());
+    btn.classList.toggle('option-btn-image-only', hasImage && !hasText);
+
     let imgHtml = '';
-    if (opt.image && opt.image.trim() !== '') {
+    if (hasImage) {
       imgHtml = `<img src="${opt.image}" class="opt-mobile-thumb" alt="画像">`;
     }
 
     btn.innerHTML = `
       <div class="opt-circle-num">${idx + 1}</div>
       ${imgHtml}
-      <div style="flex: 1;">${opt.text}</div>
+      ${hasText ? `<div style="flex: 1;">${opt.text}</div>` : ''}
     `;
 
     btn.addEventListener('click', () => {
