@@ -241,22 +241,32 @@ function renderCurrentQuestion() {
   presOptionsGrid.innerHTML = '';
   const isTextAnswer = q.answerType === 'text';
   presOptionsGrid.style.display = isTextAnswer ? 'none' : '';
+  const options = isTextAnswer ? [] : (q.options || []);
+  const hasImageOnlyOptions = options.length > 0 && options.every(option =>
+    Boolean(option.image && option.image.trim() !== '') && !String(option.text || '').trim()
+  );
+  presOptionsGrid.classList.toggle('image-only-options', hasImageOnlyOptions);
+  presOptionsGrid.style.setProperty('--option-count', options.length);
   presTextAnswerNotice.textContent = '回答は参加者のスマートフォンから入力します';
   presTextAnswerNotice.style.display = isTextAnswer ? 'block' : 'none';
-  (isTextAnswer ? [] : (q.options || [])).forEach((opt, idx) => {
+  options.forEach((opt, idx) => {
     const card = document.createElement('div');
     card.className = 'pres-option-card';
     card.setAttribute('data-index', idx);
 
+    const hasImage = Boolean(opt.image && opt.image.trim() !== '');
+    const hasText = Boolean(String(opt.text || '').trim());
+    card.classList.toggle('image-only-option', hasImage && !hasText);
+
     let imgHtml = '';
-    if (opt.image && opt.image.trim() !== '') {
+    if (hasImage) {
       imgHtml = `<img src="${escapeHtml(opt.image)}" class="opt-thumb-image" alt="選択肢画像">`;
     }
 
     card.innerHTML = `
       <div class="opt-num-badge">${idx + 1}</div>
       ${imgHtml}
-      <div class="opt-text-label">${escapeHtml(opt.text)}</div>
+      ${hasText ? `<div class="opt-text-label">${escapeHtml(opt.text)}</div>` : ''}
     `;
     presOptionsGrid.appendChild(card);
   });
