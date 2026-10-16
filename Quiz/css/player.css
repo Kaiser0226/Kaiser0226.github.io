@@ -225,6 +225,7 @@ body.locked-opt-5 { background-color: #faf5ff; }
   font-size: 1.15rem;
   font-weight: 800;
   line-height: 1.45;
+  white-space: pre-line;
   border: 1.5px solid var(--border-strong);
   border-left: 5px solid var(--primary);
   box-shadow: var(--shadow-sm);
