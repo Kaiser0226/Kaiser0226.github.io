@@ -17,6 +17,8 @@ class QuizStore {
     this.firebaseApp = null;
     this.database = null;
     this.isFirebaseReady = false;
+    this.latestState = null;
+    this.latestTransition = null;
     this.listeners = {
       state: [],
       teams: [],
@@ -35,6 +37,10 @@ class QuizStore {
                 subscription.callback(data);
               }
             });
+            return;
+          }
+          if (type === 'state') {
+            this.publishState(data);
             return;
           }
           if (this.listeners[type]) {
@@ -137,11 +143,13 @@ class QuizStore {
         this.database.ref(`${sourcePath}/questionOrder`).once('value'),
         this.database.ref(`${sourcePath}/teamList`).once('value')
       ]);
+      const defaultState = this.getDefaultState();
       const copy = {
         [`${targetPath}/questions`]: questions.val() || DEFAULT_QUESTIONS,
         [`${targetPath}/questionOrder`]: order.val() || (typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : []),
         [`${targetPath}/teamList`]: teams.val() || (typeof DEFAULT_TEAM_LIST !== 'undefined' ? DEFAULT_TEAM_LIST : []),
-        [`${targetPath}/state`]: this.getDefaultState()
+        [`${targetPath}/state`]: defaultState,
+        [`${targetPath}/transition`]: this.getTransitionState(defaultState)
       };
       await this.database.ref().update(copy);
     }
@@ -273,6 +281,32 @@ class QuizStore {
     };
   }
 
+  getTransitionState(state) {
+    return {
+      status: state.status,
+      currentScene: state.currentScene,
+      currentQuestionIndex: state.currentQuestionIndex,
+      questionStartTime: state.questionStartTime,
+      updatedAt: state.updatedAt
+    };
+  }
+
+  publishState(state) {
+    const updated = { ...state };
+    if (this.latestTransition
+      && Number(this.latestTransition.updatedAt) > Number(updated.updatedAt)) {
+      Object.assign(updated, this.latestTransition);
+    }
+    if (this.latestState
+      && Number(this.latestState.updatedAt) === Number(updated.updatedAt)
+      && JSON.stringify(this.latestState) === JSON.stringify(updated)) {
+      return;
+    }
+    this.latestState = updated;
+    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(updated));
+    this.listeners.state.forEach(callback => callback(updated));
+  }
+
   // --- 状態の取得・購読 ---
 
   subscribeState(callback) {
@@ -281,6 +315,7 @@ class QuizStore {
     // 1. まずローカルの最新状態またはデフォルト値を即座に同期返却（画面の初期化を即座に完了させる）
     const local = localStorage.getItem(this.getLocalKey('quiz_local_state'));
     const initialState = local ? JSON.parse(local) : this.getDefaultState();
+    this.latestState = initialState;
     callback(initialState);
 
     // 2. Firebaseが有効な場合はリスナーを登録
@@ -289,34 +324,58 @@ class QuizStore {
       stateRef.on('value', snapshot => {
         if (!snapshot.exists()) {
           // Firebase側が空の場合はデフォルト状態を自動投入
-          stateRef.set(this.getDefaultState());
-          callback(this.getDefaultState());
+          const defaultState = this.getDefaultState();
+          this.database.ref().update({
+            [this.getQuizPath('state')]: defaultState,
+            [this.getQuizPath('transition')]: this.getTransitionState(defaultState)
+          }).catch(err => console.warn("QuizStore: Firebase state initialization failed:", err));
+          this.publishState(defaultState);
         } else {
           const val = snapshot.val() || this.getDefaultState();
-          callback(val);
+          this.publishState(val);
         }
       }, err => {
         console.warn("QuizStore: Firebase subscribeState error:", err);
+      });
+
+      this.quizRef('transition').on('value', snapshot => {
+        const transition = snapshot.val();
+        if (!transition) return;
+        if (Number(transition.updatedAt) < Number(this.latestTransition && this.latestTransition.updatedAt || 0)) return;
+        this.latestTransition = transition;
+        this.publishState(this.latestState || this.getDefaultState());
+      }, err => {
+        console.warn("QuizStore: Firebase subscribeTransition error:", err);
       });
     }
   }
 
   async updateState(partialState) {
     const current = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || JSON.stringify(this.getDefaultState()));
-    const updated = { ...current, ...partialState, updatedAt: Date.now() };
-    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(updated));
+    const updated = { ...current, ...partialState, updatedAt: Math.max(Date.now(), Number(current.updatedAt || 0) + 1) };
+    const transitionKeys = ['status', 'currentScene', 'currentQuestionIndex', 'questionStartTime'];
+    const updatesTransition = transitionKeys.some(key => Object.prototype.hasOwnProperty.call(partialState, key));
+    if (updatesTransition) {
+      this.latestTransition = this.getTransitionState(updated);
+    }
 
     if (this.channel) {
       this.channel.postMessage({ type: 'state', data: updated });
     }
-    this.listeners.state.forEach(cb => cb(updated));
+    this.publishState(updated);
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.quizRef('state').update({
-          ...partialState,
-          updatedAt: Date.now()
+        const updates = {};
+        Object.keys(partialState).forEach(key => {
+          updates[this.getQuizPath(`state/${key}`)] = partialState[key];
         });
+        updates[this.getQuizPath('state/updatedAt')] = updated.updatedAt;
+
+        if (updatesTransition) {
+          updates[this.getQuizPath('transition')] = this.latestTransition;
+        }
+        await this.database.ref().update(updates);
       } catch (err) {
         console.warn("QuizStore: Firebase updateState failed:", err);
       }
@@ -551,7 +610,10 @@ class QuizStore {
         await this.quizRef('teams').remove();
         await this.quizRef('answers').remove();
         await this.quizRef('results').remove();
-        await this.quizRef('state').set(defaultState);
+        await this.database.ref().update({
+          [this.getQuizPath('state')]: defaultState,
+          [this.getQuizPath('transition')]: this.getTransitionState(defaultState)
+        });
       } catch (err) {
         console.error("QuizStore: Firebase resetAllData failed:", err);
       }
@@ -561,7 +623,8 @@ class QuizStore {
     localStorage.removeItem(this.getLocalKey('quiz_local_teams'));
     localStorage.removeItem(this.getLocalKey('quiz_local_answers'));
     localStorage.removeItem(this.getLocalKey('quiz_local_results'));
-    localStorage.setItem(this.getLocalKey('quiz_local_state'), JSON.stringify(defaultState));
+    this.latestTransition = this.getTransitionState(defaultState);
+    this.publishState(defaultState);
 
     if (this.channel) {
       this.channel.postMessage({ type: 'state', data: defaultState });
@@ -570,7 +633,6 @@ class QuizStore {
       this.channel.postMessage({ type: 'resetAll', resetToken: defaultState.resetToken });
     }
 
-    this.listeners.state.forEach(cb => cb(defaultState));
     this.listeners.teams.forEach(cb => cb({}));
     this.listeners.answers.forEach(subscription => subscription.callback({}));
   }
