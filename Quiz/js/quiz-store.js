@@ -446,10 +446,8 @@ class QuizStore {
     if (this.isFirebaseReady && this.database) {
       this.quizRef('teams').on('value', snapshot => {
         const val = snapshot.val() || {};
-        const cachedTeams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
-        const teams = Object.keys(val).length ? val : cachedTeams;
-        localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
-        callback(teams);
+        localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(val));
+        callback(val);
       }, err => {
         console.warn("QuizStore: Firebase subscribeTeams error:", err);
       });
@@ -462,10 +460,8 @@ class QuizStore {
       try {
         const snapshot = await this.quizRef('teams').once('value');
         const teams = snapshot.val() || {};
-        if (Object.keys(teams).length) {
-          localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
-          return teams;
-        }
+        localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
+        return teams;
       } catch (err) {
         console.warn("QuizStore: getTeams failed, using cached teams:", err);
         if (!Object.keys(cachedTeams).length) throw err;
@@ -704,33 +700,41 @@ class QuizStore {
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.quizRef('teams').remove();
-        await this.quizRef('answers').remove();
-        await this.quizRef('results').remove();
         await this.database.ref().update({
+          [this.getQuizPath('teams')]: null,
+          [this.getQuizPath('answers')]: null,
+          [this.getQuizPath('results')]: null,
+          [this.getQuizPath('teamSessions')]: null,
           [this.getQuizPath('state')]: defaultState,
           [this.getQuizPath('transition')]: this.getTransitionState(defaultState)
         });
       } catch (err) {
         console.error("QuizStore: Firebase resetAllData failed:", err);
+        throw err;
       }
     }
 
     // ローカルキャッシュクリア
-    localStorage.removeItem(this.getLocalKey('quiz_local_teams'));
+    localStorage.setItem(this.getLocalKey('quiz_local_teams'), '{}');
     localStorage.removeItem(this.getLocalKey('quiz_local_answers'));
     localStorage.removeItem(this.getLocalKey('quiz_local_results'));
+    Object.keys(localStorage)
+      .filter(key => key.startsWith('quiz_team_session_')
+        && (this.activeQuizId === 'default' || key.endsWith(`_${this.activeQuizId}`)))
+      .forEach(key => localStorage.removeItem(key));
+    this.listeners.teams.forEach(cb => cb({}));
+    if (this.channel) {
+      this.channel.postMessage({ type: 'teams', data: {} });
+    }
     this.latestTransition = this.getTransitionState(defaultState);
     this.publishState(defaultState);
 
     if (this.channel) {
       this.channel.postMessage({ type: 'state', data: defaultState });
-      this.channel.postMessage({ type: 'teams', data: {} });
       this.channel.postMessage({ type: 'answers', data: {} });
       this.channel.postMessage({ type: 'resetAll', resetToken: defaultState.resetToken });
     }
 
-    this.listeners.teams.forEach(cb => cb({}));
     this.listeners.answers.forEach(subscription => subscription.callback({}));
   }
 
