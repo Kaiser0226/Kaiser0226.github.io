@@ -738,22 +738,68 @@ async function renderAnswerDistribution(q, resultsData = null) {
     if (totalAnswers === 0) {
       appendAnswerDistributionMessage(answerDistributionList, '回答はまだありません。');
     }
-    counts.forEach((count, index) => {
-      const optionText = options[index] && typeof options[index].text === 'string'
-        ? options[index].text.trim()
-        : '';
-      appendAnswerDistributionRow(
-        answerDistributionList,
-        optionText || `選択肢 ${index + 1}`,
-        count,
-        totalAnswers,
-        index === Number(q.answer) ? 'is-correct' : ''
-      );
-    });
+    const savedAnswer = sessionStorage.getItem(`q_answered_${q.id}`);
+    const selectedOption = savedAnswer !== null && Number.isInteger(Number(savedAnswer))
+      ? Number(savedAnswer)
+      : null;
+    appendChoiceDistributionChart(
+      answerDistributionList,
+      options,
+      counts,
+      totalAnswers,
+      Number(q.answer),
+      selectedOption
+    );
   } catch (err) {
     console.error(`回答割合の取得に失敗しました (question: ${q.id}):`, err);
     appendAnswerDistributionMessage(answerDistributionList, '回答割合を取得できませんでした。');
   }
+}
+
+function appendChoiceDistributionChart(container, options, counts, total, correctOption, selectedOption) {
+  const chart = document.createElement('div');
+  chart.className = 'answer-distribution-choice-chart';
+  chart.classList.toggle('has-your-choice', selectedOption !== null);
+
+  const track = document.createElement('div');
+  track.className = 'answer-distribution-stacked-track';
+  track.setAttribute('role', 'img');
+  const descriptions = [];
+
+  options.forEach((option, index) => {
+    const count = counts[index] || 0;
+    const percentage = total > 0 ? (count / total) * 100 : 0;
+    const optionText = option && typeof option.text === 'string' ? option.text.trim() : '';
+    const label = optionText || `選択肢 ${index + 1}`;
+    const color = `var(--opt-${(index % 8) + 1})`;
+    const isCorrect = index === correctOption;
+    const isYourChoice = index === selectedOption;
+    descriptions.push(`${label}${isCorrect ? '（正解）' : ''}${isYourChoice ? '（あなたの選択肢）' : ''}: ${total > 0 ? Math.round(percentage) : 0}% (${count}件)`);
+
+    if (count > 0) {
+      const segment = document.createElement('div');
+      segment.className = `answer-distribution-segment${isCorrect ? ' is-correct' : ''}${isYourChoice ? ' is-your-choice' : ''}`;
+      segment.style.width = `${percentage}%`;
+      segment.style.backgroundColor = color;
+      segment.setAttribute('aria-hidden', 'true');
+      const percentageLabel = document.createElement('span');
+      percentageLabel.className = 'answer-distribution-segment-label';
+      percentageLabel.textContent = `${Math.round(percentage)}%`;
+      segment.appendChild(percentageLabel);
+      if (isYourChoice) {
+        const yourChoiceLabel = document.createElement('span');
+        yourChoiceLabel.className = 'answer-distribution-your-choice-label';
+        yourChoiceLabel.textContent = 'あなた';
+        yourChoiceLabel.setAttribute('aria-hidden', 'true');
+        segment.appendChild(yourChoiceLabel);
+      }
+      track.appendChild(segment);
+    }
+  });
+
+  track.setAttribute('aria-label', `全回答数${total}件。${descriptions.join('、')}`);
+  chart.appendChild(track);
+  container.appendChild(chart);
 }
 
 function appendAnswerDistributionRow(container, label, count, total, barClass) {
