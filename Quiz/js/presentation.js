@@ -1,6 +1,6 @@
 /**
  * プレゼンテーション画面ロジック (presentation.js)
- * 白基調・見切れ防止設計・5位から1位への順位発表アニメーション
+ * 白基調・見切れ防止設計・10位から1位への個別順位発表
  */
 
 let rawQuestions = DEFAULT_QUESTIONS;
@@ -42,10 +42,8 @@ const specialSubtitle = document.getElementById('specialSubtitle');
 const rankingRevealContainer = document.getElementById('rankingRevealContainer');
 const btnRevealNextRank = document.getElementById('btnRevealNextRank');
 const btnAutoRevealRanks = document.getElementById('btnAutoRevealRanks');
-const btnToggleFullRanking = document.getElementById('btnToggleFullRanking');
 const btnResetReveal = document.getElementById('btnResetReveal');
 const rankingCardsStack = document.getElementById('rankingCardsStack');
-const fullRankingView = document.getElementById('fullRankingView');
 const playerQrPanel = document.getElementById('playerQrPanel');
 const playerQrCode = document.getElementById('playerQrCode');
 const playerQrUrl = document.getElementById('playerQrUrl');
@@ -55,7 +53,6 @@ let sortedTeams = [];
 let revealOrder = []; // 発表する順序 [5, 4, 3, 2, 1]
 let currentRevealIndex = 0; // 現在どこまで発表したか
 let autoRevealTimer = null;
-let isShowingFullRanking = false;
 let finalRankingsInitialized = false;
 
 // 初期化
@@ -72,8 +69,6 @@ document.addEventListener('DOMContentLoaded', () => {
       revealNextRank();
     } else if (command === 'toggleAutoReveal') {
       toggleAutoReveal();
-    } else if (command === 'toggleFullRanking') {
-      toggleFullRanking();
     } else if (command === 'resetReveal') {
       resetRevealSequence();
     }
@@ -116,9 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }
   if (btnAutoRevealRanks) {
     btnAutoRevealRanks.addEventListener('click', toggleAutoReveal);
-  }
-  if (btnToggleFullRanking) {
-    btnToggleFullRanking.addEventListener('click', toggleFullRanking);
   }
   if (btnResetReveal) {
     btnResetReveal.addEventListener('click', resetRevealSequence);
@@ -355,76 +347,66 @@ function removeAnswerHighlights() {
 }
 
 // =========================================================
-// 最終結果ランキング発表 (5位から1位への順位発表アニメーション)
+// 最終結果ランキング発表 (10位から1位を1チームずつ表示)
 // =========================================================
 
 function setupFinalRankings(resetSequence = false) {
   rankingRevealContainer.style.display = 'flex';
-  const previouslyRevealedRanks = resetSequence ? [] : revealOrder.slice(0, currentRevealIndex);
-  const wasShowingFullRanking = !resetSequence && isShowingFullRanking;
+  const previousRevealCount = resetSequence ? 0 : currentRevealIndex;
   const teamList = Object.values(allTeams);
 
   // 得点降順ソート
   teamList.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
   sortedTeams = teamList;
 
-  // 上位5チーム（あるいは参加チーム数分）を準備
-  const topCount = Math.min(5, sortedTeams.length);
-  // 5位から1位の順序配列を作成（例: 5, 4, 3, 2, 1）
-  revealOrder = [];
-  for (let r = topCount; r >= 1; r--) {
-    revealOrder.push(r);
+  const topCount = Math.min(10, sortedTeams.length);
+  revealOrder = Array.from({ length: topCount }, (_, index) => topCount - index);
+  currentRevealIndex = Math.min(previousRevealCount, revealOrder.length);
+
+  rankingCardsStack.replaceChildren();
+  const card = document.createElement('div');
+  card.className = 'rank-card';
+  card.id = 'rankDisplayCard';
+  rankingCardsStack.appendChild(card);
+  if (currentRevealIndex > 0) {
+    renderRankCard(revealOrder[currentRevealIndex - 1], false);
+  } else if (topCount === 0) {
+    card.className = 'rank-card revealed';
+    card.textContent = '発表対象のチームがいません';
   }
-
-  currentRevealIndex = 0;
-  isShowingFullRanking = wasShowingFullRanking;
-  fullRankingView.style.display = wasShowingFullRanking ? 'block' : 'none';
-  rankingCardsStack.style.display = wasShowingFullRanking ? 'none' : 'flex';
-  btnToggleFullRanking.textContent = wasShowingFullRanking
-    ? "🏆 順位発表カードに戻る"
-    : "📋 全体ランキング表";
-
-  // カードスタックの初期DOM構築 (すべて非表示状態で配置)
-  rankingCardsStack.innerHTML = '';
-
-  // 1位〜5位のカード枠を生成
-  for (let rank = 1; rank <= topCount; rank++) {
-    const t = sortedTeams[rank - 1];
-    const card = document.createElement('div');
-    card.className = `rank-card rank-${rank}`;
-    card.id = `rankCard-${rank}`;
-
-    const rankLabel = ScoreEngine.getRankLabel(sortedTeams, rank - 1);
-    let badgeIcon = rankLabel;
-    if (!rankLabel.startsWith('同率')) {
-      if (rank === 1) badgeIcon = `🥇 ${rankLabel}`;
-      else if (rank === 2) badgeIcon = `🥈 ${rankLabel}`;
-      else if (rank === 3) badgeIcon = `🥉 ${rankLabel}`;
-    }
-
-    card.innerHTML = `
-      <div class="rank-badge-text">${badgeIcon}</div>
-      <div class="rank-team-text">${escapeHtml(t ? splitTeamDisplayName(t.teamName).name : `チーム ${rank}`)}</div>
-      <div class="rank-score-text">${t ? t.totalScore || 0 : 0} 点</div>
-    `;
-
-    if (previouslyRevealedRanks.includes(rank)) card.classList.add('revealed');
-    rankingCardsStack.appendChild(card);
-  }
-  currentRevealIndex = revealOrder.filter(rank => previouslyRevealedRanks.includes(rank)).length;
-
-  // 全体ランキングHTMLも裏で生成
-  buildFullRankingTable();
 
   updateRevealButtonText();
+}
+
+function renderRankCard(rank, animate = true) {
+  const card = document.getElementById('rankDisplayCard');
+  const team = sortedTeams[rank - 1];
+  if (!card || !team) return;
+
+  card.className = `rank-card rank-${rank}`;
+  card.replaceChildren();
+  const rankLabel = document.createElement('div');
+  rankLabel.className = 'rank-badge-text';
+  rankLabel.textContent = `${rank}位`;
+  const teamName = document.createElement('div');
+  teamName.className = 'rank-team-text';
+  teamName.textContent = splitTeamDisplayName(team.teamName).name;
+  const score = document.createElement('div');
+  score.className = 'rank-score-text';
+  score.textContent = `${Number(team.totalScore) || 0} 点`;
+  card.append(rankLabel, teamName, score);
+
+  if (animate) {
+    card.classList.remove('revealed');
+    void card.offsetWidth;
+  }
+  card.classList.add('revealed');
 }
 
 function updateRevealButtonText() {
   if (currentRevealIndex < revealOrder.length) {
     const nextRank = revealOrder[currentRevealIndex];
-    let nextText = ScoreEngine.getRankLabel(sortedTeams, nextRank - 1);
-    if (nextRank === 1 && !nextText.startsWith('同率')) nextText = `🥇 ${nextText}`;
-    btnRevealNextRank.textContent = `▶ ${nextText}を発表する`;
+    btnRevealNextRank.textContent = `▶ ${nextRank}位を発表する`;
     btnRevealNextRank.disabled = false;
   } else {
     btnRevealNextRank.textContent = `🎉 全順位発表完了！`;
@@ -442,10 +424,7 @@ function revealNextRank() {
   if (currentRevealIndex >= revealOrder.length) return;
 
   const targetRank = revealOrder[currentRevealIndex];
-  const targetCard = document.getElementById(`rankCard-${targetRank}`);
-  if (targetCard) {
-    targetCard.classList.add('revealed');
-  }
+  renderRankCard(targetRank);
   if (targetRank === 1 && currentState && !currentState.finalResultsRevealed) {
     quizStore.updateState({ finalResultsRevealed: true });
     currentState.finalResultsRevealed = true;
@@ -493,9 +472,15 @@ function resetRevealSequence() {
     quizStore.updateState({ finalResultsRevealed: false });
     currentState.finalResultsRevealed = false;
   }
-  rankingCardsStack.querySelectorAll('.rank-card').forEach(c => {
-    c.classList.remove('revealed');
-  });
+  const card = document.getElementById('rankDisplayCard');
+  if (card) {
+    card.replaceChildren();
+    card.className = 'rank-card';
+    if (revealOrder.length === 0) {
+      card.classList.add('revealed');
+      card.textContent = '発表対象のチームがいません';
+    }
+  }
   updateRevealButtonText();
 }
 
@@ -505,62 +490,9 @@ function publishRevealStatus() {
   rankingChannel.postMessage({
     type: 'revealStatus',
     complete: currentRevealIndex >= revealOrder.length,
-    nextLabel: nextRank ? ScoreEngine.getRankLabel(sortedTeams, nextRank - 1) : '',
-    autoPlaying: Boolean(autoRevealTimer),
-    isShowingFullRanking
+    nextLabel: nextRank ? `${nextRank}位` : '',
+    autoPlaying: Boolean(autoRevealTimer)
   });
-}
-
-function toggleFullRanking() {
-  isShowingFullRanking = !isShowingFullRanking;
-  if (isShowingFullRanking) {
-    rankingCardsStack.style.display = 'none';
-    fullRankingView.style.display = 'block';
-    btnToggleFullRanking.textContent = "🏆 順位発表カードに戻る";
-  } else {
-    fullRankingView.style.display = 'none';
-    rankingCardsStack.style.display = 'flex';
-    btnToggleFullRanking.textContent = "📋 全体ランキング表";
-  }
-  publishRevealStatus();
-}
-
-function buildFullRankingTable() {
-  let html = `
-    <table class="full-ranking-table">
-      <thead>
-        <tr>
-          <th style="width: 120px;">順位</th>
-          <th>チーム名</th>
-          <th style="text-align: right; width: 140px;">合計得点</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
-
-  sortedTeams.forEach((t, i) => {
-    const rank = i + 1;
-    const rankLabel = ScoreEngine.getRankLabel(sortedTeams, i);
-    let rankBadge = rankLabel;
-    if (!rankLabel.startsWith('同率')) {
-      if (rank === 1) rankBadge = `🥇 ${rankLabel}`;
-      else if (rank === 2) rankBadge = `🥈 ${rankLabel}`;
-      else if (rank === 3) rankBadge = `🥉 ${rankLabel}`;
-    }
-
-    html += `
-      <tr>
-        <td style="font-weight: 800; color: ${rank === 1 ? '#d97706' : rank === 2 ? '#64748b' : rank === 3 ? '#c2410c' : '#0f172a'};">
-          ${rankBadge}
-        </td>
-        <td style="font-weight: 700; color: #0f172a;">${escapeHtml(splitTeamDisplayName(t.teamName).name)}</td>
-        <td style="text-align: right; font-weight: 900; color: #2563eb;">${t.totalScore || 0} 点</td>
-      </tr>
-    `;
-  });
-
-  html += `</tbody></table>`;
-  fullRankingView.innerHTML = html;
 }
 
 function escapeHtml(str) {

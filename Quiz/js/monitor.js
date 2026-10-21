@@ -8,6 +8,13 @@ let currentQuestion = null;
 let unsubscribeAnswers = null;
 let monitorSortKey = 'id';
 let monitorSortDir = 'asc';
+let selectedHistoryQuestionIds = new Set();
+let historyQuestionSelectionInitialized = false;
+let historyQuestionSelectionChanged = false;
+const historyResultsByQuestion = {};
+const historyResultSubscriptions = new Map();
+let historySortKey = 'id';
+let historySortDir = 'asc';
 
 const statConnectedTeams = document.getElementById('statConnectedTeams');
 const statAnsweredTeams = document.getElementById('statAnsweredTeams');
@@ -19,13 +26,53 @@ const teamMonitorBody = document.getElementById('teamMonitorBody');
 const thSortId = document.getElementById('thSortId');
 const thSortTime = document.getElementById('thSortTime');
 const thSortScore = document.getElementById('thSortScore');
+const tabLive = document.getElementById('tabLive');
+const tabHistory = document.getElementById('tabHistory');
+const livePanel = document.getElementById('livePanel');
+const historyPanel = document.getElementById('historyPanel');
+const selectAllHistoryQuestions = document.getElementById('selectAllHistoryQuestions');
+const historyQuestionOptions = document.getElementById('historyQuestionOptions');
+const historyQuestionFilterLabel = document.getElementById('historyQuestionFilterLabel');
+const selectHistorySort = document.getElementById('selectHistorySort');
+const historyQuestionLabel = document.getElementById('historyQuestionLabel');
+const historyTeamBody = document.getElementById('historyTeamBody');
+const historyTableHeadRow = document.getElementById('historyTableHeadRow');
 
 document.addEventListener('DOMContentLoaded', () => {
   selectMonitorSort.value = `${monitorSortKey}-${monitorSortDir}`;
+  selectHistorySort.value = `${historySortKey}-${historySortDir}`;
   selectMonitorSort.addEventListener('change', event => {
     [monitorSortKey, monitorSortDir] = event.target.value.split('-');
     renderMonitor();
   });
+  selectHistorySort.addEventListener('change', event => {
+    [historySortKey, historySortDir] = event.target.value.split('-');
+    renderHistory();
+  });
+  selectAllHistoryQuestions.addEventListener('change', () => {
+    historyQuestionSelectionChanged = true;
+    selectedHistoryQuestionIds = selectAllHistoryQuestions.checked
+      ? new Set(currentQuestions.map(question => String(question.id)))
+      : new Set();
+    renderHistoryQuestionOptions();
+    syncHistoryResultSubscriptions();
+    renderHistory();
+  });
+  historyQuestionOptions.addEventListener('change', event => {
+    const checkbox = event.target.closest('input[data-question-id]');
+    if (!checkbox) return;
+    historyQuestionSelectionChanged = true;
+    if (checkbox.checked) {
+      selectedHistoryQuestionIds.add(checkbox.dataset.questionId);
+    } else {
+      selectedHistoryQuestionIds.delete(checkbox.dataset.questionId);
+    }
+    updateHistoryQuestionSelectionState();
+    syncHistoryResultSubscriptions();
+    renderHistory();
+  });
+  tabLive.addEventListener('click', () => setMonitorTab('live'));
+  tabHistory.addEventListener('click', () => setMonitorTab('history'));
   thSortId.addEventListener('click', () => toggleHeaderSort('id'));
   thSortTime.addEventListener('click', () => toggleHeaderSort('time'));
   thSortScore.addEventListener('click', () => toggleHeaderSort('score'));
@@ -41,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeTeams(teams => {
     allTeams = teams || {};
     renderMonitor();
+    renderHistory();
   });
   quizStore.subscribeState(state => {
     currentState = state;
@@ -50,7 +98,89 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function updateOrderedQuestions() {
   currentQuestions = quizStore.getOrderedQuestions(rawQuestions, questionOrder);
+  updateHistoryQuestionOptions();
   updateActiveQuestion();
+}
+
+function updateHistoryQuestionOptions() {
+  const currentIds = new Set(currentQuestions.map(question => String(question.id)));
+  if (!historyQuestionSelectionInitialized) {
+    selectedHistoryQuestionIds = currentIds;
+    historyQuestionSelectionInitialized = true;
+  } else if (!historyQuestionSelectionChanged) {
+    selectedHistoryQuestionIds = currentIds;
+  } else {
+    const hadAllQuestionsSelected = currentQuestions.length > 0
+      && selectedHistoryQuestionIds.size === currentQuestions.length;
+    selectedHistoryQuestionIds = new Set(
+      [...selectedHistoryQuestionIds].filter(questionId => currentIds.has(questionId))
+    );
+    if (hadAllQuestionsSelected) selectedHistoryQuestionIds = currentIds;
+  }
+  renderHistoryQuestionOptions();
+  syncHistoryResultSubscriptions();
+  renderHistory();
+}
+
+function renderHistoryQuestionOptions() {
+  historyQuestionOptions.replaceChildren();
+  currentQuestions.forEach((question, index) => {
+    const label = document.createElement('label');
+    label.className = 'history-question-option';
+    const checkbox = document.createElement('input');
+    checkbox.type = 'checkbox';
+    checkbox.dataset.questionId = String(question.id);
+    checkbox.checked = selectedHistoryQuestionIds.has(String(question.id));
+    const text = document.createElement('span');
+    text.textContent = `第${index + 1}問: ${question.question}`;
+    label.title = question.question;
+    label.append(checkbox, text);
+    historyQuestionOptions.appendChild(label);
+  });
+  updateHistoryQuestionSelectionState();
+}
+
+function updateHistoryQuestionSelectionState() {
+  const selectedCount = currentQuestions.filter(question =>
+    selectedHistoryQuestionIds.has(String(question.id))
+  ).length;
+  selectAllHistoryQuestions.checked = currentQuestions.length > 0
+    && selectedCount === currentQuestions.length;
+  selectAllHistoryQuestions.indeterminate = selectedCount > 0
+    && selectedCount < currentQuestions.length;
+  historyQuestionFilterLabel.textContent = selectedCount === currentQuestions.length
+    ? `表示する問題（すべて・${selectedCount}問）`
+    : `表示する問題（${selectedCount}/${currentQuestions.length}問）`;
+}
+
+function syncHistoryResultSubscriptions() {
+  const selectedIds = new Set([...selectedHistoryQuestionIds]);
+  historyResultSubscriptions.forEach((unsubscribe, questionId) => {
+    if (!selectedIds.has(questionId)) {
+      unsubscribe();
+      historyResultSubscriptions.delete(questionId);
+      delete historyResultsByQuestion[questionId];
+    }
+  });
+  currentQuestions.forEach(question => {
+    const questionId = String(question.id);
+    if (!selectedIds.has(questionId) || historyResultSubscriptions.has(questionId)) return;
+    const unsubscribe = quizStore.subscribeQuestionResults(question.id, results => {
+      historyResultsByQuestion[questionId] = results || null;
+      renderHistory();
+    });
+    historyResultSubscriptions.set(questionId, unsubscribe);
+  });
+}
+
+function setMonitorTab(tab) {
+  const showLive = tab === 'live';
+  livePanel.hidden = !showLive;
+  historyPanel.hidden = showLive;
+  tabLive.classList.toggle('is-active', showLive);
+  tabHistory.classList.toggle('is-active', !showLive);
+  tabLive.setAttribute('aria-selected', String(showLive));
+  tabHistory.setAttribute('aria-selected', String(!showLive));
 }
 
 function updateActiveQuestion() {
@@ -169,6 +299,96 @@ function renderMonitor() {
     row.append(idCell, nameCell, answerCell, timeCell, scoreCell);
     teamMonitorBody.appendChild(row);
   });
+}
+
+function renderHistory() {
+  if (!historyTeamBody) return;
+  const selectedQuestions = currentQuestions.filter(question =>
+    selectedHistoryQuestionIds.has(String(question.id))
+  );
+  historyQuestionLabel.textContent = `表示中: ${selectedQuestions.length}問`;
+  historyTeamBody.replaceChildren();
+  historyTableHeadRow.replaceChildren();
+  appendHistoryHeader('ID', 'id');
+  appendHistoryHeader('チーム名');
+  appendHistoryHeader('合計点', 'score');
+  selectedQuestions.forEach(question => {
+    const questionIndex = currentQuestions.indexOf(question);
+    appendHistoryHeader(`第${questionIndex + 1}問`);
+  });
+
+  const teams = Object.values(allTeams);
+  teams.sort((teamA, teamB) => {
+    let comparison = 0;
+    if (historySortKey === 'id') {
+      comparison = splitTeamDisplayName(teamA.teamName).id.localeCompare(
+        splitTeamDisplayName(teamB.teamName).id, undefined, { numeric: true, sensitivity: 'base' }
+      );
+    } else {
+      comparison = getHistoryTotalScore(teamA, selectedQuestions)
+        - getHistoryTotalScore(teamB, selectedQuestions);
+    }
+    return historySortDir === 'asc' ? comparison : -comparison;
+  });
+
+  teams.forEach(team => {
+    const row = document.createElement('tr');
+    const displayName = splitTeamDisplayName(team.teamName);
+    const idCell = document.createElement('td');
+    idCell.className = 'monitor-id';
+    idCell.textContent = displayName.id;
+    const nameCell = document.createElement('td');
+    nameCell.className = 'monitor-team-name';
+    nameCell.textContent = displayName.name;
+    const totalCell = document.createElement('td');
+    totalCell.className = 'monitor-score';
+    totalCell.textContent = `${getHistoryTotalScore(team, selectedQuestions)}`;
+    row.append(idCell, nameCell, totalCell);
+    selectedQuestions.forEach(question => {
+      const scoreCell = document.createElement('td');
+      scoreCell.className = 'monitor-score';
+      scoreCell.textContent = `${getHistoryQuestionScore(team, question)}`;
+      row.appendChild(scoreCell);
+    });
+    historyTeamBody.appendChild(row);
+  });
+}
+
+function appendHistoryHeader(label, sortKey = null) {
+  const header = document.createElement('th');
+  header.textContent = label;
+  if (sortKey) {
+    header.className = 'sortable';
+    header.dataset.sort = sortKey;
+    if (sortKey === historySortKey) {
+      header.classList.add(historySortDir === 'asc' ? 'sort-asc' : 'sort-desc');
+    }
+    header.addEventListener('click', () => toggleHistoryHeaderSort(sortKey));
+  }
+  historyTableHeadRow.appendChild(header);
+}
+
+function getHistoryQuestionScore(team, question) {
+  const questionId = String(question.id);
+  const result = historyResultsByQuestion[questionId]
+    && historyResultsByQuestion[questionId].results
+    && historyResultsByQuestion[questionId].results[team.teamId];
+  return Number(result && result.pointsAwarded) || 0;
+}
+
+function getHistoryTotalScore(team, questions) {
+  return questions.reduce((total, question) => total + getHistoryQuestionScore(team, question), 0);
+}
+
+function toggleHistoryHeaderSort(key) {
+  if (historySortKey === key) {
+    historySortDir = historySortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    historySortKey = key;
+    historySortDir = key === 'score' ? 'desc' : 'asc';
+  }
+  selectHistorySort.value = `${historySortKey}-${historySortDir}`;
+  renderHistory();
 }
 
 function toggleHeaderSort(key) {

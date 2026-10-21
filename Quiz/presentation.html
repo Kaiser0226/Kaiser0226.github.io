@@ -74,10 +74,10 @@
         スマートフォンの画面を開き、運営者の合図をお待ちください。
       </p>
 
-      <!-- 最終結果発表: 5位〜1位アニメーション表示コンテナ -->
+      <!-- 最終結果発表: 10位から1位を1チームずつ表示 -->
       <div class="ranking-reveal-container" id="rankingRevealContainer" style="display: none;">
         
-        <!-- 操作バー (司会用ボタン: 次へ、自動再生、全一覧切替) -->
+        <!-- 操作バー (司会用ボタン: 次へ、自動再生) -->
         <div class="ranking-control-bar" id="rankingControlBar" style="display: none;">
           <button type="button" class="btn btn-primary" id="btnRevealNextRank" style="font-size: 1.1rem; padding: 10px 24px;">
             ▶ 次の順位を発表する
@@ -85,22 +85,13 @@
           <button type="button" class="btn btn-secondary" id="btnAutoRevealRanks" style="font-size: 0.95rem;">
             ⏩ 1位まで自動再生
           </button>
-          <button type="button" class="btn btn-secondary" id="btnToggleFullRanking" style="font-size: 0.95rem;">
-            📋 全体ランキング表
-          </button>
           <button type="button" class="btn btn-secondary" id="btnResetReveal" style="font-size: 0.85rem;" title="発表を最初からやり直す">
             🔄 最初から
           </button>
         </div>
 
-        <!-- 5位から1位までのカードスタック -->
+        <!-- 発表中の順位だけを表示 -->
         <div class="ranking-cards-stack" id="rankingCardsStack">
-          <!-- JSで動的生成 -->
-        </div>
-
-        <!-- 全体ランキングテーブル (切り替え表示) -->
-        <div id="fullRankingView" style="width: 100%; max-height: 55vh; overflow-y: auto; display: none;">
-          <!-- JSで動的生成 -->
         </div>
 
       </div>

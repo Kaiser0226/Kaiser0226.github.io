@@ -655,7 +655,7 @@ body.presentation-body {
   font-size: clamp(0.9rem, 1.8vh, 1.25rem);
 }
 
-/* 最終結果: 5位〜1位順位発表アニメーションコンテナ (ワイド大迫力) */
+/* 最終結果: 10位〜1位の個別順位発表コンテナ */
 .ranking-reveal-container {
   width: 95%;
   max-width: 1400px;
@@ -721,7 +721,7 @@ body.presentation-body {
 .rank-badge-text {
   font-size: clamp(1.6rem, 2.3vw, 2.3rem);
   font-weight: 900;
-  width: clamp(160px, 18vw, 260px);
+  width: clamp(120px, 16vw, 220px);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -767,28 +767,3 @@ body.presentation-body {
   box-shadow: 0 6px 18px rgba(234, 88, 12, 0.16);
 }
 .rank-card.rank-3 .rank-badge-text { color: #c2410c; }
-
-/* 全体ランキング表 (切り替え時) */
-.full-ranking-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: #ffffff;
-  border: 2px solid #cbd5e1;
-  border-radius: var(--radius-lg);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  font-size: 1.25rem;
-}
-
-.full-ranking-table th {
-  background: #f1f5f9;
-  color: #0f172a;
-  font-weight: 800;
-  padding: 14px 20px;
-  text-align: left;
-}
-
-.full-ranking-table td {
-  padding: 14px 20px;
-  border-bottom: 1px solid #e2e8f0;
-}

@@ -25,7 +25,16 @@
   </header>
 
   <main class="admin-main monitor-main">
-    <section class="admin-card">
+    <nav class="monitor-tabs" aria-label="回答状況の表示切替">
+      <button type="button" class="monitor-tab is-active" id="tabLive" aria-controls="livePanel" aria-selected="true">
+        現在の回答状況
+      </button>
+      <button type="button" class="monitor-tab" id="tabHistory" aria-controls="historyPanel" aria-selected="false">
+        これまでの回答状況
+      </button>
+    </nav>
+
+    <section class="admin-card" id="livePanel">
       <div class="admin-card-header monitor-heading">
         <div class="admin-card-title"><span>📝</span><span id="monitorQuestionLabel">回答一覧</span></div>
         <div class="answer-live-stats monitor-stats">
@@ -77,6 +86,46 @@
           <tbody id="teamMonitorBody"></tbody>
         </table>
       </div>
+    </section>
+
+    <section class="admin-card history-card" id="historyPanel" hidden>
+      <div class="admin-card-header monitor-history-heading">
+        <div>
+          <div class="admin-card-title"><span>📚</span><span>これまでの回答状況</span></div>
+          <p class="monitor-note">チームごとの合計点と、問題ごとの獲得点を一覧で確認できます。</p>
+        </div>
+        <details class="history-question-filter">
+          <summary id="historyQuestionFilterLabel">表示する問題を選択</summary>
+          <div class="history-question-filter-options">
+            <label class="history-question-option history-question-option-all">
+              <input type="checkbox" id="selectAllHistoryQuestions">
+              <span>すべて選択</span>
+            </label>
+            <div id="historyQuestionOptions"></div>
+          </div>
+        </details>
+      </div>
+      <div class="monitor-toolbar">
+        <div>
+          <label for="selectHistorySort">並べ替え:</label>
+          <select id="selectHistorySort" class="form-input">
+            <option value="id-asc">チームID 昇順</option>
+            <option value="id-desc">チームID 降順</option>
+            <option value="score-desc">合計点 高い順</option>
+            <option value="score-asc">合計点 低い順</option>
+          </select>
+        </div>
+        <span id="historyQuestionLabel" class="history-question-label"></span>
+      </div>
+      <div class="monitor-table-scroll history-table-scroll">
+        <table class="live-team-table history-team-table">
+          <thead>
+            <tr id="historyTableHeadRow"></tr>
+          </thead>
+          <tbody id="historyTeamBody"></tbody>
+        </table>
+      </div>
+      <p class="history-score-note">※ 表示中の問題で獲得した点数を合計点として表示します。未回答・未集計の問題は0点です。</p>
     </section>
   </main>
 

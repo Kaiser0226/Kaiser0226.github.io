@@ -162,7 +162,6 @@ function setupEventListeners() {
   });
   document.getElementById('btnRevealNextRankAdmin').addEventListener('click', () => sendRankingCommand('revealNext'));
   document.getElementById('btnAutoRevealRanksAdmin').addEventListener('click', () => sendRankingCommand('toggleAutoReveal'));
-  document.getElementById('btnToggleFullRankingAdmin').addEventListener('click', () => sendRankingCommand('toggleFullRanking'));
   document.getElementById('btnResetRevealAdmin').addEventListener('click', () => sendRankingCommand('resetReveal'));
   if (currentState && currentState.currentScene === 'final') {
     rankingChannel.postMessage({ type: 'getRevealStatus' });
@@ -254,9 +253,6 @@ function updateFinalRankingControls(status) {
   document.getElementById('btnAutoRevealRanksAdmin').textContent = status.autoPlaying
     ? '⏸️ 一時停止'
     : '⏩ 1位まで自動再生';
-  document.getElementById('btnToggleFullRankingAdmin').textContent = status.isShowingFullRanking
-    ? '🏆 順位発表カードに戻る'
-    : '📋 全体ランキング表';
 }
 
 function updateMainButtonText() {
