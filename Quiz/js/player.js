@@ -57,6 +57,8 @@ const verdictTitle = document.getElementById('verdictTitle');
 const verdictPoints = document.getElementById('verdictPoints');
 const statCorrectRate = document.getElementById('statCorrectRate');
 const statAnswerTime = document.getElementById('statAnswerTime');
+const answerDistributionTitle = document.getElementById('answerDistributionTitle');
+const answerDistributionList = document.getElementById('answerDistributionList');
 const playerExplanationText = document.getElementById('playerExplanationText');
 const playerCorrectAnswer = document.getElementById('playerCorrectAnswer');
 const playerRankingSection = document.getElementById('playerRankingSection');
@@ -674,9 +676,118 @@ function renderActualResultData(q, resultsData) {
     : '';
   playerCorrectAnswer.style.display = playerCorrectAnswer.textContent ? 'block' : 'none';
   playerExplanationText.textContent = q.explanation || "解説はありません。";
+  renderAnswerDistribution(q, resultsData);
 
   // 順位一覧テーブルの描画
   renderRankingsTable();
+}
+
+async function renderAnswerDistribution(q, resultsData = null) {
+  answerDistributionTitle.textContent = q.answerType === 'text' ? '正答・誤答の割合' : '選択肢ごとの回答割合';
+  answerDistributionList.replaceChildren();
+
+  try {
+    const answers = Object.values(await quizStore.getAnswersForQuestion(q.id) || {});
+    if (q.answerType === 'text') {
+      const resultMap = resultsData && resultsData.results ? resultsData.results : {};
+      let correctCount = 0;
+      let incorrectCount = 0;
+      let pendingCount = 0;
+
+      answers.forEach(answer => {
+        const result = resultMap[answer.teamId];
+        const isCorrect = result && typeof result.isCorrect === 'boolean'
+          ? result.isCorrect
+          : typeof answer.manualIsCorrect === 'boolean'
+            ? answer.manualIsCorrect
+            : null;
+        if (isCorrect === true) {
+          correctCount += 1;
+        } else if (isCorrect === false) {
+          incorrectCount += 1;
+        } else {
+          pendingCount += 1;
+        }
+      });
+
+      const gradedCount = correctCount + incorrectCount;
+      if (gradedCount === 0) {
+        appendAnswerDistributionMessage(answerDistributionList, answers.length > 0
+          ? '採点済みの回答はまだありません。'
+          : '回答はまだありません。');
+      } else {
+        appendAnswerDistributionRow(answerDistributionList, '正答', correctCount, gradedCount, 'is-correct');
+        appendAnswerDistributionRow(answerDistributionList, '誤答', incorrectCount, gradedCount, 'is-incorrect');
+      }
+      if (pendingCount > 0) {
+        appendAnswerDistributionMessage(answerDistributionList, `未採点: ${pendingCount}件（割合には含みません）`);
+      }
+      return;
+    }
+
+    const options = Array.isArray(q.options) ? q.options : [];
+    const counts = options.map(() => 0);
+    answers.forEach(answer => {
+      const selectedOption = Number(answer.selectedOption);
+      if (Number.isInteger(selectedOption) && selectedOption >= 0 && selectedOption < counts.length) {
+        counts[selectedOption] += 1;
+      }
+    });
+
+    const totalAnswers = counts.reduce((total, count) => total + count, 0);
+    if (totalAnswers === 0) {
+      appendAnswerDistributionMessage(answerDistributionList, '回答はまだありません。');
+    }
+    counts.forEach((count, index) => {
+      const optionText = options[index] && typeof options[index].text === 'string'
+        ? options[index].text.trim()
+        : '';
+      appendAnswerDistributionRow(
+        answerDistributionList,
+        optionText || `選択肢 ${index + 1}`,
+        count,
+        totalAnswers,
+        index === Number(q.answer) ? 'is-correct' : ''
+      );
+    });
+  } catch (err) {
+    console.error(`回答割合の取得に失敗しました (question: ${q.id}):`, err);
+    appendAnswerDistributionMessage(answerDistributionList, '回答割合を取得できませんでした。');
+  }
+}
+
+function appendAnswerDistributionRow(container, label, count, total, barClass) {
+  const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+  const row = document.createElement('div');
+  row.className = 'answer-distribution-row';
+
+  const labelElement = document.createElement('span');
+  labelElement.className = 'answer-distribution-label';
+  labelElement.textContent = label;
+
+  const track = document.createElement('div');
+  track.className = 'answer-distribution-track';
+  track.setAttribute('role', 'img');
+  track.setAttribute('aria-label', `${label}: ${percentage}%`);
+
+  const bar = document.createElement('div');
+  bar.className = `answer-distribution-bar${barClass ? ` ${barClass}` : ''}`;
+  bar.style.width = `${percentage}%`;
+  track.appendChild(bar);
+
+  const value = document.createElement('span');
+  value.className = 'answer-distribution-value';
+  value.textContent = `${percentage}% (${count}件)`;
+
+  row.append(labelElement, track, value);
+  container.appendChild(row);
+}
+
+function appendAnswerDistributionMessage(container, message) {
+  const messageElement = document.createElement('p');
+  messageElement.className = 'answer-distribution-note';
+  messageElement.textContent = message;
+  container.appendChild(messageElement);
 }
 
 function applyLocalResultFallback(q) {
@@ -705,6 +816,7 @@ function applyLocalResultFallback(q) {
       }
       statAnswerTime.textContent = `${answerSeconds}秒`;
       statCorrectRate.textContent = '集計中...';
+      renderAnswerDistribution(q);
       renderRankingsTable();
       return;
     }
@@ -732,6 +844,7 @@ function applyLocalResultFallback(q) {
   statAnswerTime.textContent = `${answerSeconds}秒`;
   statCorrectRate.textContent = `集計中...`;
   playerExplanationText.textContent = q.explanation || "解説はありません。";
+  renderAnswerDistribution(q);
   if (savedAnswerIndex === null || savedAnswerIndex === undefined) {
     verdictBanner.className = 'verdict-banner pending';
     verdictTitle.textContent = '未回答';
