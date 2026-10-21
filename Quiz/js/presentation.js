@@ -54,6 +54,8 @@ let revealOrder = []; // 発表する順序 [5, 4, 3, 2, 1]
 let currentRevealIndex = 0; // 現在どこまで発表したか
 let autoRevealTimer = null;
 let finalRankingsInitialized = false;
+let finalTeamsLoadStatus = 'idle';
+let finalTeamsLoadPromise = null;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
@@ -94,6 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeTeams(teams => {
     allTeams = teams || {};
     updateWaterLevel();
+    if (Object.keys(allTeams).length) finalTeamsLoadStatus = 'loaded';
     if (currentState && currentState.currentScene === 'final') {
       setupFinalRankings(false);
     }
@@ -156,7 +159,7 @@ function applyState() {
   qNumberBadge.textContent = `Q ${currentQuestionIndex + 1}`;
 
   // シーンごとの表示制御
-  if (status === 'stopped' || currentScene === 'waiting') {
+  if (currentScene !== 'final' && (status === 'stopped' || currentScene === 'waiting')) {
     showSpecialView("まもなく開始します", "各チームのスマートフォンを準備してお待ちください。");
     sceneStatusBadge.textContent = "待機中";
     waterContainer.style.height = "0%";
@@ -168,8 +171,11 @@ function applyState() {
     sceneStatusBadge.textContent = "最終結果発表";
     answerBadge.style.display = "none";
     showSpecialView("🎉 最終結果発表 🎉", "クイズ大会の成績上位チームを発表します！");
-    setupFinalRankings(!finalRankingsInitialized);
+    const resetSequence = !finalRankingsInitialized;
+    if (resetSequence) finalTeamsLoadStatus = 'idle';
+    setupFinalRankings(resetSequence);
     finalRankingsInitialized = true;
+    if (!Object.keys(allTeams).length) refreshFinalTeams();
     return;
   }
   // 出題・回答・正解表示シーン
@@ -372,10 +378,39 @@ function setupFinalRankings(resetSequence = false) {
     renderRankCard(revealOrder[currentRevealIndex - 1], false);
   } else if (topCount === 0) {
     card.className = 'rank-card revealed';
-    card.textContent = '発表対象のチームがいません';
+    card.textContent = finalTeamsLoadStatus === 'loading' || finalTeamsLoadStatus === 'idle'
+      ? 'チーム情報を読み込んでいます...'
+      : finalTeamsLoadStatus === 'error'
+        ? 'チーム情報を取得できませんでした。接続を確認してください。'
+        : '登録されたチームがいません';
   }
 
   updateRevealButtonText();
+}
+
+async function refreshFinalTeams() {
+  if (finalTeamsLoadPromise) return finalTeamsLoadPromise;
+
+  finalTeamsLoadStatus = 'loading';
+  setupFinalRankings(false);
+  finalTeamsLoadPromise = quizStore.getTeams()
+    .then(teams => {
+      if (!currentState || currentState.currentScene !== 'final') return;
+      if (!Object.keys(allTeams).length) allTeams = teams || {};
+      finalTeamsLoadStatus = 'loaded';
+      setupFinalRankings(false);
+    })
+    .catch(error => {
+      console.error('最終結果発表のチーム情報を取得できませんでした:', error);
+      if (currentState && currentState.currentScene === 'final') {
+        finalTeamsLoadStatus = 'error';
+        setupFinalRankings(false);
+      }
+    })
+    .finally(() => {
+      finalTeamsLoadPromise = null;
+    });
+  return finalTeamsLoadPromise;
 }
 
 function renderRankCard(rank, animate = true) {
@@ -478,7 +513,11 @@ function resetRevealSequence() {
     card.className = 'rank-card';
     if (revealOrder.length === 0) {
       card.classList.add('revealed');
-      card.textContent = '発表対象のチームがいません';
+      card.textContent = finalTeamsLoadStatus === 'loaded'
+        ? '登録されたチームがいません'
+        : finalTeamsLoadStatus === 'error'
+          ? 'チーム情報を取得できませんでした。接続を確認してください。'
+          : 'チーム情報を読み込んでいます...';
     }
   }
   updateRevealButtonText();

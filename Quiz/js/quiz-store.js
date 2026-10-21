@@ -439,27 +439,56 @@ class QuizStore {
     if (this.isFirebaseReady && this.database) {
       this.quizRef('teams').on('value', snapshot => {
         const val = snapshot.val() || {};
-        callback(val);
+        const cachedTeams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
+        const teams = Object.keys(val).length ? val : cachedTeams;
+        localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
+        callback(teams);
       }, err => {
         console.warn("QuizStore: Firebase subscribeTeams error:", err);
       });
     }
   }
 
+  async getTeams() {
+    const cachedTeams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
+    if (this.isFirebaseReady && this.database) {
+      try {
+        const snapshot = await this.quizRef('teams').once('value');
+        const teams = snapshot.val() || {};
+        if (Object.keys(teams).length) {
+          localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
+          return teams;
+        }
+      } catch (err) {
+        console.warn("QuizStore: getTeams failed, using cached teams:", err);
+        if (!Object.keys(cachedTeams).length) throw err;
+      }
+    }
+    return cachedTeams;
+  }
+
   async registerTeam(teamId, teamName) {
     if (this.isFirebaseReady && this.database) {
       const teamRef = this.quizRef(`teams/${teamId}`);
       const snapshot = await teamRef.once('value');
+      let team;
       if (!snapshot.exists()) {
-        await teamRef.set({
+        team = {
           teamId,
           teamName,
           totalScore: 0,
           registeredAt: Date.now()
-        });
+        };
+        await teamRef.set(team);
       } else {
-        await teamRef.update({ teamName, lastActive: Date.now() });
+        team = { ...snapshot.val(), teamName, lastActive: Date.now() };
+        await teamRef.update({ teamName, lastActive: team.lastActive });
       }
+      const teams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
+      teams[teamId] = team;
+      localStorage.setItem(this.getLocalKey('quiz_local_teams'), JSON.stringify(teams));
+      if (this.channel) this.channel.postMessage({ type: 'teams', data: teams });
+      this.listeners.teams.forEach(cb => cb(teams));
     } else {
       const teams = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_teams')) || '{}');
       if (!teams[teamId]) {
