@@ -3,6 +3,8 @@
  */
 
 let myTeam = null; // { teamId, teamName }
+let mySessionId = null;
+let unsubscribeTeamSession = null;
 let rawQuestions = DEFAULT_QUESTIONS;
 let currentQuestionOrder = typeof DEFAULT_QUESTION_ORDER !== 'undefined' ? DEFAULT_QUESTION_ORDER : [1, 2, 3, 4, 5];
 let currentQuestions = DEFAULT_QUESTIONS;
@@ -110,9 +112,9 @@ document.addEventListener('DOMContentLoaded', () => {
     allTeams = teams || {};
     updateHeaderStats();
     populateTeamDropdown(); // 参加状況反映
-    if (currentState && currentState.currentScene === 'result') {
+    if (myTeam && currentState && currentState.currentScene === 'result') {
       renderRankingsTable();
-    } else if (currentState && currentState.currentScene === 'final') {
+    } else if (myTeam && currentState && currentState.currentScene === 'final') {
       renderFinalResults();
     }
   });
@@ -177,18 +179,17 @@ function populateTeamDropdown() {
   }
 }
 
-function initTeam() {
-  const saved = localStorage.getItem('quiz_player_team');
+async function initTeam() {
+  const saved = sessionStorage.getItem('quiz_player_team')
+    || localStorage.getItem('quiz_player_team');
   if (saved) {
     try {
-      myTeam = JSON.parse(saved);
-      displayTeamName.textContent = splitTeamDisplayName(myTeam.teamName).name;
-      registerView.style.display = 'none';
-      gameView.style.display = 'flex';
-      quizStore.registerTeam(myTeam.teamId, myTeam.teamName);
+      localStorage.removeItem('quiz_player_team');
+      await activateTeam(JSON.parse(saved));
       return;
     } catch (e) {
       console.error(e);
+      alert(`チームのログインに失敗しました: ${e.message}`);
     }
   }
 
@@ -205,29 +206,67 @@ async function handleRegister() {
     return;
   }
 
-  if (!confirm(`このチームで間違いないですか？\n\nチーム名: ${selectedName}`)) {
+  if (!confirm(`このチームで間違いないですか？\n\nチーム名: ${selectedName}\n\n同じチームで別の端末がログイン中の場合、この端末に回答権が移り、もとの端末はログアウトします。`)) {
     return;
   }
 
   // チーム名は選択制で固定のため、名前から一意のteamIdを生成
   const teamId = 'team_' + btoa(encodeURIComponent(selectedName)).replace(/=/g, '');
-  myTeam = { teamId, teamName: selectedName };
+  btnRegisterTeam.disabled = true;
+  try {
+    await activateTeam({ teamId, teamName: selectedName });
+  } catch (error) {
+    console.error('チームのログインに失敗しました:', error);
+    alert(`チームのログインに失敗しました: ${error.message}`);
+  } finally {
+    btnRegisterTeam.disabled = false;
+  }
+}
 
-  localStorage.setItem('quiz_player_team', JSON.stringify(myTeam));
-  displayTeamName.textContent = splitTeamDisplayName(selectedName).name;
+async function activateTeam(team) {
+  const sessionId = generatePlayerSessionId();
+  await quizStore.registerTeam(team.teamId, team.teamName);
+  await quizStore.claimTeamSession(team.teamId, sessionId);
 
-  await quizStore.registerTeam(teamId, selectedName);
+  if (unsubscribeTeamSession) unsubscribeTeamSession();
+  myTeam = team;
+  mySessionId = sessionId;
+  sessionStorage.clear();
+  sessionStorage.setItem('quiz_player_team', JSON.stringify(myTeam));
+  unsubscribeTeamSession = quizStore.subscribeTeamSession(team.teamId, activeSession => {
+    if (myTeam && myTeam.teamId === team.teamId
+      && mySessionId && activeSession && activeSession.sessionId !== mySessionId) {
+      resetPlayerSession(false, '別の端末がこのチームでログインしたため、この端末はログアウトしました。');
+    }
+  });
 
+  displayTeamName.textContent = splitTeamDisplayName(team.teamName).name;
   registerView.style.display = 'none';
   gameView.style.display = 'flex';
   applyState();
 }
 
-function resetPlayerSession() {
+function generatePlayerSessionId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  if (typeof crypto === 'undefined' || typeof crypto.getRandomValues !== 'function') {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+  const values = new Uint32Array(4);
+  crypto.getRandomValues(values);
+  return Array.from(values, value => value.toString(16)).join('-');
+}
+
+function resetPlayerSession(removeSavedTeam = true, message = '') {
+  if (unsubscribeTeamSession) unsubscribeTeamSession();
+  unsubscribeTeamSession = null;
   myTeam = null;
+  mySessionId = null;
   selectedOptionIndex = null;
   isAnswerLocked = false;
-  localStorage.removeItem('quiz_player_team');
+  sessionStorage.removeItem('quiz_player_team');
+  if (removeSavedTeam) localStorage.removeItem('quiz_player_team');
   sessionStorage.clear();
   resetBodyLockedColor();
 
@@ -235,6 +274,7 @@ function resetPlayerSession() {
   gameView.style.display = 'none';
   if (teamSelectDropdown) teamSelectDropdown.value = '';
   populateTeamDropdown();
+  if (message) alert(message);
 }
 
 // --- 状態の適用とシーン切り替え ---
@@ -452,11 +492,16 @@ async function handleLockAnswer() {
       myTeam.teamName,
       isTextAnswer ? answerText : selectedOptionIndex,
       answerTimeMs,
-      currentQ.answerType
+      currentQ.answerType,
+      mySessionId
     );
   } catch (error) {
     isAnswerLocked = false;
     console.error('回答の送信に失敗しました:', error);
+    if (error.message.includes('回答権を引き継いだ')) {
+      resetPlayerSession(false, error.message);
+      return;
+    }
     alert(error.message || '回答を送信できませんでした。');
     return;
   }

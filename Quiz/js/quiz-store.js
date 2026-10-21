@@ -23,7 +23,8 @@ class QuizStore {
       state: [],
       teams: [],
       answers: [],
-      questions: []
+      questions: [],
+      teamSessions: []
     };
 
     // ローカル通信チャンネル
@@ -41,6 +42,12 @@ class QuizStore {
           }
           if (type === 'state') {
             this.publishState(data);
+            return;
+          }
+          if (type === 'teamSession') {
+            this.listeners.teamSessions.forEach(subscription => {
+              if (subscription.teamId === event.data.teamId) subscription.callback(data);
+            });
             return;
           }
           if (this.listeners[type]) {
@@ -510,6 +517,67 @@ class QuizStore {
     }
   }
 
+  async claimTeamSession(teamId, sessionId) {
+    const session = { sessionId, updatedAt: Date.now() };
+    if (this.isFirebaseReady && this.database) {
+      const result = await this.quizRef(`teamSessions/${encodeURIComponent(teamId)}`).transaction(() => session);
+      if (!result.committed) {
+        throw new Error('チームの回答権を取得できませんでした。');
+      }
+    }
+
+    localStorage.setItem(this.getLocalKey(`quiz_team_session_${teamId}`), JSON.stringify(session));
+    if (this.channel) {
+      this.channel.postMessage({ type: 'teamSession', teamId, data: session });
+    }
+  }
+
+  subscribeTeamSession(teamId, callback) {
+    const subscription = { teamId, callback };
+    this.listeners.teamSessions.push(subscription);
+    const localKey = this.getLocalKey(`quiz_team_session_${teamId}`);
+    const localSession = localStorage.getItem(localKey);
+    if (localSession) callback(JSON.parse(localSession));
+
+    let firebaseRef = null;
+    let firebaseCallback = null;
+    if (this.isFirebaseReady && this.database) {
+      firebaseRef = this.quizRef(`teamSessions/${encodeURIComponent(teamId)}`);
+      firebaseCallback = snapshot => {
+        callback(snapshot.val());
+      };
+      firebaseRef.on('value', firebaseCallback, err => {
+        console.warn(`QuizStore: Firebase subscribeTeamSession error for ${teamId}:`, err);
+      });
+    }
+
+    const storageCallback = event => {
+      if (event.key === localKey) {
+        callback(event.newValue ? JSON.parse(event.newValue) : null);
+      }
+    };
+    window.addEventListener('storage', storageCallback);
+
+    return () => {
+      this.listeners.teamSessions = this.listeners.teamSessions.filter(item => item !== subscription);
+      if (firebaseRef && firebaseCallback) firebaseRef.off('value', firebaseCallback);
+      window.removeEventListener('storage', storageCallback);
+    };
+  }
+
+  async isTeamSessionActive(teamId, sessionId) {
+    if (this.isFirebaseReady && this.database) {
+      const snapshot = await this.quizRef(`teamSessions/${encodeURIComponent(teamId)}`).once('value');
+      const activeSession = snapshot.val();
+      return Boolean(activeSession && activeSession.sessionId === sessionId);
+    }
+    const serializedSession = localStorage.getItem(
+      this.getLocalKey(`quiz_team_session_${teamId}`)
+    );
+    if (!serializedSession) return false;
+    return JSON.parse(serializedSession).sessionId === sessionId;
+  }
+
   // --- 出題順 (Question Order) の取得・更新 ---
 
   subscribeQuestionOrder(callback) {
@@ -718,7 +786,11 @@ class QuizStore {
     };
   }
 
-  async submitAnswer(questionId, teamId, teamName, answer, answerTimeMs, answerType = 'choice') {
+  async submitAnswer(questionId, teamId, teamName, answer, answerTimeMs, answerType = 'choice', sessionId = null) {
+    if (sessionId && !await this.isTeamSessionActive(teamId, sessionId)) {
+      throw new Error('別の端末がこのチームの回答権を引き継いだため、ログアウトしました。');
+    }
+
     let state = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_state')) || 'null');
     if (this.isFirebaseReady && this.database) {
       const stateSnapshot = await this.quizRef('state').once('value');
@@ -745,6 +817,10 @@ class QuizStore {
       }
     } else {
       answerData.selectedOption = Number(answer);
+    }
+
+    if (sessionId && !await this.isTeamSessionActive(teamId, sessionId)) {
+      throw new Error('別の端末がこのチームの回答権を引き継いだため、ログアウトしました。');
     }
 
     const allAnswers = JSON.parse(localStorage.getItem(this.getLocalKey('quiz_local_answers')) || '{}');
