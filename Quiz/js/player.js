@@ -716,8 +716,7 @@ async function renderAnswerDistribution(q, resultsData = null) {
           ? '採点済みの回答はまだありません。'
           : '回答はまだありません。');
       } else {
-        appendAnswerDistributionRow(answerDistributionList, '正答', correctCount, gradedCount, 'is-correct');
-        appendAnswerDistributionRow(answerDistributionList, '誤答', incorrectCount, gradedCount, 'is-incorrect');
+        appendTextDistributionChart(answerDistributionList, correctCount, incorrectCount, gradedCount);
       }
       if (pendingCount > 0) {
         appendAnswerDistributionMessage(answerDistributionList, `未採点: ${pendingCount}件（割合には含みません）`);
@@ -802,31 +801,43 @@ function appendChoiceDistributionChart(container, options, counts, total, correc
   container.appendChild(chart);
 }
 
-function appendAnswerDistributionRow(container, label, count, total, barClass) {
-  const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
-  const row = document.createElement('div');
-  row.className = 'answer-distribution-row';
-
-  const labelElement = document.createElement('span');
-  labelElement.className = 'answer-distribution-label';
-  labelElement.textContent = label;
+function appendTextDistributionChart(container, correctCount, incorrectCount, total) {
+  const chart = document.createElement('div');
+  chart.className = 'answer-distribution-choice-chart';
 
   const track = document.createElement('div');
-  track.className = 'answer-distribution-track';
+  track.className = 'answer-distribution-stacked-track';
   track.setAttribute('role', 'img');
-  track.setAttribute('aria-label', `${label}: ${percentage}%`);
 
-  const bar = document.createElement('div');
-  bar.className = `answer-distribution-bar${barClass ? ` ${barClass}` : ''}`;
-  bar.style.width = `${percentage}%`;
-  track.appendChild(bar);
+  const segments = [
+    { label: '正答', count: correctCount, color: 'var(--success)', className: 'is-correct' },
+    { label: '誤答', count: incorrectCount, color: 'var(--danger)', className: 'is-incorrect' }
+  ];
+  const descriptions = segments.map(segment => {
+    const percentage = total > 0 ? Math.round((segment.count / total) * 100) : 0;
+    return `${segment.label}: ${percentage}% (${segment.count}件)`;
+  });
 
-  const value = document.createElement('span');
-  value.className = 'answer-distribution-value';
-  value.textContent = `${percentage}% (${count}件)`;
+  segments.forEach(segment => {
+    if (segment.count === 0) return;
 
-  row.append(labelElement, track, value);
-  container.appendChild(row);
+    const percentage = (segment.count / total) * 100;
+    const barSegment = document.createElement('div');
+    barSegment.className = `answer-distribution-segment ${segment.className}`;
+    barSegment.style.width = `${percentage}%`;
+    barSegment.style.backgroundColor = segment.color;
+    barSegment.setAttribute('aria-hidden', 'true');
+
+    const label = document.createElement('span');
+    label.className = 'answer-distribution-segment-label';
+    label.textContent = `${Math.round(percentage)}%`;
+    barSegment.appendChild(label);
+    track.appendChild(barSegment);
+  });
+
+  track.setAttribute('aria-label', `採点済み回答${total}件。${descriptions.join('、')}`);
+  chart.appendChild(track);
+  container.appendChild(chart);
 }
 
 function appendAnswerDistributionMessage(container, message) {
