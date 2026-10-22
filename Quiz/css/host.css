@@ -87,19 +87,17 @@
   font-weight: 850;
 }
 
-.host-question-picker-label {
-  display: block;
-  margin-bottom: 5px;
-  color: #475569;
-  font-size: 0.78rem;
-  font-weight: 800;
+.host-question-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
 }
 
 .host-question-picker {
-  display: block;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   min-height: 44px;
-  margin-bottom: 8px;
   padding: 9px 11px;
   border: 1px solid #cbd5e1;
   border-radius: 10px;
@@ -109,9 +107,38 @@
   font-size: 0.9rem;
 }
 
+.host-nav-button {
+  min-height: 44px;
+  flex: 0 0 auto;
+  padding: 8px 10px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.host-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .host-question-picker:focus {
   outline: 3px solid rgba(37, 99, 235, 0.18);
   border-color: #2563eb;
+}
+
+.host-data-status {
+  margin: -5px 0 12px;
+  color: #64748b;
+  font-size: 0.73rem;
+  line-height: 1.45;
+}
+
+.host-data-status.is-loaded {
+  color: #15803d;
+}
+
+.host-data-status.is-error {
+  color: #b91c1c;
+  font-weight: 750;
 }
 
 .host-follow-notice {
@@ -328,6 +355,11 @@
 
   .host-header h1 {
     font-size: 1.35rem;
+  }
+
+  .host-nav-button {
+    padding: 8px 7px;
+    font-size: 0.7rem;
   }
 
   .host-memo-footer {

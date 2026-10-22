@@ -392,13 +392,23 @@ class QuizStore {
 
   // --- 問題リストの取得・更新 ---
 
-  subscribeQuestions(callback) {
+  subscribeQuestions(callback, onError = () => {}) {
     this.listeners.questions.push(callback);
 
     // 1. まず即座にデフォルト問題またはローカル保存問題を返却（描画ブロックを防止）
     const local = localStorage.getItem(this.getLocalKey('quiz_local_questions'));
-    const initialQuestions = local ? JSON.parse(local) : DEFAULT_QUESTIONS;
-    callback(initialQuestions);
+    let initialQuestions = DEFAULT_QUESTIONS;
+    if (local) {
+      try {
+        const parsedLocal = JSON.parse(local);
+        if (Array.isArray(parsedLocal) && parsedLocal.length) {
+          initialQuestions = parsedLocal;
+        }
+      } catch (err) {
+        console.warn("QuizStore: Invalid local question cache; trying Firebase:", err);
+      }
+    }
+    callback(initialQuestions, { source: 'local' });
 
     // 2. Firebaseが有効な場合はリスナー登録
     if (this.isFirebaseReady && this.database) {
@@ -407,15 +417,34 @@ class QuizStore {
         if (!snapshot.exists()) {
           // Firebase側にまだ問題データがない場合はデフォルト問題を自動シード
           console.log("QuizStore: Seeding initial questions to Firebase");
-          qRef.set(DEFAULT_QUESTIONS);
-          callback(DEFAULT_QUESTIONS);
+          qRef.set(DEFAULT_QUESTIONS).catch(err => {
+            console.warn("QuizStore: Firebase question initialization failed:", err);
+            onError(err);
+          });
+          localStorage.setItem(this.getLocalKey('quiz_local_questions'), JSON.stringify(DEFAULT_QUESTIONS));
+          callback(DEFAULT_QUESTIONS, { source: 'firebase-default' });
         } else {
-          const val = snapshot.val();
-          callback(val && val.length ? val : DEFAULT_QUESTIONS);
+          const value = snapshot.val();
+          const questions = Array.isArray(value)
+            ? value
+            : value && typeof value === 'object'
+              ? Object.values(value)
+              : [];
+          if (!questions.length) {
+            const error = new Error('Firebaseの問題データが空、または配列・オブジェクト形式ではありません。');
+            console.warn("QuizStore: Firebase question data is invalid:", error);
+            onError(error);
+            return;
+          }
+          localStorage.setItem(this.getLocalKey('quiz_local_questions'), JSON.stringify(questions));
+          callback(questions, { source: 'firebase' });
         }
       }, err => {
         console.warn("QuizStore: Firebase subscribeQuestions error:", err);
+        onError(err);
       });
+    } else {
+      onError(new Error('Firebaseに接続できません。端末内の保存データを表示しています。'));
     }
   }
 

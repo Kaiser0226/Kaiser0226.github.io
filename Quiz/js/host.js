@@ -17,7 +17,10 @@ let selectedQuestionId = null;
 const hostSyncStatus = document.getElementById('hostSyncStatus');
 const hostQuestionNumber = document.getElementById('hostQuestionNumber');
 const hostQuestionPicker = document.getElementById('hostQuestionPicker');
+const btnPrevHostQuestion = document.getElementById('btnPrevHostQuestion');
+const btnNextHostQuestion = document.getElementById('btnNextHostQuestion');
 const hostFollowNotice = document.getElementById('hostFollowNotice');
+const hostQuestionDataStatus = document.getElementById('hostQuestionDataStatus');
 const hostSceneStatus = document.getElementById('hostSceneStatus');
 const hostQuestionText = document.getElementById('hostQuestionText');
 const hostTextAnswerNotice = document.getElementById('hostTextAnswerNotice');
@@ -37,11 +40,29 @@ document.addEventListener('DOMContentLoaded', () => {
     hostSyncStatus.parentElement.classList.toggle('is-online', isConnected);
   });
 
-  quizStore.subscribeQuestions(questions => {
+  quizStore.subscribeQuestions((questions, metadata) => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    if (metadata && metadata.source === 'firebase') {
+      hostQuestionDataStatus.textContent = '問題データをFirebaseから読み込みました';
+      hostQuestionDataStatus.classList.remove('is-error');
+      hostQuestionDataStatus.classList.add('is-loaded');
+    } else if (metadata && metadata.source === 'firebase-default') {
+      hostQuestionDataStatus.textContent = 'Firebaseに問題データがないため、初期データを表示しています';
+      hostQuestionDataStatus.classList.remove('is-error');
+      hostQuestionDataStatus.classList.add('is-loaded');
+    } else if (!quizStore.isFirebaseReady) {
+      hostQuestionDataStatus.textContent = 'Firebase未接続: 端末内の保存データを表示しています';
+      hostQuestionDataStatus.classList.remove('is-loaded');
+    } else {
+      hostQuestionDataStatus.textContent = '端末内の保存データを表示中。Firebaseから読み込みます...';
+    }
     syncQuestionPicker();
     renderCurrentQuestion();
+  }, error => {
+    hostQuestionDataStatus.textContent = `Firebaseから問題を読み込めません: ${error.message || error}`;
+    hostQuestionDataStatus.classList.remove('is-loaded');
+    hostQuestionDataStatus.classList.add('is-error');
   });
 
   quizStore.subscribeQuestionOrder(order => {
@@ -72,16 +93,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   hostQuestionPicker.addEventListener('change', () => {
-    const questionId = hostQuestionPicker.value;
-    if (!questionId) return;
-    followsQuiz = false;
-    selectedQuestionId = questionId;
-    hostFollowNotice.textContent = '手動で問題を選択中です。進行との自動同期は停止しています（再読み込みで再開）。';
-    hostFollowNotice.classList.add('is-manual');
-    hostSceneStatus.textContent = '手動選択中（進行同期停止）';
-    renderCurrentQuestion();
-    loadMemoForSelectedQuestion();
+    selectHostQuestion(hostQuestionPicker.value);
   });
+  btnPrevHostQuestion.addEventListener('click', () => moveHostQuestion(-1));
+  btnNextHostQuestion.addEventListener('click', () => moveHostQuestion(1));
 
   hostMemo.addEventListener('input', () => {
     memoDirty = true;
@@ -100,7 +115,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function renderCurrentQuestion() {
   const questionIndex = followsQuiz
-    ? (currentState ? Number(currentState.currentQuestionIndex) || 0 : 0)
+    ? getCurrentQuestionIndex()
     : currentQuestions.findIndex(question => String(question.id) === String(selectedQuestionId));
   const question = currentQuestions[questionIndex];
   const scene = currentState && currentState.currentScene;
@@ -159,7 +174,7 @@ function renderCurrentQuestion() {
 
 function syncQuestionPicker() {
   const displayedQuestionId = followsQuiz
-    ? currentQuestions[Number(currentState && currentState.currentQuestionIndex) || 0]?.id
+    ? currentQuestions[getCurrentQuestionIndex()]?.id
     : selectedQuestionId;
 
   hostQuestionPicker.replaceChildren();
@@ -177,6 +192,8 @@ function syncQuestionPicker() {
     option.textContent = '表示できる問題がありません';
     hostQuestionPicker.appendChild(option);
     hostQuestionPicker.disabled = true;
+    btnPrevHostQuestion.disabled = true;
+    btnNextHostQuestion.disabled = true;
     return;
   }
 
@@ -191,6 +208,36 @@ function syncQuestionPicker() {
   if (!followsQuiz) {
     selectedQuestionId = hostQuestionPicker.value;
   }
+  const selectedIndex = followsQuiz
+    ? getCurrentQuestionIndex()
+    : currentQuestions.findIndex(question => String(question.id) === String(selectedQuestionId));
+  btnPrevHostQuestion.disabled = selectedIndex <= 0;
+  btnNextHostQuestion.disabled = selectedIndex < 0 || selectedIndex >= currentQuestions.length - 1;
+}
+
+function getCurrentQuestionIndex() {
+  const index = Math.trunc(Number(currentState && currentState.currentQuestionIndex) || 0);
+  return Math.min(Math.max(index, 0), Math.max(currentQuestions.length - 1, 0));
+}
+
+function selectHostQuestion(questionId) {
+  if (!questionId) return;
+  followsQuiz = false;
+  selectedQuestionId = String(questionId);
+  hostFollowNotice.textContent = '手動で問題を選択中です。進行との自動同期は停止しています（再読み込みで再開）。';
+  hostFollowNotice.classList.add('is-manual');
+  hostSceneStatus.textContent = '手動選択中（進行同期停止）';
+  syncQuestionPicker();
+  renderCurrentQuestion();
+  loadMemoForSelectedQuestion();
+}
+
+function moveHostQuestion(direction) {
+  const currentIndex = followsQuiz
+    ? getCurrentQuestionIndex()
+    : currentQuestions.findIndex(question => String(question.id) === String(selectedQuestionId));
+  const nextQuestion = currentQuestions[currentIndex + direction];
+  if (nextQuestion) selectHostQuestion(nextQuestion.id);
 }
 
 function getDisplayedQuestionId() {
@@ -198,7 +245,7 @@ function getDisplayedQuestionId() {
     String(question.id) === String(selectedQuestionId)
   );
   return followsQuiz
-    ? String(currentQuestions[Number(currentState && currentState.currentQuestionIndex) || 0]?.id || '')
+    ? String(currentQuestions[getCurrentQuestionIndex()]?.id || '')
     : String(currentQuestions[index]?.id || '');
 }
 
