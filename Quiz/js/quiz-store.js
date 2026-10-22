@@ -25,7 +25,7 @@ class QuizStore {
       answers: [],
       questions: [],
       teamSessions: [],
-      hostMemo: []
+      hostMemos: []
     };
 
     // ローカル通信チャンネル
@@ -435,41 +435,41 @@ class QuizStore {
     }
   }
 
-  subscribeHostMemo(callback) {
-    this.listeners.hostMemo.push(callback);
-    const localKey = this.getLocalKey('quiz_local_host_memo');
-    const localMemo = localStorage.getItem(localKey) || '';
-    callback(localMemo);
+  subscribeHostMemos(callback) {
+    this.listeners.hostMemos.push(callback);
+    const localKey = this.getLocalKey('quiz_local_host_memos');
+    const localMemos = JSON.parse(localStorage.getItem(localKey) || '{}');
+    callback(localMemos);
 
     if (this.isFirebaseReady && this.database) {
-      const memoRef = this.quizRef('hostMemo');
-      memoRef.on('value', snapshot => {
-        if (!snapshot.exists()) {
-          const latestLocalMemo = localStorage.getItem(localKey) || '';
-          if (latestLocalMemo) memoRef.set(latestLocalMemo);
-          callback(latestLocalMemo);
+      this.quizRef('hostMemos').on('value', snapshot => {
+        const memos = snapshot.val();
+        if (!memos || typeof memos !== 'object') {
+          callback(localMemos);
           return;
         }
-        const memo = String(snapshot.val() || '');
-        localStorage.setItem(localKey, memo);
-        callback(memo);
+        localStorage.setItem(localKey, JSON.stringify(memos));
+        callback(memos);
       }, err => {
-        console.warn('QuizStore: Firebase subscribeHostMemo error:', err);
+        console.warn('QuizStore: Firebase subscribeHostMemos error:', err);
       });
     }
   }
 
-  async saveHostMemo(memo) {
-    const value = String(memo);
-    localStorage.setItem(this.getLocalKey('quiz_local_host_memo'), value);
+  async saveHostMemo(questionId, memo) {
+    const memoKey = String(questionId);
+    const localKey = this.getLocalKey('quiz_local_host_memos');
+    const memos = JSON.parse(localStorage.getItem(localKey) || '{}');
+    memos[memoKey] = String(memo);
+    localStorage.setItem(localKey, JSON.stringify(memos));
     if (this.channel) {
-      this.channel.postMessage({ type: 'hostMemo', data: value });
+      this.channel.postMessage({ type: 'hostMemos', data: memos });
     }
-    this.listeners.hostMemo.forEach(callback => callback(value));
+    this.listeners.hostMemos.forEach(callback => callback(memos));
 
     if (this.isFirebaseReady && this.database) {
       try {
-        await this.quizRef('hostMemo').set(value);
+        await this.quizRef(`hostMemos/${encodeURIComponent(memoKey)}`).set(String(memo));
       } catch (err) {
         console.warn('QuizStore: Firebase saveHostMemo failed:', err);
         throw err;

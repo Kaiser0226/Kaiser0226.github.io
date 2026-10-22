@@ -8,11 +8,17 @@ let currentQuestions = DEFAULT_QUESTIONS;
 let currentState = null;
 let allTeams = {};
 let memoDirty = false;
+let hostMemos = {};
+let memoDrafts = {};
+let loadedMemoQuestionId = null;
+let followsQuiz = true;
+let selectedQuestionId = null;
 
 const hostSyncStatus = document.getElementById('hostSyncStatus');
 const hostQuestionNumber = document.getElementById('hostQuestionNumber');
+const hostQuestionPicker = document.getElementById('hostQuestionPicker');
+const hostFollowNotice = document.getElementById('hostFollowNotice');
 const hostSceneStatus = document.getElementById('hostSceneStatus');
-const hostQuestionImage = document.getElementById('hostQuestionImage');
 const hostQuestionText = document.getElementById('hostQuestionText');
 const hostTextAnswerNotice = document.getElementById('hostTextAnswerNotice');
 const hostOptions = document.getElementById('hostOptions');
@@ -24,6 +30,8 @@ const btnSaveHostMemo = document.getElementById('btnSaveHostMemo');
 const hostRanking = document.getElementById('hostRanking');
 
 document.addEventListener('DOMContentLoaded', () => {
+  memoDrafts = JSON.parse(localStorage.getItem(quizStore.getLocalKey('quiz_local_host_memo_drafts')) || '{}');
+
   quizStore.subscribeConnection(isConnected => {
     hostSyncStatus.textContent = isConnected ? 'Firebase同期中' : 'オフライン / ローカル';
     hostSyncStatus.parentElement.classList.toggle('is-online', isConnected);
@@ -32,18 +40,22 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeQuestions(questions => {
     rawQuestions = questions || DEFAULT_QUESTIONS;
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    syncQuestionPicker();
     renderCurrentQuestion();
   });
 
   quizStore.subscribeQuestionOrder(order => {
     currentQuestionOrder = order || [];
     currentQuestions = quizStore.getOrderedQuestions(rawQuestions, currentQuestionOrder);
+    syncQuestionPicker();
     renderCurrentQuestion();
   });
 
   quizStore.subscribeState(state => {
     currentState = state;
+    syncQuestionPicker();
     renderCurrentQuestion();
+    if (followsQuiz) loadMemoForSelectedQuestion();
   });
 
   quizStore.subscribeTeams(teams => {
@@ -51,16 +63,34 @@ document.addEventListener('DOMContentLoaded', () => {
     renderRanking();
   });
 
-  quizStore.subscribeHostMemo(memo => {
-    if (!memoDirty) hostMemo.value = memo;
+  quizStore.subscribeHostMemos(memos => {
+    hostMemos = memos || {};
+    loadMemoForSelectedQuestion();
     hostMemoStatus.textContent = quizStore.isFirebaseReady
       ? 'Firebaseと同期済み'
       : 'ローカル保存（Firebase未接続）';
   });
 
+  hostQuestionPicker.addEventListener('change', () => {
+    const questionId = hostQuestionPicker.value;
+    if (!questionId) return;
+    followsQuiz = false;
+    selectedQuestionId = questionId;
+    hostFollowNotice.textContent = '手動で問題を選択中です。進行との自動同期は停止しています（再読み込みで再開）。';
+    hostFollowNotice.classList.add('is-manual');
+    hostSceneStatus.textContent = '手動選択中（進行同期停止）';
+    renderCurrentQuestion();
+    loadMemoForSelectedQuestion();
+  });
+
   hostMemo.addEventListener('input', () => {
     memoDirty = true;
-    hostMemoStatus.textContent = '未保存の変更があります';
+    const questionId = String(loadedMemoQuestionId || '');
+    if (questionId) {
+      memoDrafts[questionId] = hostMemo.value;
+      localStorage.setItem(quizStore.getLocalKey('quiz_local_host_memo_drafts'), JSON.stringify(memoDrafts));
+    }
+    hostMemoStatus.textContent = 'この問題の未保存メモがあります';
   });
   btnSaveHostMemo.addEventListener('click', saveMemo);
 
@@ -69,7 +99,9 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function renderCurrentQuestion() {
-  const questionIndex = currentState ? Number(currentState.currentQuestionIndex) || 0 : 0;
+  const questionIndex = followsQuiz
+    ? (currentState ? Number(currentState.currentQuestionIndex) || 0 : 0)
+    : currentQuestions.findIndex(question => String(question.id) === String(selectedQuestionId));
   const question = currentQuestions[questionIndex];
   const scene = currentState && currentState.currentScene;
   const sceneLabels = {
@@ -81,10 +113,11 @@ function renderCurrentQuestion() {
   };
 
   hostQuestionNumber.textContent = question ? `Q ${questionIndex + 1}` : 'Q --';
-  hostSceneStatus.textContent = sceneLabels[scene] || '進行状況を待っています';
+  if (followsQuiz) {
+    hostSceneStatus.textContent = sceneLabels[scene] || '進行状況を待っています';
+  }
 
   if (!question) {
-    hostQuestionImage.hidden = true;
     hostQuestionText.textContent = '出題中の問題はありません';
     hostTextAnswerNotice.hidden = true;
     hostOptions.replaceChildren();
@@ -94,13 +127,6 @@ function renderCurrentQuestion() {
   }
 
   hostQuestionText.textContent = question.question || '（問題文なし）';
-  hostQuestionImage.hidden = !question.image;
-  if (question.image) {
-    hostQuestionImage.src = question.image;
-    hostQuestionImage.alt = question.question || '問題画像';
-  } else {
-    hostQuestionImage.removeAttribute('src');
-  }
 
   const isTextAnswer = question.answerType === 'text';
   hostTextAnswerNotice.hidden = !isTextAnswer;
@@ -122,13 +148,6 @@ function renderCurrentQuestion() {
       const text = document.createElement('span');
       text.textContent = option.text || '';
       item.appendChild(text);
-
-      if (option.image) {
-        const image = document.createElement('img');
-        image.src = option.image;
-        image.alt = `${index + 1}番の選択肢画像`;
-        item.appendChild(image);
-      }
       hostOptions.appendChild(item);
     });
   }
@@ -136,6 +155,69 @@ function renderCurrentQuestion() {
   const correctAnswer = getCorrectAnswerText(question);
   hostCorrectAnswer.textContent = `正解：${correctAnswer}`;
   hostExplanation.textContent = question.explanation || '解説はありません';
+}
+
+function syncQuestionPicker() {
+  const displayedQuestionId = followsQuiz
+    ? currentQuestions[Number(currentState && currentState.currentQuestionIndex) || 0]?.id
+    : selectedQuestionId;
+
+  hostQuestionPicker.replaceChildren();
+  currentQuestions.forEach((question, index) => {
+    const option = document.createElement('option');
+    option.value = String(question.id);
+    const questionLabel = String(question.question || '').replace(/\s+/g, ' ').trim();
+    option.textContent = `Q${index + 1}: ${questionLabel || '（問題文なし）'}`;
+    hostQuestionPicker.appendChild(option);
+  });
+
+  if (!currentQuestions.length) {
+    const option = document.createElement('option');
+    option.value = '';
+    option.textContent = '表示できる問題がありません';
+    hostQuestionPicker.appendChild(option);
+    hostQuestionPicker.disabled = true;
+    return;
+  }
+
+  hostQuestionPicker.disabled = false;
+  const selectedStillExists = currentQuestions.some(question =>
+    String(question.id) === String(displayedQuestionId)
+  );
+  if (!selectedStillExists) {
+    selectedQuestionId = currentQuestions[0].id;
+  }
+  hostQuestionPicker.value = String(selectedStillExists ? displayedQuestionId : selectedQuestionId);
+  if (!followsQuiz) {
+    selectedQuestionId = hostQuestionPicker.value;
+  }
+}
+
+function getDisplayedQuestionId() {
+  const index = currentQuestions.findIndex(question =>
+    String(question.id) === String(selectedQuestionId)
+  );
+  return followsQuiz
+    ? String(currentQuestions[Number(currentState && currentState.currentQuestionIndex) || 0]?.id || '')
+    : String(currentQuestions[index]?.id || '');
+}
+
+function loadMemoForSelectedQuestion() {
+  const questionId = getDisplayedQuestionId();
+  const memoKey = String(questionId || '');
+  if (!memoKey || memoKey === String(loadedMemoQuestionId || '')) {
+    if (memoDirty) return;
+  } else if (memoDirty && loadedMemoQuestionId) {
+    memoDrafts[String(loadedMemoQuestionId)] = hostMemo.value;
+    localStorage.setItem(quizStore.getLocalKey('quiz_local_host_memo_drafts'), JSON.stringify(memoDrafts));
+  }
+
+  loadedMemoQuestionId = memoKey || null;
+  memoDirty = Boolean(memoKey && Object.prototype.hasOwnProperty.call(memoDrafts, memoKey));
+  hostMemo.value = memoKey ? memoDrafts[memoKey] ?? hostMemos[memoKey] ?? '' : '';
+  hostMemoStatus.textContent = quizStore.isFirebaseReady
+    ? (memoDirty ? 'この問題の未保存メモがあります' : 'この問題のメモをFirebaseと同期')
+    : (memoDirty ? 'この問題の未保存メモがあります' : 'この問題のメモをローカル保存');
 }
 
 function getCorrectAnswerText(question) {
@@ -190,11 +272,18 @@ async function saveMemo() {
   btnSaveHostMemo.disabled = true;
   hostMemoStatus.textContent = '保存中...';
   try {
-    await quizStore.saveHostMemo(hostMemo.value);
+    const questionId = loadedMemoQuestionId;
+    if (!questionId) {
+      hostMemoStatus.textContent = '保存する問題を選択してください';
+      return;
+    }
+    await quizStore.saveHostMemo(questionId, hostMemo.value);
+    delete memoDrafts[String(questionId)];
+    localStorage.setItem(quizStore.getLocalKey('quiz_local_host_memo_drafts'), JSON.stringify(memoDrafts));
     memoDirty = false;
     hostMemoStatus.textContent = quizStore.isFirebaseReady
-      ? 'Firebaseに保存しました'
-      : 'この端末に保存しました（Firebase未接続）';
+      ? 'この問題のメモをFirebaseに保存しました'
+      : 'この問題のメモを端末に保存しました（Firebase未接続）';
   } catch (error) {
     hostMemoStatus.textContent = '保存に失敗しました。接続を確認して再試行してください。';
     console.error('司会メモの保存に失敗しました:', error);
