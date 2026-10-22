@@ -24,22 +24,10 @@
     </header>
 
     <section class="host-card host-question-card" aria-labelledby="hostQuestionHeading">
-      <div class="host-question-nav" aria-label="表示する問題">
-        <button type="button" class="btn btn-secondary host-nav-button" id="btnPrevHostQuestion">◀ 前の問題</button>
-        <select id="hostQuestionPicker" class="host-question-picker" aria-label="問題">
-          <option value="">問題を読み込んでいます...</option>
-        </select>
-        <button type="button" class="btn btn-secondary host-nav-button" id="btnNextHostQuestion">次の問題 ▶</button>
-      </div>
       <div class="host-section-heading">
-        <h2 id="hostQuestionHeading">現在の問題</h2>
+        <h2 id="hostQuestionHeading">問題</h2>
         <span id="hostQuestionNumber" class="host-question-number">Q --</span>
       </div>
-      <p id="hostFollowNotice" class="host-follow-notice" role="status">
-        出題進行に自動同期しています。問題を選ぶと、このページを再読み込みするまで同期を停止します。
-      </p>
-      <p id="hostQuestionDataStatus" class="host-data-status" role="status">問題データを読み込んでいます...</p>
-      <p id="hostSceneStatus" class="host-scene-status">進行状況を読み込んでいます</p>
       <p id="hostQuestionText" class="host-question-text">問題を読み込んでいます...</p>
       <p id="hostTextAnswerNotice" class="host-note" hidden>この問題は記述式です</p>
       <ol id="hostOptions" class="host-options"></ol>
@@ -63,6 +51,24 @@
         <span id="hostMemoStatus" class="host-memo-status" role="status">メモを読み込んでいます...</span>
         <button type="button" id="btnSaveHostMemo" class="btn btn-primary host-save-button">メモを保存</button>
       </div>
+    </section>
+
+    <section class="host-card host-controls-card" aria-labelledby="hostControlsHeading">
+      <div class="host-section-heading">
+        <h2 id="hostControlsHeading">進行状況・問題移動</h2>
+        <span id="hostSceneStatus" class="host-scene-status">進行状況を読み込んでいます</span>
+      </div>
+      <div class="host-question-nav" aria-label="表示する問題">
+        <button type="button" class="btn btn-secondary host-nav-button" id="btnPrevHostQuestion">◀ 前の問題</button>
+        <select id="hostQuestionPicker" class="host-question-picker" aria-label="問題">
+          <option value="">問題を読み込んでいます...</option>
+        </select>
+        <button type="button" class="btn btn-secondary host-nav-button" id="btnNextHostQuestion">次の問題 ▶</button>
+      </div>
+      <p id="hostFollowNotice" class="host-follow-notice" role="status">
+        出題進行に自動同期しています。問題を選ぶと、このページを再読み込みするまで同期を停止します。
+      </p>
+      <p id="hostQuestionDataStatus" class="host-data-status" role="status">問題データを読み込んでいます...</p>
     </section>
 
     <section class="host-card" aria-labelledby="hostRankingHeading">
