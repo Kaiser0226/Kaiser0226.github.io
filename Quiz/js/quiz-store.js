@@ -666,27 +666,28 @@ class QuizStore {
    * 出題順リストに従って問題配列を整列して返すヘルパー
    */
   getOrderedQuestions(questions, order) {
-    if (!order || !order.length) return questions;
-    const qMap = {};
-    questions.forEach(q => {
-      qMap[q.id] = q;
-    });
+    const visibleQuestions = questions.filter(question => !question.hidden);
+    if (!order || !order.length) return visibleQuestions;
+    const qMap = new Map(visibleQuestions.map(question => [String(question.id), question]));
+    const orderedIds = new Set();
 
     const ordered = [];
     order.forEach(id => {
-      if (qMap[id]) {
-        ordered.push(qMap[id]);
+      const question = qMap.get(String(id));
+      if (question && !orderedIds.has(String(id))) {
+        ordered.push(question);
+        orderedIds.add(String(id));
       }
     });
 
     // orderに載っていない問題があれば後ろに追加
-    questions.forEach(q => {
-      if (!order.includes(q.id)) {
-        ordered.push(q);
+    visibleQuestions.forEach(question => {
+      if (!orderedIds.has(String(question.id))) {
+        ordered.push(question);
       }
     });
 
-    return ordered.length ? ordered : questions;
+    return ordered;
   }
 
   /**

@@ -443,20 +443,24 @@ async function handleSaveConfig() {
 let tempOrder = [];
 
 function renderOrderListEditor() {
-  const validQuestionIds = new Set(rawQuestions.map(question => String(question.id)));
-  const cleanedOrder = currentQuestionOrder.filter(id => validQuestionIds.has(String(id)));
-  if (cleanedOrder.length !== currentQuestionOrder.length) {
-    currentQuestionOrder = cleanedOrder;
-    quizStore.saveQuestionOrder(cleanedOrder);
-  }
-  tempOrder = [...currentQuestionOrder];
-  if (tempOrder.length === 0) {
-    tempOrder = rawQuestions.map(q => q.id);
+  const visibleQuestions = rawQuestions.filter(question => !question.hidden);
+  const visibleQuestionIds = new Set(visibleQuestions.map(question => String(question.id)));
+  tempOrder = currentQuestionOrder.filter(id => visibleQuestionIds.has(String(id)));
+  visibleQuestions.forEach(question => {
+    if (!tempOrder.some(id => String(id) === String(question.id))) {
+      tempOrder.push(question.id);
+    }
+  });
+  const orderChanged = tempOrder.length !== currentQuestionOrder.length
+    || tempOrder.some((id, index) => String(id) !== String(currentQuestionOrder[index]));
+  currentQuestionOrder = [...tempOrder];
+  if (orderChanged) {
+    quizStore.saveQuestionOrder(currentQuestionOrder);
   }
 
   orderListContainer.innerHTML = '';
   tempOrder.forEach((qid, idx) => {
-    const q = rawQuestions.find(rq => rq.id === qid);
+    const q = rawQuestions.find(rq => String(rq.id) === String(qid));
     const qText = q ? q.question : `(ID: ${qid} - 削除済み)`;
     const multiplier = getPointMultiplier(q);
     const doubleBadge = multiplier > 1 ? ` <span style="display:inline-block; font-size:0.75rem; color:#b45309; background:#fef3c7; border:1px solid #fde68a; padding:1px 6px; border-radius:4px; font-weight:800; margin-left:4px;">${escapeHtml(ScoreEngine.getMultiplierLabel(multiplier))}</span>` : '';
@@ -480,6 +484,7 @@ function renderOrderListEditor() {
       <div style="display: flex; gap: 6px; flex-shrink: 0;">
         <button type="button" class="btn btn-secondary btn-order-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↑ 上へ</button>
         <button type="button" class="btn btn-secondary btn-order-down" data-idx="${idx}" ${idx === tempOrder.length - 1 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↓ 下へ</button>
+        <button type="button" class="btn btn-secondary btn-hide-question" data-id="${escapeHtml(String(qid))}" ${visibleQuestions.length <= 1 ? 'disabled title="出題中の問題は最低1問必要です。"' : ''} style="padding: 4px 8px; font-size: 0.8rem;">非表示</button>
       </div>
     `;
     orderListContainer.appendChild(item);
@@ -530,6 +535,64 @@ function renderOrderListEditor() {
       }
     });
   });
+
+  const hiddenQuestions = rawQuestions.filter(question => question.hidden);
+  if (hiddenQuestions.length > 0) {
+    const hiddenHeading = document.createElement('h3');
+    hiddenHeading.textContent = '非表示の問題';
+    hiddenHeading.style.cssText = 'margin: 18px 0 8px; font-size: 0.95rem; color: #64748b;';
+    orderListContainer.appendChild(hiddenHeading);
+
+    hiddenQuestions.forEach(question => {
+      const item = document.createElement('div');
+      item.classList.add('order-list-item');
+      item.style.cssText = `
+        display: flex; align-items: center; justify-content: space-between;
+        padding: 10px 14px; background: #f8fafc; border: 1px solid #e2e8f0;
+        border-radius: 8px; margin-bottom: 8px;
+      `;
+      item.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 12px; flex: 1; overflow: hidden;">
+          <span style="font-weight: 800; color: #64748b; width: 30px;">—</span>
+          <span style="font-size: 0.9rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            ${escapeHtml(question.question)} <span style="color: #64748b;">(非表示)</span>
+          </span>
+        </div>
+        <button type="button" class="btn btn-secondary btn-show-question" data-id="${escapeHtml(String(question.id))}" style="padding: 4px 8px; font-size: 0.8rem;">再表示</button>
+      `;
+      orderListContainer.appendChild(item);
+    });
+
+    orderListContainer.querySelectorAll('.btn-show-question').forEach(button => {
+      button.addEventListener('click', () => setQuestionHidden(button.getAttribute('data-id'), false));
+    });
+  }
+
+  orderListContainer.querySelectorAll('.btn-hide-question').forEach(button => {
+    button.addEventListener('click', () => setQuestionHidden(button.getAttribute('data-id'), true));
+  });
+}
+
+async function setQuestionHidden(questionId, hidden) {
+  const question = rawQuestions.find(item => String(item.id) === String(questionId));
+  if (!question) return;
+
+  if (hidden && rawQuestions.filter(item => !item.hidden).length <= 1) {
+    alert('出題中の問題は最低1問必要です。');
+    return;
+  }
+
+  question.hidden = hidden;
+  if (hidden) {
+    tempOrder = tempOrder.filter(id => String(id) !== String(question.id));
+  } else if (!tempOrder.some(id => String(id) === String(question.id))) {
+    tempOrder.push(question.id);
+  }
+  currentQuestionOrder = [...tempOrder];
+
+  await quizStore.saveQuestions(rawQuestions);
+  await quizStore.saveQuestionOrder(currentQuestionOrder);
+  renderOrderListEditor();
 }
 
 function refreshOrderEditor() {
