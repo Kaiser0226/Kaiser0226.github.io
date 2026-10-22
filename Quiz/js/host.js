@@ -22,6 +22,7 @@ const btnNextHostQuestion = document.getElementById('btnNextHostQuestion');
 const hostFollowNotice = document.getElementById('hostFollowNotice');
 const hostQuestionDataStatus = document.getElementById('hostQuestionDataStatus');
 const hostSceneStatus = document.getElementById('hostSceneStatus');
+const hostQuestionImage = document.getElementById('hostQuestionImage');
 const hostQuestionText = document.getElementById('hostQuestionText');
 const hostTextAnswerNotice = document.getElementById('hostTextAnswerNotice');
 const hostOptions = document.getElementById('hostOptions');
@@ -133,6 +134,8 @@ function renderCurrentQuestion() {
   }
 
   if (!question) {
+    hostQuestionImage.hidden = true;
+    hostQuestionImage.removeAttribute('src');
     hostQuestionText.textContent = '出題中の問題はありません';
     hostTextAnswerNotice.hidden = true;
     hostOptions.replaceChildren();
@@ -141,15 +144,28 @@ function renderCurrentQuestion() {
     return;
   }
 
+  const questionImage = String(question.image || '').trim();
+  hostQuestionImage.hidden = !questionImage;
+  if (questionImage) {
+    hostQuestionImage.src = questionImage;
+    hostQuestionImage.alt = `${question.question || '問題'}の画像`;
+  } else {
+    hostQuestionImage.removeAttribute('src');
+  }
   hostQuestionText.textContent = question.question || '（問題文なし）';
 
   const isTextAnswer = question.answerType === 'text';
   hostTextAnswerNotice.hidden = !isTextAnswer;
   hostOptions.replaceChildren();
+  const options = isTextAnswer ? [] : (question.options || []);
+  const hasImageOptions = options.some(option => Boolean(String(option.image || '').trim()));
+  hostOptions.classList.toggle('has-image-options', hasImageOptions);
   if (!isTextAnswer) {
-    (question.options || []).forEach((option, index) => {
+    options.forEach((option, index) => {
       const item = document.createElement('li');
-      item.className = 'host-option';
+      item.className = hasImageOptions
+        ? 'host-option host-option-image-card'
+        : 'host-option';
       const colorIndex = Math.min(index + 1, 8);
       item.style.setProperty('--option-color', `var(--opt-${colorIndex})`);
       item.style.setProperty('--option-bg', `var(--opt-${colorIndex}-bg)`);
@@ -160,11 +176,26 @@ function renderCurrentQuestion() {
       label.textContent = String(index + 1);
       item.appendChild(label);
 
-      const text = document.createElement('span');
-      text.textContent = option.text || '';
-      item.appendChild(text);
+      const optionImage = String(option.image || '').trim();
+      if (optionImage) {
+        const image = document.createElement('img');
+        image.className = 'host-option-image';
+        image.src = optionImage;
+        image.alt = `選択肢${index + 1}の画像`;
+        item.appendChild(image);
+      }
+
+      const optionText = String(option.text || '').trim();
+      if (optionText) {
+        const text = document.createElement('span');
+        text.className = hasImageOptions ? 'host-option-text-label' : '';
+        text.textContent = optionText;
+        item.appendChild(text);
+      }
       hostOptions.appendChild(item);
     });
+  } else {
+    hostOptions.classList.remove('has-image-options');
   }
 
   const correctAnswer = getCorrectAnswerText(question);
