@@ -1,0 +1,312 @@
+.host-body {
+  background: #eef2f7;
+}
+
+.host-page {
+  width: min(100%, 680px);
+  margin: 0 auto;
+  padding: 16px 14px 36px;
+}
+
+.host-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 2px 16px;
+}
+
+.host-header h1 {
+  font-size: 1.55rem;
+  line-height: 1.2;
+  font-weight: 900;
+}
+
+.host-eyebrow {
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+.host-live-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  color: #475569;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.host-live-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #94a3b8;
+}
+
+.host-live-status.is-online .host-live-dot {
+  background: #16a34a;
+  box-shadow: 0 0 0 3px #dcfce7;
+}
+
+.host-card {
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid #dbe3ee;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05);
+}
+
+.host-question-card {
+  border-top: 4px solid #2563eb;
+}
+
+.host-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.host-section-heading h2 {
+  font-size: 1rem;
+  font-weight: 850;
+}
+
+.host-question-number {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.host-scene-status {
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.host-question-image {
+  display: block;
+  max-width: 100%;
+  max-height: 240px;
+  margin: 0 auto 14px;
+  border-radius: 10px;
+  object-fit: contain;
+}
+
+.host-question-text {
+  margin-bottom: 14px;
+  font-size: 1.25rem;
+  font-weight: 850;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.host-note {
+  margin: -4px 0 12px;
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.host-options {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  counter-reset: host-option;
+}
+
+.host-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 10px 12px;
+  border: 1px solid var(--option-border);
+  border-radius: 10px;
+  background: var(--option-bg);
+  color: #0f172a;
+  font-size: 0.93rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.host-option-label {
+  display: grid;
+  width: 27px;
+  height: 27px;
+  flex: 0 0 27px;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--option-color);
+  color: #ffffff;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.host-option img {
+  max-width: 78px;
+  max-height: 54px;
+  margin-left: auto;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+.host-correct-answer {
+  margin-bottom: 8px;
+  color: #15803d;
+  font-weight: 850;
+  overflow-wrap: anywhere;
+}
+
+.host-explanation {
+  color: #334155;
+  font-size: 0.92rem;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.host-memo {
+  display: block;
+  width: 100%;
+  min-height: 132px;
+  padding: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  background: #fbfdff;
+  color: #0f172a;
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.host-memo:focus {
+  outline: 3px solid rgba(37, 99, 235, 0.18);
+  border-color: #2563eb;
+}
+
+.host-memo-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.host-memo-status {
+  color: #64748b;
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.host-save-button {
+  min-height: 44px;
+  padding: 9px 16px;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+}
+
+.host-live-label {
+  color: #15803d;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.host-ranking {
+  display: grid;
+  gap: 8px;
+  list-style: none;
+  counter-reset: host-rank;
+}
+
+.host-ranking-item {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 9px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.host-ranking-item:first-child {
+  border-color: #facc15;
+  background: #fffbeb;
+}
+
+.host-rank-number {
+  color: #475569;
+  font-size: 0.88rem;
+  font-weight: 900;
+}
+
+.host-ranking-item:first-child .host-rank-number {
+  color: #b45309;
+}
+
+.host-team-name {
+  min-width: 0;
+  font-size: 0.9rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.host-team-score {
+  white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 850;
+  font-variant-numeric: tabular-nums;
+}
+
+.host-empty-ranking {
+  padding: 12px;
+  color: #64748b;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.host-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 380px) {
+  .host-page {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .host-card {
+    padding: 15px;
+  }
+
+  .host-header h1 {
+    font-size: 1.35rem;
+  }
+
+  .host-memo-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

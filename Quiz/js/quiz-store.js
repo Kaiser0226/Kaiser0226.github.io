@@ -24,7 +24,8 @@ class QuizStore {
       teams: [],
       answers: [],
       questions: [],
-      teamSessions: []
+      teamSessions: [],
+      hostMemo: []
     };
 
     // ローカル通信チャンネル
@@ -430,6 +431,48 @@ class QuizStore {
         await this.quizRef('questions').set(questions);
       } catch (err) {
         console.warn("QuizStore: Firebase saveQuestions failed:", err);
+      }
+    }
+  }
+
+  subscribeHostMemo(callback) {
+    this.listeners.hostMemo.push(callback);
+    const localKey = this.getLocalKey('quiz_local_host_memo');
+    const localMemo = localStorage.getItem(localKey) || '';
+    callback(localMemo);
+
+    if (this.isFirebaseReady && this.database) {
+      const memoRef = this.quizRef('hostMemo');
+      memoRef.on('value', snapshot => {
+        if (!snapshot.exists()) {
+          const latestLocalMemo = localStorage.getItem(localKey) || '';
+          if (latestLocalMemo) memoRef.set(latestLocalMemo);
+          callback(latestLocalMemo);
+          return;
+        }
+        const memo = String(snapshot.val() || '');
+        localStorage.setItem(localKey, memo);
+        callback(memo);
+      }, err => {
+        console.warn('QuizStore: Firebase subscribeHostMemo error:', err);
+      });
+    }
+  }
+
+  async saveHostMemo(memo) {
+    const value = String(memo);
+    localStorage.setItem(this.getLocalKey('quiz_local_host_memo'), value);
+    if (this.channel) {
+      this.channel.postMessage({ type: 'hostMemo', data: value });
+    }
+    this.listeners.hostMemo.forEach(callback => callback(value));
+
+    if (this.isFirebaseReady && this.database) {
+      try {
+        await this.quizRef('hostMemo').set(value);
+      } catch (err) {
+        console.warn('QuizStore: Firebase saveHostMemo failed:', err);
+        throw err;
       }
     }
   }

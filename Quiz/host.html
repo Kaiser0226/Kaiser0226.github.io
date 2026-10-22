@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f172a">
+  <title>クイズ大会 - 司会用画面</title>
+  <link rel="stylesheet" href="css/common.css">
+  <link rel="stylesheet" href="css/host.css">
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+</head>
+<body class="host-body">
+  <main class="host-page">
+    <header class="host-header">
+      <div>
+        <p class="host-eyebrow">QUIZ HOST</p>
+        <h1>司会用画面</h1>
+      </div>
+      <div class="host-live-status">
+        <span class="host-live-dot" aria-hidden="true"></span>
+        <span id="hostSyncStatus" role="status">同期中...</span>
+      </div>
+    </header>
+
+    <section class="host-card host-question-card" aria-labelledby="hostQuestionHeading">
+      <div class="host-section-heading">
+        <h2 id="hostQuestionHeading">現在の問題</h2>
+        <span id="hostQuestionNumber" class="host-question-number">Q --</span>
+      </div>
+      <p id="hostSceneStatus" class="host-scene-status">進行状況を読み込んでいます</p>
+      <img id="hostQuestionImage" class="host-question-image" alt="問題画像" hidden>
+      <p id="hostQuestionText" class="host-question-text">問題を読み込んでいます...</p>
+      <p id="hostTextAnswerNotice" class="host-note" hidden>この問題は記述式です</p>
+      <ol id="hostOptions" class="host-options"></ol>
+    </section>
+
+    <section class="host-card" aria-labelledby="hostExplanationHeading">
+      <div class="host-section-heading">
+        <h2 id="hostExplanationHeading">解答・解説</h2>
+      </div>
+      <p id="hostCorrectAnswer" class="host-correct-answer">正解はまだ表示されていません</p>
+      <p id="hostExplanation" class="host-explanation">解説はありません</p>
+    </section>
+
+    <section class="host-card" aria-labelledby="hostMemoHeading">
+      <div class="host-section-heading">
+        <h2 id="hostMemoHeading">司会メモ</h2>
+      </div>
+      <label class="host-sr-only" for="hostMemo">司会用メモ</label>
+      <textarea id="hostMemo" class="host-memo" rows="5" placeholder="進行メモや読み上げ内容を入力..."></textarea>
+      <div class="host-memo-footer">
+        <span id="hostMemoStatus" class="host-memo-status" role="status">メモを読み込んでいます...</span>
+        <button type="button" id="btnSaveHostMemo" class="btn btn-primary host-save-button">メモを保存</button>
+      </div>
+    </section>
+
+    <section class="host-card" aria-labelledby="hostRankingHeading">
+      <div class="host-section-heading">
+        <h2 id="hostRankingHeading">現在の上位チーム</h2>
+        <span class="host-live-label">リアルタイム</span>
+      </div>
+      <ol id="hostRanking" class="host-ranking"></ol>
+    </section>
+  </main>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/questions-data.js"></script>
+  <script src="js/questions-order.js"></script>
+  <script src="js/score-engine.js"></script>
+  <script src="js/quiz-store.js"></script>
+  <script src="js/host.js"></script>
+</body>
+</html>
