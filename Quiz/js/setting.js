@@ -481,10 +481,10 @@ function renderOrderListEditor() {
           ${escapeHtml(qText)}${doubleBadge}
         </span>
       </div>
-      <div style="display: flex; gap: 6px; flex-shrink: 0;">
+      <div class="order-list-actions" style="display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap;">
         <button type="button" class="btn btn-secondary btn-order-up" data-idx="${idx}" ${idx === 0 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↑ 上へ</button>
         <button type="button" class="btn btn-secondary btn-order-down" data-idx="${idx}" ${idx === tempOrder.length - 1 ? 'disabled' : ''} style="padding: 4px 8px; font-size: 0.8rem;">↓ 下へ</button>
-        <button type="button" class="btn btn-secondary btn-hide-question" data-id="${escapeHtml(String(qid))}" ${visibleQuestions.length <= 1 ? 'disabled title="出題中の問題は最低1問必要です。"' : ''} style="padding: 4px 8px; font-size: 0.8rem;">非表示</button>
+        <button type="button" class="btn btn-order-visibility btn-hide-question" data-id="${escapeHtml(String(qid))}" ${visibleQuestions.length <= 1 ? 'disabled title="出題中の問題は最低1問必要です。"' : ''}>非表示にする</button>
       </div>
     `;
     orderListContainer.appendChild(item);
@@ -558,7 +558,7 @@ function renderOrderListEditor() {
             ${escapeHtml(question.question)} <span style="color: #64748b;">(非表示)</span>
           </span>
         </div>
-        <button type="button" class="btn btn-secondary btn-show-question" data-id="${escapeHtml(String(question.id))}" style="padding: 4px 8px; font-size: 0.8rem;">再表示</button>
+        <button type="button" class="btn btn-order-visibility btn-show-question" data-id="${escapeHtml(String(question.id))}">表示に戻す</button>
       `;
       orderListContainer.appendChild(item);
     });

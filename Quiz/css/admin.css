@@ -474,6 +474,40 @@
 
 .order-list-item {
   cursor: grab;
+  gap: 12px;
+}
+
+.order-list-actions {
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.btn-order-visibility {
+  display: inline-flex !important;
+  visibility: visible !important;
+  align-items: center;
+  justify-content: center;
+  min-width: 104px;
+  padding: 7px 10px;
+  border: 1px solid #1d4ed8;
+  border-radius: var(--radius-sm);
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn-order-visibility:hover:not(:disabled) {
+  background: #1d4ed8;
+  color: #ffffff;
+}
+
+.btn-order-visibility:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .order-list-item.dragging {
