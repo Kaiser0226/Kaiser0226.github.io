@@ -449,30 +449,36 @@ function renderRankCard(rank, animate = true) {
 function updateRevealButtonText() {
   const hasTeams = revealOrder.length > 0;
   if (!hasTeams) {
-    btnRevealNextRank.textContent = finalTeamsLoadStatus === 'error'
-      ? 'チーム情報を取得できません'
-      : finalTeamsLoadStatus === 'loading' || finalTeamsLoadStatus === 'idle'
-        ? 'チーム情報を読み込み中...'
-        : '発表できるチームがいません';
-    btnRevealNextRank.disabled = true;
-    btnAutoRevealRanks.disabled = true;
+    if (btnRevealNextRank) {
+      btnRevealNextRank.textContent = finalTeamsLoadStatus === 'error'
+        ? 'チーム情報を取得できません'
+        : finalTeamsLoadStatus === 'loading' || finalTeamsLoadStatus === 'idle'
+          ? 'チーム情報を読み込み中...'
+          : '発表できるチームがいません';
+      btnRevealNextRank.disabled = true;
+    }
+    if (btnAutoRevealRanks) btnAutoRevealRanks.disabled = true;
     if (autoRevealTimer) {
       clearInterval(autoRevealTimer);
       autoRevealTimer = null;
     }
   } else if (currentRevealIndex < revealOrder.length) {
     const nextRank = revealOrder[currentRevealIndex];
-    btnRevealNextRank.textContent = `▶ ${nextRank}位を発表する`;
-    btnRevealNextRank.disabled = false;
-    btnAutoRevealRanks.disabled = false;
+    if (btnRevealNextRank) {
+      btnRevealNextRank.textContent = `▶ ${nextRank}位を発表する`;
+      btnRevealNextRank.disabled = false;
+    }
+    if (btnAutoRevealRanks) btnAutoRevealRanks.disabled = false;
   } else {
-    btnRevealNextRank.textContent = `🎉 全順位発表完了！`;
-    btnRevealNextRank.disabled = true;
-    btnAutoRevealRanks.disabled = false;
+    if (btnRevealNextRank) {
+      btnRevealNextRank.textContent = `🎉 全順位発表完了！`;
+      btnRevealNextRank.disabled = true;
+    }
+    if (btnAutoRevealRanks) btnAutoRevealRanks.disabled = false;
     if (autoRevealTimer) {
       clearInterval(autoRevealTimer);
       autoRevealTimer = null;
-      btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
+      if (btnAutoRevealRanks) btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
     }
   }
   publishRevealStatus();
@@ -483,12 +489,12 @@ function revealNextRank() {
 
   const targetRank = revealOrder[currentRevealIndex];
   renderRankCard(targetRank);
+  currentRevealIndex++;
   if (targetRank === 1 && currentState && !currentState.finalResultsRevealed) {
     quizStore.updateState({ finalResultsRevealed: true });
     currentState.finalResultsRevealed = true;
   }
 
-  currentRevealIndex++;
   updateRevealButtonText();
 }
 
@@ -497,7 +503,7 @@ function toggleAutoReveal() {
     // 停止
     clearInterval(autoRevealTimer);
     autoRevealTimer = null;
-    btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
+    if (btnAutoRevealRanks) btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
     publishRevealStatus();
   } else {
     // 自動再生開始
@@ -505,14 +511,14 @@ function toggleAutoReveal() {
     if (currentRevealIndex >= revealOrder.length) {
       resetRevealSequence();
     }
-    btnAutoRevealRanks.textContent = "⏸️ 一時停止";
+    if (btnAutoRevealRanks) btnAutoRevealRanks.textContent = "⏸️ 一時停止";
     autoRevealTimer = setInterval(() => {
       if (currentRevealIndex < revealOrder.length) {
         revealNextRank();
       } else {
         clearInterval(autoRevealTimer);
         autoRevealTimer = null;
-        btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
+        if (btnAutoRevealRanks) btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
       }
     }, 2800); // 2.8秒おきに次を発表
     revealNextRank();
@@ -524,7 +530,7 @@ function resetRevealSequence() {
   if (autoRevealTimer) {
     clearInterval(autoRevealTimer);
     autoRevealTimer = null;
-    btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
+    if (btnAutoRevealRanks) btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
   }
   currentRevealIndex = 0;
   if (currentState && currentState.finalResultsRevealed) {

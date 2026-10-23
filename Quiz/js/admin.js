@@ -381,6 +381,21 @@ async function changeScene(scene) {
   if (scene === 'result') {
     const currentQ = currentQuestions[selectedQIndex];
     if (currentQ) {
+      if (currentQ.answerType === 'text') {
+        const answers = await quizStore.getAnswersForQuestion(currentQ.id);
+        const pendingAnswers = Object.values(answers).filter(answer =>
+          typeof answer.answerText === 'string' && typeof answer.manualIsCorrect !== 'boolean'
+        );
+        if (pendingAnswers.length > 0) {
+          const warning = `未採点の記述式回答が ${pendingAnswers.length} 件あります。\nOKを押すと未採点の回答をすべて不正解として結果発表に進みます。`;
+          console.warn(warning);
+          if (!confirm(warning)) return;
+          for (const answer of pendingAnswers) {
+            await quizStore.setManualGrade(currentQ, answer.teamId, false);
+          }
+          currentAnswers = await quizStore.getAnswersForQuestion(currentQ.id);
+        }
+      }
       await calculateAndApplyScores(currentQ);
     }
   }
