@@ -59,21 +59,23 @@ let finalTeamsLoadPromise = null;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', () => {
-  rankingChannel = new BroadcastChannel('quiz-ranking');
+  if (typeof BroadcastChannel !== 'undefined') {
+    rankingChannel = new BroadcastChannel('quiz-ranking');
+    rankingChannel.addEventListener('message', event => {
+      const command = event.data && event.data.type;
+      if (command === 'getRevealStatus') {
+        publishRevealStatus();
+      } else if (command === 'revealNext') {
+        revealNextRank();
+      } else if (command === 'toggleAutoReveal') {
+        toggleAutoReveal();
+      } else if (command === 'resetReveal') {
+        resetRevealSequence();
+      }
+    });
+  }
   document.getElementById('btnClosePlayerQr').addEventListener('click', () => {
     quizStore.updateState({ playerQrVisible: false });
-  });
-  rankingChannel.addEventListener('message', event => {
-    const command = event.data && event.data.type;
-    if (command === 'getRevealStatus') {
-      publishRevealStatus();
-    } else if (command === 'revealNext') {
-      revealNextRank();
-    } else if (command === 'toggleAutoReveal') {
-      toggleAutoReveal();
-    } else if (command === 'resetReveal') {
-      resetRevealSequence();
-    }
   });
 
   // 問題データ購読
@@ -359,11 +361,17 @@ function removeAnswerHighlights() {
 function setupFinalRankings(resetSequence = false) {
   rankingRevealContainer.style.display = 'flex';
   const previousRevealCount = resetSequence ? 0 : currentRevealIndex;
-  const teamList = Object.values(allTeams);
-
-  // 得点降順ソート
-  teamList.sort((a, b) => (b.totalScore || 0) - (a.totalScore || 0));
-  sortedTeams = teamList;
+  sortedTeams = Object.entries(allTeams || {})
+    .filter(([, team]) => team && typeof team === 'object' && String(team.teamName || '').trim())
+    .map(([teamId, team]) => ({
+      ...team,
+      teamId: team.teamId || teamId,
+      totalScore: Number(team.totalScore) || 0
+    }))
+    .sort((a, b) =>
+      b.totalScore - a.totalScore ||
+      String(a.teamId).localeCompare(String(b.teamId), undefined, { numeric: true, sensitivity: 'base' })
+    );
 
   const topCount = Math.min(10, sortedTeams.length);
   revealOrder = Array.from({ length: topCount }, (_, index) => topCount - index);
@@ -425,7 +433,7 @@ function renderRankCard(rank, animate = true) {
   rankLabel.textContent = `${rank}位`;
   const teamName = document.createElement('div');
   teamName.className = 'rank-team-text';
-  teamName.textContent = splitTeamDisplayName(team.teamName).name;
+  teamName.textContent = splitTeamDisplayName(String(team.teamName)).name;
   const score = document.createElement('div');
   score.className = 'rank-score-text';
   score.textContent = `${Number(team.totalScore) || 0} 点`;
@@ -439,13 +447,28 @@ function renderRankCard(rank, animate = true) {
 }
 
 function updateRevealButtonText() {
-  if (currentRevealIndex < revealOrder.length) {
+  const hasTeams = revealOrder.length > 0;
+  if (!hasTeams) {
+    btnRevealNextRank.textContent = finalTeamsLoadStatus === 'error'
+      ? 'チーム情報を取得できません'
+      : finalTeamsLoadStatus === 'loading' || finalTeamsLoadStatus === 'idle'
+        ? 'チーム情報を読み込み中...'
+        : '発表できるチームがいません';
+    btnRevealNextRank.disabled = true;
+    btnAutoRevealRanks.disabled = true;
+    if (autoRevealTimer) {
+      clearInterval(autoRevealTimer);
+      autoRevealTimer = null;
+    }
+  } else if (currentRevealIndex < revealOrder.length) {
     const nextRank = revealOrder[currentRevealIndex];
     btnRevealNextRank.textContent = `▶ ${nextRank}位を発表する`;
     btnRevealNextRank.disabled = false;
+    btnAutoRevealRanks.disabled = false;
   } else {
     btnRevealNextRank.textContent = `🎉 全順位発表完了！`;
     btnRevealNextRank.disabled = true;
+    btnAutoRevealRanks.disabled = false;
     if (autoRevealTimer) {
       clearInterval(autoRevealTimer);
       autoRevealTimer = null;
@@ -478,11 +501,11 @@ function toggleAutoReveal() {
     publishRevealStatus();
   } else {
     // 自動再生開始
+    if (!revealOrder.length) return;
     if (currentRevealIndex >= revealOrder.length) {
       resetRevealSequence();
     }
     btnAutoRevealRanks.textContent = "⏸️ 一時停止";
-    revealNextRank();
     autoRevealTimer = setInterval(() => {
       if (currentRevealIndex < revealOrder.length) {
         revealNextRank();
@@ -492,6 +515,7 @@ function toggleAutoReveal() {
         btnAutoRevealRanks.textContent = "⏩ 1位まで自動再生";
       }
     }, 2800); // 2.8秒おきに次を発表
+    revealNextRank();
     publishRevealStatus();
   }
 }
