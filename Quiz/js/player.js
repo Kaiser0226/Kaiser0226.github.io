@@ -113,7 +113,6 @@ document.addEventListener('DOMContentLoaded', () => {
   quizStore.subscribeTeams(teams => {
     allTeams = teams || {};
     updateHeaderStats();
-    populateTeamDropdown(); // 参加状況反映
     if (myTeam && currentState && currentState.currentScene === 'result') {
       renderRankingsTable();
     } else if (myTeam && currentState && currentState.currentScene === 'final') {
@@ -170,9 +169,7 @@ function populateTeamDropdown() {
   teamMasterList.forEach(name => {
     const opt = document.createElement('option');
     opt.value = name;
-    // 参加中のチームかチェック
-    const isJoined = Object.values(allTeams).some(t => t.teamName === name);
-    opt.textContent = isJoined ? `${name} (参加中)` : name;
+    opt.textContent = name;
     teamSelectDropdown.appendChild(opt);
   });
 
